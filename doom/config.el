@@ -258,8 +258,26 @@
 
 (global-set-key (kbd "M-n") #'scroll-up-line)
 (global-set-key (kbd "M-p") #'scroll-down-line)
-(define-key repeat-map (kbd "M-n") #'scroll-up-line)
-(define-key repeat-map (kbd "M-p") #'scroll-down-line)
+;(define-key repeat-map (kbd "M-n") #'scroll-up-line)
+;(define-key repeat-map (kbd "M-p") #'scroll-down-line)
+
+(defun open-ncview (file)
+  "Open FILE with ncview."
+  (interactive "fOpen .nc file: ")
+  (when (y-or-n-p (format "Open '%s' with ncview?" file))
+    (let ((original-buffer (current-buffer)))  ;; Save the current buffer
+      (start-process "ncview" nil "ncview" file)  ;; Open with ncview
+      (kill-buffer original-buffer)                ;; Kill the current buffer
+      ;; Switch back to the original buffer
+      (switch-to-buffer original-buffer))))
+
+(defun my-find-file-hook ()
+  "Open .nc files with ncview after confirmation."
+  (when (and buffer-file-name
+             (string-equal (file-name-extension buffer-file-name) "nc"))
+    (open-ncview buffer-file-name)))
+
+(add-hook 'find-file-hook 'my-find-file-hook)
 
 
 ;; ;; Define global variables to store state
@@ -349,12 +367,24 @@
 (add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-mp3-in-vlc))
 
 
-(org-add-link-type "mp3" 'open-mp3-in-vlc) ; add the function to org file type
+;; (org-add-link-type "mp3" 'open-mp3-in-vlc) ; add the function to org file type
 
 
 ;; ------------------------- terminals ----------------------------
 ;;
 (use-package multi-vterm :ensure t)
+
+;; -------------------------- TRAMP ------------------------------
+
+;; (require 'tramp)
+;; (setq tramp-default-remote-shell "/bin/bash")
+;; (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+
+;; (use-package tramp
+;;   :ensure t
+;;   :config
+;;   (setq tramp-default-remote-shell "/bin/bash")
+;;   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 
 ;; ------------------------ Specifics -----------------------------
@@ -362,4 +392,4 @@
 ;; for a particular system such as a HPC
 
 (when (file-exists-p (expand-file-name "specifics.el" doom-user-dir))
-  (load (expand-file-name "hpc-config.el" doom-user-dir)))
+  (load (expand-file-name "specifics.el" doom-user-dir)))

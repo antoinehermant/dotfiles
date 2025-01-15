@@ -6,7 +6,8 @@ alias gomisu="cd /home/anthe/misu"
 alias da="du -sm .[^.]* * 2>/dev/null"
 alias ds="du -sh"
 alias e="emacsclient -n"
-alias emacs="emacsclient -c -a 'emacs'"
+alias ew="emacsclient -nw"
+alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
 
 alias ll='ls -alF'
 alias la='ls -A'
