@@ -68,3 +68,5 @@
 (package! multi-vterm)
 (package! popper)
 (package! disable-mouse)
+(package! org-present)
+(package! openwith)

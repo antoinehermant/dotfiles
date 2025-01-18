@@ -79,8 +79,8 @@
 ;; ---------------------------- GUI configuration -------------------------------------
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))  ; Adjust transparency
 
-;; (set-frame-parameter nil 'alpha-background 95)
-;; (add-to-list 'default-frame-alist '(alpha-background . 95))
+(set-frame-parameter nil 'alpha-background 95)
+(add-to-list 'default-frame-alist '(alpha-background . 95))
 
 (add-hook 'server-switch-hook #'raise-frame)
 (add-hook 'server-switch-hook (lambda () (select-frame-set-input-focus (selected-frame))))
@@ -92,18 +92,18 @@
    :config
    (global-disable-mouse-mode t))
 
-(defun toggle-frame-transparency ()
-  "Toggle transparency of Emacs frame."
-  (interactive)
-  (let ((alpha (frame-parameter nil 'alpha)))
-    (set-frame-parameter
-     nil 'alpha
-     (if (eql (cond ((numberp alpha) alpha)
-                    ((numberp (cdr alpha)) (cdr alpha))
-                    ;; Also handle undocumented (<active> <inactive>) form.
-                    ((numberp (cadr alpha)) (cadr alpha)))
-              100)
-              '(90 . 90) '(100 . 100)))))
+;; (defun toggle-frame-transparency ()
+;;   "Toggle transparency of Emacs frame."
+;;   (interactive)
+;;   (let ((alpha (frame-parameter nil 'alpha)))
+;;     (set-frame-parameter
+;;      nil 'alpha
+;;      (if (eql (cond ((numberp alpha) alpha)
+;;                     ((numberp (cdr alpha)) (cdr alpha))
+;;                     ;; Also handle undocumented (<active> <inactive>) form.
+;;                     ((numberp (cadr alpha)) (cadr alpha)))
+;;               100)
+;;               '(90 . 90) '(100 . 100)))))
 
 ;; (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
 ;;(add-to-list 'default-frame-alist '(fullscreen . maximized))
@@ -112,10 +112,21 @@
 ;;             (select-frame-set-input-focus (selected-frame))))
 
 (add-hook 'window-setup-hook #'toggle-frame-maximized)
-;; (add-hook 'window-setup-hook #'toggle-frame-fullscreen)
+;; ;; (add-hook 'window-setup-hook #'toggle-frame-fullscreen)
 ;; (add-hook 'window-setup-hook 'toggle-frame-maximized t)
 ;; (add-hook 'window-setup-hook #'toggle-frame-transparency)
-(add-hook 'window-setup-hook #'toggle-transparency t)
+;; (add-hook 'window-setup-hook #'toggle-transparency t)
+
+(setq image-use-external-converter t)
+(setq image-converter 'imagemagick)
+
+
+;; (setq gc-cons-threshold 100000000)
+;; (setq read-process-output-max 10000000)
+;; (setq bidi-inhibit-bpa t)
+
+;; UNSET mouse drag in evil mode
+(global-unset-key [drag-mouse-1]) 
 
 
 
@@ -216,7 +227,26 @@
 ;; Bind the function to a key
 (global-set-key (kbd "C-c `") 'toggle-vterm-popper-size)
 
-;; ;; Match eshell, shell, term and/or vterm buffers
+(defvar frame-transparency-toggle-state nil
+  "State of frame transparency toggle.")
+
+(defun toggle-frame-transparency ()
+  "Toggle frame transparency between 100% and 95%."
+  (interactive)
+  (if frame-transparency-toggle-state
+      (progn
+        (set-frame-parameter nil 'alpha-background 100)
+        (add-to-list 'default-frame-alist '(alpha-background . 100))
+        (setq frame-transparency-toggle-state nil))
+    (progn
+      (set-frame-parameter nil 'alpha-background 95)
+      (add-to-list 'default-frame-alist '(alpha-background . 95))
+      (setq frame-transparency-toggle-state t)))
+  (message "Frame transparency toggled to %s%%"
+           (if frame-transparency-toggle-state 95 100)))
+
+
+; ;; Match eshell, shell, term and/or vterm buffers
 ;; (setq popper-reference-buffers
 ;;       (append popper-reference-buffers
 ;;               '("\\*eshell*\\*$" eshell-mode ;eshell as a popup
@@ -238,9 +268,9 @@
 (defun toggle-frame-all ()
   "Toggle my frame for my workflow."
   (interactive)
-  (if (not (frame-parameter nil 'fullscreen))  ; Check if not in fullscreen
+  ;; (if (not (frame-parameter nil 'fullscreen))  ; Check if not in fullscreen
       ;; (set-frame-parameter nil 'alpha-background 95)
-      ())
+      ;; ())
   (toggle-frame-fullscreen)
   ;; (toggle-frame-transparency)
   ;; (toggle-frame-transparency)
@@ -261,23 +291,29 @@
 ;(define-key repeat-map (kbd "M-n") #'scroll-up-line)
 ;(define-key repeat-map (kbd "M-p") #'scroll-down-line)
 
-(defun open-ncview (file)
-  "Open FILE with ncview."
-  (interactive "fOpen .nc file: ")
-  (when (y-or-n-p (format "Open '%s' with ncview?" file))
-    (let ((original-buffer (current-buffer)))  ;; Save the current buffer
-      (start-process "ncview" nil "ncview" file)  ;; Open with ncview
-      (kill-buffer original-buffer)                ;; Kill the current buffer
-      ;; Switch back to the original buffer
-      (switch-to-buffer original-buffer))))
+;; (defun open-ncview (file)
+;;   "Open FILE with ncview."
+;;   (interactive "fOpen .nc file: ")
+;;   (when (y-or-n-p (format "Open '%s' with ncview?" file))
+;;     (let ((original-buffer (current-buffer)))  ;; Save the current buffer
+;;       (start-process "ncview" nil "ncview" file)  ;; Open with ncview
+;;       (kill-buffer original-buffer)                ;; Kill the current buffer
+;;       ;; Switch back to the original buffer
+;;       (switch-to-buffer original-buffer))))
 
-(defun my-find-file-hook ()
-  "Open .nc files with ncview after confirmation."
-  (when (and buffer-file-name
-             (string-equal (file-name-extension buffer-file-name) "nc"))
-    (open-ncview buffer-file-name)))
+;; (defun my-find-file-hook ()
+;;   "Open .nc files with ncview after confirmation."
+;;   (when (and buffer-file-name
+;;              (string-equal (file-name-extension buffer-file-name) "nc"))
+;;     (open-ncview buffer-file-name)))
 
-(add-hook 'find-file-hook 'my-find-file-hook)
+;; (add-hook 'find-file-hook 'my-find-file-hook)
+
+;;(require 'openwith)
+(use-package openwith
+  :config
+  (setq openwith-associations '(("\\.nc\\'" "ncview" (file))))
+  (openwith-mode t))
 
 
 ;; ;; Define global variables to store state
