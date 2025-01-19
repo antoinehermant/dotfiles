@@ -291,6 +291,118 @@
 ;(define-key repeat-map (kbd "M-n") #'scroll-up-line)
 ;(define-key repeat-map (kbd "M-p") #'scroll-down-line)
 
+;; (after! python
+;;   (map! :leader
+;;         :desc "Send line or region to Python shell" "r r" #'python-shell-send-region))
+
+(after! python
+  (defun python-shell-send-line-and-step ()
+    "Send the current line to the Python shell and move to the next line."
+    (interactive)
+    (let ((start (line-beginning-position))
+          (end (line-end-position)))
+      (python-shell-send-region start end)
+      (forward-line 1)
+      (back-to-indentation)))
+
+  (map! :map python-mode-map
+        :leader
+        :desc "Run region in Python shell" "r r" #'python-shell-send-region
+        :desc "Run line in Python shell" "r l" #'python-shell-send-line-and-step
+        :desc "Run current cell in Python shell" "r c" #'code-cells-eval
+        :desc "Activate pyvenv" "r a" #'pyvenv-activate
+        :desc "Run python" "r p" #'run-python
+        :desc "Forward to next cell" "}" #'code-cells-forward-cell
+        :desc "Backward to previous cell" "{" #'code-cells-backward-cell
+        :desc "Jupyter run REPL" "r j" #'jupyter-run-repl))
+
+;; (defun switch-to-shell-buffer ()
+;;   "Switch to a shell-like buffer using minibuffer completion."
+;;   (interactive)
+;;   (let* ((shell-buffers (--filter (with-current-buffer it
+;;                                     (or (derived-mode-p 'shell-mode)
+;;                                         (derived-mode-p 'term-mode)
+;;                                         (derived-mode-p 'vterm-mode)
+;;                                         (derived-mode-p 'eshell-mode)
+;;                                         (derived-mode-p 'comint-mode)))
+;;                                   (buffer-list)))
+;;          (buffer-names (mapcar #'buffer-name shell-buffers))
+;;          (selected-buffer (completing-read "Switch to shell: " buffer-names nil t)))
+;;     (when selected-buffer
+;;       (switch-to-buffer selected-buffer))))
+
+(defvar my-shell-buffer-list nil
+  "List of current shell-like buffers.")
+
+(defun my-shell-buffer-p (buffer)
+  "Return t if BUFFER is a shell-like buffer."
+  (with-current-buffer buffer
+    (or (derived-mode-p 'shell-mode)
+        (derived-mode-p 'term-mode)
+        (derived-mode-p 'vterm-mode)
+        (derived-mode-p 'eshell-mode)
+        (derived-mode-p 'comint-mode))))
+
+(defun my-update-shell-buffer-list ()
+  "Update the list of shell-like buffers."
+  (setq my-shell-buffer-list
+        (seq-filter #'my-shell-buffer-p (buffer-list))))
+
+(defun switch-to-shell-buffer ()
+  "Switch to a shell-like buffer using minibuffer completion."
+  (interactive)
+  (my-update-shell-buffer-list)
+  (let* ((buffer-names (mapcar #'buffer-name my-shell-buffer-list))
+         (selected-buffer (completing-read "Switch to shell: " buffer-names nil t)))
+    (when selected-buffer
+      (switch-to-buffer selected-buffer))))
+
+(defun my-cycle-shell-buffer (direction)
+  "Cycle to the next or previous shell buffer.
+DIRECTION should be 1 for next, -1 for previous."
+  (my-update-shell-buffer-list)
+  (when my-shell-buffer-list
+    (let* ((current (current-buffer))
+           (pos (seq-position my-shell-buffer-list current))
+           (next-pos (mod (+ (or pos -1) direction) (length my-shell-buffer-list))))
+      (switch-to-buffer (nth next-pos my-shell-buffer-list)))))
+
+(defun my-next-shell-buffer ()
+  "Switch to the next shell buffer."
+  (interactive)
+  (my-cycle-shell-buffer 1))
+
+(defun my-previous-shell-buffer ()
+  "Switch to the previous shell buffer."
+  (interactive)
+  (my-cycle-shell-buffer -1))
+
+;; Keybindings
+(map! :leader
+      :desc "Switch to shell buffer" "b t" #'switch-to-shell-buffer
+      :desc "New vterm (multi-vterm)" "v" #'multi-vterm
+      :desc "Next shell buffer" "t n" #'my-next-shell-buffer
+      :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer)
+
+;;                                         ; Keybindings
+;; (map! :leader
+;;       :desc "Switch to shell buffer" "b t" #'switch-to-shell-buffer
+;;       :desc "New vterm (multi-vterm)" "v" #'multi-vterm
+;;       :desc "Next shell buffer" "t n" #'my-next-shell-buffer
+;;       :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer)
+
+;; To reproduce 'ENTER' behavior in other editors in evil mode normal node
+;; (evil-define-key 'normal 'global (kbd "RET") (kbd "o<escape>"))
+;; (evil-define-key 'normal 'global (kbd "<S-return>") (kbd "O<escape>"))
+
+
+
+      ;   "Send the current line or region to the Python shell."
+;;   (interactive)
+;;   (if (use-region-p)
+;;       (python-shell-send-region (region-beginning) (region-end))
+;;     (python-shell-send-line)))
+
 ;; (defun open-ncview (file)
 ;;   "Open FILE with ncview."
 ;;   (interactive "fOpen .nc file: ")
