@@ -5,9 +5,16 @@ alias goanthe_ext_drive_1="cd /media/anthe/anthe_ext_drive_1"
 alias gomisu="cd /home/anthe/misu"
 alias da="du -sm .[^.]* * 2>/dev/null"
 alias ds="du -sh"
-alias e="emacsclient -n"
-alias ew="emacsclient -nw"
-alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
+alias e="$EMACS/emacsclient -n"
+alias ew="$EMACS/emacsclient -nw"
+#alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
+if [ -n "$INSIDE_EMACS" ]; then
+    export EDITOR="emacsclient -n"
+    export VISUAL="emacsclient -n"
+else
+    export EDITOR="emacs -nw"
+    export VISUAL="emacs -nw"
+fi
 
 alias ll='ls -alF'
 alias la='ls -A'

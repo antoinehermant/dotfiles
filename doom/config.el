@@ -79,8 +79,8 @@
 ;; ---------------------------- GUI configuration -------------------------------------
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))  ; Adjust transparency
 
-(set-frame-parameter nil 'alpha-background 95)
-(add-to-list 'default-frame-alist '(alpha-background . 95))
+;; (set-frame-parameter nil 'alpha-background 95)
+;; (add-to-list 'default-frame-alist '(alpha-background . 95))
 
 (add-hook 'server-switch-hook #'raise-frame)
 (add-hook 'server-switch-hook (lambda () (select-frame-set-input-focus (selected-frame))))
@@ -265,17 +265,6 @@
 
 ;; ------------------------- Functions ------------------------------
 
-(defun toggle-frame-all ()
-  "Toggle my frame for my workflow."
-  (interactive)
-  ;; (if (not (frame-parameter nil 'fullscreen))  ; Check if not in fullscreen
-      ;; (set-frame-parameter nil 'alpha-background 95)
-      ;; ())
-  (toggle-frame-fullscreen)
-  ;; (toggle-frame-transparency)
-  ;; (toggle-frame-transparency)
-  )
-
 ;; -------------------------- Keybindings ---------------------------
 ;; (global-set-key (kbd "KEY_SEQUENCE") 'command)
 ;; (global-unset-key (kbd "KEY_SEQUENCE"))
@@ -283,13 +272,9 @@
 ;;           (lambda ()
 ;;             (local-set-key (kbd "KEY_SEQUENCE") 'command)))
 
-(global-set-key (kbd "<f9>") 'toggle-frame-all)
-
 
 (global-set-key (kbd "M-n") #'scroll-up-line)
 (global-set-key (kbd "M-p") #'scroll-down-line)
-;(define-key repeat-map (kbd "M-n") #'scroll-up-line)
-;(define-key repeat-map (kbd "M-p") #'scroll-down-line)
 
 ;; (after! python
 ;;   (map! :leader
@@ -382,7 +367,9 @@ DIRECTION should be 1 for next, -1 for previous."
       :desc "Switch to shell buffer" "b t" #'switch-to-shell-buffer
       :desc "New vterm (multi-vterm)" "v" #'multi-vterm
       :desc "Next shell buffer" "t n" #'my-next-shell-buffer
-      :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer)
+      :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
+      :desc "Toggle transparency" "t t" #'toggle-frame-transparency
+      )
 
 ;;                                         ; Keybindings
 ;; (map! :leader
@@ -489,9 +476,9 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; -----------------------------audio --------------------------------
 
-(require 'emms-setup)
-(emms-all)
-(setq emms-player-list '(emms-player-vlc))
+;;(require 'emms-setup)
+;;(emms-all)
+;;(setq emms-player-list '(emms-player-vlc))
 
 ;; (defun open-mp3-in-vlc ()
 ;;   "Open MP3 file in VLC, starting VLC if necessary."
@@ -514,6 +501,14 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-mp3-in-vlc))
 
+(use-package pdf-tools
+  :ensure t
+  :defer t
+  :commands (pdf-view-mode pdf-tools-install)
+  :mode ("\\.pdf\\'" . pdf-view-mode)
+  :config
+  (pdf-tools-install)
+  (setq-default pdf-view-display-size 'fit-width))
 
 ;; (org-add-link-type "mp3" 'open-mp3-in-vlc) ; add the function to org file type
 
