@@ -5,8 +5,8 @@ alias goanthe_ext_drive_1="cd /media/anthe/anthe_ext_drive_1"
 alias gomisu="cd /home/anthe/misu"
 alias da="du -sm .[^.]* * 2>/dev/null"
 alias ds="du -sh"
-alias e="$EMACS/emacsclient -n"
-alias ew="$EMACS/emacsclient -nw"
+alias e="emacsclient -n"
+alias ew="emacsclient -nw"
 #alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
 if [ -n "$INSIDE_EMACS" ]; then
     export EDITOR="emacsclient -n"
@@ -54,15 +54,13 @@ function charibdis() {
 }
 
 function filepath() {
-    function="find "$(pwd)" -maxdepth 1 -name "$1" -type f"
+    function="find $(pwd) -maxdepth 1 -name $1 -type f"
     $function | clip
 }
 
-
 function clip() {
-    tee >(xsel --clipboard --input)
+    tr -d '\n' | xsel --clipboard --input
 }
-
 
 kuproxy() {
 	socks_host="localhost"

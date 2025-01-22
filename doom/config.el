@@ -508,6 +508,21 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   :config
 ;;   (add-to-list 'treesit-language-source-alist '(python "https://github.com/tree-sitter/tree-sitter-python"))
 ;;   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode)))
+;; (use-package treesit
+;;   :config
+;;   (add-to-list 'treesit-language-source-alist '(python "https://github.com/tree-sitter/tree-sitter-python"))
+;;   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode)))
+;; (tree-sitter-hl-add-patterns 'python
+;;   [((import_statement
+;;      name: (dotted_name (identifier) @module))
+;;     (import_from_statement
+;;      module_name: (dotted_name (identifier) @module)))
+
+;;    ((call
+;;      function: (attribute
+;;                 object: (identifier) @module
+;;                 attribute: (identifier) @function))
+;;     (.match? @module "^xr$"))])
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
 (add-hook 'python-mode-hook 'eglot-ensure)
