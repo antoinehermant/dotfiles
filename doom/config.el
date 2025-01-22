@@ -446,32 +446,112 @@ DIRECTION should be 1 for next, -1 for previous."
 ;; ------------------------ Python ----------------------------------
 ;;
 
+
 (require 'python)
 
-;; Enable elpy for better Python support
-;; (elpy-enable)
+(use-package python
+  :ensure t
+  :custom
+  (python-indent-offset 4)
+  (python-shell-interpreter "python3"))
 
-;; (use-package! elpy
+;; (use-package elpy
+;;   :ensure t
 ;;   :init
 ;;   (elpy-enable))
 
+;; (setq elpy-rpc-virtualenv-path 'current)
+
+(add-hook 'python-mode-hook 'flymake-mode)
+
+(use-package eglot
+  :ensure t
+  :config
+  (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
+
+;; (use-package company
+;;   :ensure t
+;;   :hook (python-mode . company-mode)
+;;   :config
+;;   (setq company-idle-delay 0.1
+;;         company-minimum-prefix-length 1))
+
+;; (use-package company-capf
+;;   :after company
+;;   :config
+;;   (add-to-list 'company-backends 'company-capf))
+
+(use-package yasnippet
+  :ensure t
+  :hook (python-mode . yas-minor-mode))
+
+(use-package pyvenv
+  :ensure t
+  :config
+  (pyvenv-mode 1))
+
 (use-package! jupyter)
-(setq jupyter-repl-echo-eval-p t) ; send to repl instead of minibuffer
-;; (use-package! python-mode
-;;   :hook (python-mode . lsp-deferred))
+(setq jupyter-repl-echo-eval-p t)
 
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
-
-;; (use-package! company
-;;   :hook (python-mode . company-mode))
 
 (use-package! flycheck
   :hook (python-mode . flycheck-mode))
 
-;; (use-package! jedi
-;;   :init
-;;   (add-hook 'python-mode-hook 'jedi:setup)
-;;   (setq jedi:complete-on-dot t))
+;; Enable tree-sitter for Python
+(use-package treesit
+  :config
+  (add-to-list 'treesit-language-source-alist '(python "https://github.com/tree-sitter/tree-sitter-python"))
+  (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode)))
+
+(add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
+(add-hook 'python-mode-hook 'eglot-ensure)
+
+;; (require 'python)
+
+;; (use-package python
+;;   :ensure t
+;;   :custom
+;;   (python-indent-offset 4)
+;;   (python-shell-interpreter "python3"))
+
+;; (use-package lsp-mode
+;;   :ensure t
+;;   :hook (python-mode . lsp-deferred)
+;;   :commands lsp)
+
+;; (use-package lsp-pyright
+;;   :ensure t
+;;   :hook (python-mode . (lambda ()
+;;                          (require 'lsp-pyright)
+;;                          (lsp-deferred))))
+
+;; (setq lsp-pyright-langserver-command-args
+;;       '("--stdio" "--verbose"))
+
+;; ;; (use-package tree-sitter
+;; ;;   :ensure t
+;; ;;   :config
+;; ;;   (global-tree-sitter-mode)
+;; ;;   (add-hook 'python-mode-hook #'tree-sitter-hl-mode))
+
+;; ;; (use-package tree-sitter-langs
+;;   ;; :ensure t)
+;; ;; Enable elpy for better Python support
+;; ;; (elpy-enable)
+
+;; (use-package! jupyter)
+;; (setq jupyter-repl-echo-eval-p t) ; send to repl instead of minibuffer
+
+;; (add-hook 'python-mode-hook 'code-cells-mode-maybe)
+
+;; (use-package! flycheck
+;;   :hook (python-mode . flycheck-mode))
+
+;; ;; (use-package! jedi
+;; ;;   :init
+;; ;;   (add-hook 'python-mode-hook 'jedi:setup)
+;; ;;   (setq jedi:complete-on-dot t))
 
 
 ;; -----------------------------audio --------------------------------
@@ -536,3 +616,24 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (when (file-exists-p (expand-file-name "specifics.el" doom-user-dir))
   (load (expand-file-name "specifics.el" doom-user-dir)))
+
+
+;; ---------------------- treesitter languages -------------------
+
+(setq treesit-language-source-alist
+   '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+     (cmake "https://github.com/uyha/tree-sitter-cmake")
+     ;; (css "https://github.com/tree-sitter/tree-sitter-css")
+     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+     ;; (go "https://github.com/tree-sitter/tree-sitter-go")
+     ;; (html "https://github.com/tree-sitter/tree-sitter-html")
+     ;; (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+     ;; (json "https://github.com/tree-sitter/tree-sitter-json")
+     (make "https://github.com/alemuller/tree-sitter-make")
+     ;; (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+     (python "https://github.com/tree-sitter/tree-sitter-python")
+     ;; (toml "https://github.com/tree-sitter/tree-sitter-toml")
+     ;; (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+     ;; (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+     ;; (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+     ))

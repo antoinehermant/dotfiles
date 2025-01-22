@@ -39,6 +39,7 @@
 ;; Use `:pin' to specify a particular commit to install.
 ;; (package! builtin-package :pin "1a2b3c4d5e")
 
+
 ;; Doom's packages are pinned to a specific commit and updated from release to
 ;; release. The `unpin!' macro allows you to unpin single packages...
 ;; (unpin! pinned-package)
@@ -46,28 +47,3 @@
 ;; (unpin! pinned-package another-pinned-package)
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
-
-
-(package! solaire-mode :disable t)
-(package! tldr)
-(package! pdf-tools)
-(package! elpy)
-(package! jupyter)
-(package! python-mode)
-(package! company)
-(package! eglot)
-(package! virtualenv)
-(package! pipenv)
-;;(package! jedi)
-(package! code-cells)
-(package! pdf-tools)
-(package! dash)
-(package! f)
-(package! pkg-info)
-;;(package! epl)
-(package! vterm-toggle)
-(package! multi-vterm)
-(package! popper)
-(package! disable-mouse)
-(package! org-present)
-(package! openwith)

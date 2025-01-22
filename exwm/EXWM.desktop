@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=EXWM
+Comment=Emacs Window Manager
+Exec=exec dbus-launch --exit-with-session emacs -mm --debug-init
+Type=Application
