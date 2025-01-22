@@ -58,6 +58,7 @@
 (package! eglot)
 (package! virtualenv)
 (package! pipenv)
+(package! conda)
 ;;(package! jedi)
 (package! code-cells)
 (package! pdf-tools)

@@ -493,7 +493,8 @@ DIRECTION should be 1 for next, -1 for previous."
 (use-package conda
   :ensure t)
 (setq conda-anaconda-home "/home/anthe/software/miniconda3")
-(conda-mode-line-setup)
+(require 'conda-projectile)
+(conda-projectile-mode-line-setup)
 
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)
