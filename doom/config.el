@@ -91,7 +91,15 @@
    :ensure t
    :config
    (global-disable-mouse-mode t))
+;; more elaborate than disable-mouse, like it handles evil better
+(use-package inhibit-mouse
+  :ensure t
+  :config
+  (inhibit-mouse-mode))
 
+
+(display-line-numbers-mode)
+(setq display-line-numbers 'relative)
 ;; (defun toggle-frame-transparency ()
 ;;   "Toggle transparency of Emacs frame."
 ;;   (interactive)
@@ -369,6 +377,7 @@ DIRECTION should be 1 for next, -1 for previous."
       :desc "Next shell buffer" "t n" #'my-next-shell-buffer
       :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
       :desc "Toggle transparency" "t t" #'toggle-frame-transparency
+      :desc "Wrap lines" "t w" #'toggle-truncate-lines
       )
 
 ;;                                         ; Keybindings
@@ -408,10 +417,12 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; (add-hook 'find-file-hook 'my-find-file-hook)
 
-;;(require 'openwith)
 (use-package openwith
   :config
-  (setq openwith-associations '(("\\.nc\\'" "ncview" (file))))
+  (setq openwith-associations
+        `(,(list (openwith-make-extension-regexp '("nc"))
+                 "ncview"
+                 '(file))))
   (openwith-mode t))
 
 
@@ -517,7 +528,7 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;      name: (dotted_name (identifier) @module))
 ;;     (import_from_statement
 ;;      module_name: (dotted_name (identifier) @module)))
-
+   
 ;;    ((call
 ;;      function: (attribute
 ;;                 object: (identifier) @module
@@ -616,7 +627,7 @@ DIRECTION should be 1 for next, -1 for previous."
 ;; ------------------------- terminals ----------------------------
 ;;
 (use-package multi-vterm :ensure t)
-
+(use-package org-inline-pdf :ensure t)
 ;; -------------------------- TRAMP ------------------------------
 
 ;; (require 'tramp)

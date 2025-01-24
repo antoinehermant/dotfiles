@@ -77,3 +77,14 @@ disable_proxy() {
     gsettings set org.gnome.system.proxy mode 'none'
     echo "System proxy disabled."
 }
+
+rsynckup() {
+
+    rsync -auv $(cat /home/anthe/kup/.rsync.conf) /home/anthe/kup/ kupflores:/home/hermant/kup/
+    rsync -auv $(cat /home/anthe/kup/.rsync.conf) kupflores:/home/hermant/kup/ /home/anthe/kup/
+
+    rsync -auv $(cat /home/anthe/kup/.rsync.conf) /home/anthe/kup/ ubelix2:/storage/homefs/ah23k256/kup/
+    rsync -auv $(cat /home/anthe/kup/.rsync.conf) ubelix2:/storage/homefs/ah23k256/kup/ /home/anthe/kup/
+
+    rclone sync --delete-during /home/anthe/kup/notes gdrive:/kup/notes
+}

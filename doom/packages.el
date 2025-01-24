@@ -72,3 +72,6 @@
 (package! disable-mouse)
 (package! org-present)
 (package! openwith)
+(package! org-inline-pdf)
+(package! exec-path-from-shell)
+(package! inhibit-mouse)
