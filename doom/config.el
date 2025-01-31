@@ -36,7 +36,7 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+;; (setq display-line-numbers-type t)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -99,7 +99,11 @@
 
 
 (display-line-numbers-mode)
-(setq display-line-numbers 'relative)
+(setq display-line-numbers-type 'relative)
+(custom-set-faces!
+  '(line-number :foreground "#5B6268")  ;; #FF9E3B
+  '(line-number-current-line :weight bold :foreground "#51afef"))
+
 ;; (defun toggle-frame-transparency ()
 ;;   "Toggle transparency of Emacs frame."
 ;;   (interactive)
@@ -288,20 +292,27 @@
 ;;   (map! :leader
 ;;         :desc "Send line or region to Python shell" "r r" #'python-shell-send-region))
 
-(after! python
-  (defun python-shell-send-line-and-step ()
-    "Send the current line to the Python shell and move to the next line."
-    (interactive)
-    (let ((start (line-beginning-position))
-          (end (line-end-position)))
-      (python-shell-send-region start end)
-      (forward-line 1)
-      (back-to-indentation)))
+(defun python-shell-send-region-or-current-line ()
+  "Send the current region or line to the Python shell and execute."
+  (interactive)
+  (let* ((region-active (region-active-p))
+         (start (if (region-active-p)
+                   (region-beginning)
+                 (line-beginning-position)))
+        (end (if (region-active-p)
+                 (region-end)
+               (line-end-position))))
+    (python-shell-send-region start end)
+    ;; (deactivate-mark)  ; Quit visual mode
+    (unless region-active
+      (forward-line 1))
+    (back-to-indentation)))
 
+(defun my-python-mode-setup ()
+  "Setup keybindings for Python mode."
   (map! :map python-mode-map
         :leader
-        :desc "Run region in Python shell" "r r" #'python-shell-send-region
-        :desc "Run line in Python shell" "r l" #'python-shell-send-line-and-step
+        :desc "Run region or line in Python shell" "r r" #'python-shell-send-region-or-current-line
         :desc "Run current cell in Python shell" "r c" #'code-cells-eval
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python
@@ -309,6 +320,7 @@
         :desc "Backward to previous cell" "{" #'code-cells-backward-cell
         :desc "Jupyter run REPL" "r j" #'jupyter-run-repl))
 
+(add-hook 'python-mode-hook #'my-python-mode-setup)
 ;; (defun switch-to-shell-buffer ()
 ;;   "Switch to a shell-like buffer using minibuffer completion."
 ;;   (interactive)
@@ -378,8 +390,68 @@ DIRECTION should be 1 for next, -1 for previous."
       :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
       :desc "Toggle transparency" "t t" #'toggle-frame-transparency
       :desc "Wrap lines" "t w" #'toggle-truncate-lines
+      :desc "Find file at point" "f f" #'find-file-at-point
+      :desc "Open citar" "o c" #'citar-open
       )
 
+;; (defun my/vterm-execute-region-or-current-line ()
+;;   "Insert text of current line in vterm and execute."
+;;   (interactive)
+;;   (require 'vterm)
+;;   (eval-when-compile (require 'subr-x))
+;;   (let ((command (if (region-active-p)
+;;                      (string-trim (buffer-substring
+;;                                    (save-excursion (region-beginning))
+;;                                    (save-excursion (region-end))))
+;;                    (string-trim (buffer-substring (save-excursion
+;;                                                     (beginning-of-line)
+;;                                                     (point))
+;;                                                   (save-excursion
+;;                                                     (end-of-line)
+;;                                                     (point)))))))
+;;     (let* ((buf (current-buffer))
+;;            (buffer-name (buffer-name buf))
+;;            (vterm-buffer-name (concat "*vterm-" buffer-name "*")))
+;;       (unless (get-buffer vterm-buffer-name)
+;;         (vterm)
+;;         (rename-buffer vterm-buffer-name))
+;;       (display-buffer vterm-buffer-name t)
+;;       (switch-to-buffer-other-window vterm-buffer-name)
+;;       (vterm--goto-line -1)
+;;       (message command)
+;;       (vterm-send-string command)
+;;       (vterm-send-return)
+;;       (switch-to-buffer-other-window buf)
+
+(defun multi-vterm-execute-region-or-current-line ()
+  "Insert text of current line in multi-vterm and execute."
+  (interactive)
+  (require 'multi-vterm)
+  (eval-when-compile (require 'subr-x))
+  (let ((command (if (region-active-p)
+                     (string-trim (buffer-substring
+                                   (save-excursion (region-beginning))
+                                   (save-excursion (region-end))))
+                   (string-trim (buffer-substring (save-excursion
+                                                    (beginning-of-line)
+                                                    (point))
+                                                  (save-excursion
+                                                    (end-of-line)
+                                                    (point)))))))
+    (let* ((buf (current-buffer))
+           (buffer-name (buffer-name buf))
+           (vterm-buffer-name (concat "*multi-vterm-" buffer-name "*")))
+      (unless (get-buffer vterm-buffer-name)
+        (multi-vterm)
+        (rename-buffer vterm-buffer-name))
+      (display-buffer vterm-buffer-name t)
+      (switch-to-buffer-other-window vterm-buffer-name)
+      (let ((vterm-buffer (get-buffer vterm-buffer-name)))
+        (with-current-buffer vterm-buffer
+          (vterm-send-string command)
+          (vterm-send-return)))
+      (switch-to-buffer-other-window buf)
+      )))
 ;;                                         ; Keybindings
 ;; (map! :leader
 ;;       :desc "Switch to shell buffer" "b t" #'switch-to-shell-buffer
@@ -668,3 +740,69 @@ DIRECTION should be 1 for next, -1 for previous."
      ;; (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
      ;; (yaml "https://github.com/ikatyang/tree-sitter-yaml")
      ))
+
+
+;; Org-Ref
+;; (use-package org-ref
+;;   :ensure t
+;;   :config
+;;   (setq org-ref-cite-on-exit t)
+;;   (setq org-ref-prettify-keywords '("href" "label" "bibliography" "bibliographystyle" "printbibliography" "nobibliography" "cite")))
+
+;; RefTeX
+;; (use-package reftex
+;;   :ensure t
+;;   :config
+;;   (setq bibtex-completion-pdf-field "file")
+;;   (setq bibtex-completion-notes-field nil))
+(setq! bibtex-completion-bibliography '("~/kup/bib/kup.bib"))
+(setq! citar-bibliography '("~/kup/bib/kup.bib"))
+;; (require 'zotra)
+(defun clean-bibtex-entry()
+  "Format the current BibTeX entry without wrapping lines."
+  (interactive)
+  (save-excursion
+    (bibtex-beginning-of-entry)
+    (let ((bibtex-align-at-equal-sign t)
+          (bibtex-text-indentation 2)
+          (bibtex-comma-after-last-field t)
+          (bibtex-entry-format '(opts-or-alts required-fields numerical-fields
+                                 page-dashes delimiters last-comma
+                                 unify-case sort-fields))
+          (bibtex-field-delimiters 'braces)
+          (fill-column 100000)  ; Set a very large fill-column to prevent wrapping
+          (max-field-width 0))
+      (bibtex-clean-entry)
+      (let ((end (save-excursion (bibtex-end-of-entry) (point))))
+        ;; First pass: find the maximum field name width
+        (save-excursion
+          (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
+            (setq max-field-width (max max-field-width (length (match-string 1))))))
+        ;; Second pass: format entries
+        (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
+          (replace-match (format "  %-*s = " max-field-width (match-string 1))))))))
+
+(require 'url-http)
+(defun insert-bibtex-from-doi ()
+  (interactive)
+  (let* ((doi (string-trim (gui-get-primary-selection)))
+         (url (if (string-prefix-p "https://doi.org/" doi)
+                  doi
+                (concat "https://doi.org/" doi)))
+         (url-request-method "GET")
+         (url-mime-accept-string "application/x-bibtex"))
+    (insert
+     (with-current-buffer (url-retrieve-synchronously url t)
+        (goto-char (point-min))
+        (while (not (looking-at "\n"))
+          (forward-line 1))
+        (let ((string (buffer-substring-no-properties (point) (point-max))))
+          (kill-buffer)
+          (decode-coding-string (string-trim string) 'utf-8))))
+    (clean-bibtex-entry)))
+
+(setq org-latex-pdf-process
+      '("pdflatex -interaction nonstopmode -output-directory %o %f"
+        "biber %b"
+        "pdflatex -interaction nonstopmode -output-directory %o %f"
+        "pdflatex -interaction nonstopmode -output-directory %o %f"))
