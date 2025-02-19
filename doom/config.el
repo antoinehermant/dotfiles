@@ -312,7 +312,7 @@
   "Setup keybindings for Python mode."
   (map! :map python-mode-map
         :leader
-        :desc "Run region or line in Python shell" "r r" #'python-shell-send-region-or-current-line
+        :desc "Run region or line in Python shell" "r RET" #'python-shell-send-region-or-current-line
         :desc "Run current cell in Python shell" "r c" #'code-cells-eval
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python
@@ -384,16 +384,27 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; Keybindings
 (map! :leader
-      :desc "Switch to shell buffer" "b t" #'switch-to-shell-buffer
-      :desc "New vterm (multi-vterm)" "v" #'multi-vterm
+      :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
       :desc "Next shell buffer" "t n" #'my-next-shell-buffer
       :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
       :desc "Toggle transparency" "t t" #'toggle-frame-transparency
       :desc "Wrap lines" "t w" #'toggle-truncate-lines
       :desc "Find file at point" "f f" #'find-file-at-point
+      ;; vterm
+      :desc "New vterm (multi-vterm)" "V" #'multi-vterm
+      :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
+      :desc "Previous vterm (multi-vterm)" "v p" #'multi-vterm-prev
+      :desc "Execute region of line in vterm" "v r" #'multi-vterm-execute-region-or-current-line
       :desc "Open citar" "o c" #'citar-open
       )
 
+(defun my-sh-mode-setup ()
+  "Setup keybindings for Python mode."
+  (map! :map sh-mode-map
+        :leader
+        :desc "Execute region or line in vterm" "v r" #'multi-vterm-execute-region-or-current-line))
+
+(add-hook 'sh-mode-hook #'my-sh-mode-setup)
 ;; (defun my/vterm-execute-region-or-current-line ()
 ;;   "Insert text of current line in vterm and execute."
 ;;   (interactive)
@@ -551,18 +562,7 @@ DIRECTION should be 1 for next, -1 for previous."
   :ensure t
   :config
   (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
-
-;; (use-package company
-;;   :ensure t
-;;   :hook (python-mode . company-mode)
-;;   :config
-;;   (setq company-idle-delay 0.1
-;;         company-minimum-prefix-length 1))
-
-;; (use-package company-capf
-;;   :after company
-;;   :config
-;;   (add-to-list 'company-backends 'company-capf))
+(add-hook 'python-mode-hook 'eglot-ensure)
 
 (use-package yasnippet
   :ensure t
@@ -608,15 +608,6 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;     (.match? @module "^xr$"))])
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
-(add-hook 'python-mode-hook 'eglot-ensure)
-
-;; (require 'python)
-
-;; (use-package python
-;;   :ensure t
-;;   :custom
-;;   (python-indent-offset 4)
-;;   (python-shell-interpreter "python3"))
 
 ;; (use-package lsp-mode
 ;;   :ensure t
@@ -642,14 +633,6 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   ;; :ensure t)
 ;; ;; Enable elpy for better Python support
 ;; ;; (elpy-enable)
-
-;; (use-package! jupyter)
-;; (setq jupyter-repl-echo-eval-p t) ; send to repl instead of minibuffer
-
-;; (add-hook 'python-mode-hook 'code-cells-mode-maybe)
-
-;; (use-package! flycheck
-;;   :hook (python-mode . flycheck-mode))
 
 ;; ;; (use-package! jedi
 ;; ;;   :init
@@ -782,6 +765,8 @@ DIRECTION should be 1 for next, -1 for previous."
         (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
           (replace-match (format "  %-*s = " max-field-width (match-string 1))))))))
 
+;; --------------------------- LATEX -----------------------------
+
 (require 'url-http)
 (defun insert-bibtex-from-doi ()
   (interactive)
@@ -806,3 +791,6 @@ DIRECTION should be 1 for next, -1 for previous."
         "biber %b"
         "pdflatex -interaction nonstopmode -output-directory %o %f"
         "pdflatex -interaction nonstopmode -output-directory %o %f"))
+
+(require 'tex-site)
+(add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
