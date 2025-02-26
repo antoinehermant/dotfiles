@@ -86,6 +86,7 @@
 (use-package exwm
   :config
   ;; Set the default number of workspaces
+  ;;
   (setq exwm-workspace-number 5)
 
   ;; When window "class" updates, use it to set the buffer name

@@ -312,13 +312,13 @@
   "Setup keybindings for Python mode."
   (map! :map python-mode-map
         :leader
-        :desc "Run region or line in Python shell" "r RET" #'python-shell-send-region-or-current-line
-        :desc "Run current cell in Python shell" "r c" #'code-cells-eval
+        :desc "Run region or line in Python shell" "r j" #'python-shell-send-region-or-current-line
+        :desc "Run current cell in Python shell" "r [" #'code-cells-eval
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python
-        :desc "Forward to next cell" "}" #'code-cells-forward-cell
-        :desc "Backward to previous cell" "{" #'code-cells-backward-cell
-        :desc "Jupyter run REPL" "r j" #'jupyter-run-repl))
+        :desc "Forward to next cell" "]" #'code-cells-forward-cell
+        :desc "Backward to previous cell" "[" #'code-cells-backward-cell
+        :desc "Jupyter run REPL" "r J" #'jupyter-run-repl))
 
 (add-hook 'python-mode-hook #'my-python-mode-setup)
 ;; (defun switch-to-shell-buffer ()
@@ -573,10 +573,10 @@ DIRECTION should be 1 for next, -1 for previous."
   :config
   (pyvenv-mode 1))
 
-(use-package conda
-  :ensure t)
-(setq conda-anaconda-home "/home/anthe/software/miniconda3")
-(conda-mode-line-setup)
+;; (use-package conda
+;;   :ensure t)
+;; (setq conda-anaconda-home "/home/anthe/software/miniconda3")
+;; (conda-mode-line-setup)
 
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)

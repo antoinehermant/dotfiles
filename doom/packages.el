@@ -75,5 +75,6 @@
 (package! org-inline-pdf)
 (package! exec-path-from-shell)
 (package! inhibit-mouse)
+(package! counsel)
 ;; (package! bibtex-completion)
 ;; (package! zotra)

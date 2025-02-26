@@ -1,5 +1,8 @@
 [Desktop Entry]
 Name=EXWM
 Comment=Emacs Window Manager
-Exec=exec dbus-launch --exit-with-session emacs -mm --debug-init
+Exec=sh /home/anthe/.config/doom/exwm/start-exwm.sh
+TryExec=sh
 Type=Application
+X-LightDM-DesktopName=exwm
+DesktopNames=exwm
