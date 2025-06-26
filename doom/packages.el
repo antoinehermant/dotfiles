@@ -48,6 +48,8 @@
 ;; (unpin! t)
 
 
+(package! ws-butler)
+(package! night-owl-theme)
 (package! solaire-mode :disable t)
 (package! tldr)
 (package! pdf-tools)
@@ -76,5 +78,11 @@
 (package! exec-path-from-shell)
 (package! inhibit-mouse)
 (package! counsel)
+(package! gptel)
+(package! eldoc :pin "a233b42b0e32154d2fe00d25a8b89329e81450f2")
+(package! org-fragtog)
 ;; (package! bibtex-completion)
 ;; (package! zotra)
+
+;; (package! citar)
+(package! org-journal)

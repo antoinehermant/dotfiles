@@ -32,7 +32,20 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+;;
+
+;; Removes the background color that was set in the early init (which turns the annoying white splash screen from vanilla emacs to a color)
+(setq default-frame-alist (assq-delete-all 'background-color default-frame-alist))
+(setq default-frame-alist (assq-delete-all 'foreground-color default-frame-alist))
+;; (setq doom-theme 'doom-one)
+;; (setq doom-theme 'doom-nord)
+;; (setq doom-theme 'doom-palenight)
+(setq doom-theme 'doom-outrun-electric)
+;; (setq doom-theme 'doom-challenger-deep)
+;; (load-theme 'night-owl)
+;; (load-theme 'doom-outrun-electric)
+;; (setq doom-theme 'night-owl)
+
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -82,6 +95,22 @@
 ;; (set-frame-parameter nil 'alpha-background 95)
 ;; (add-to-list 'default-frame-alist '(alpha-background . 95))
 
+;; FIXME: not sure if this does anything usefull, need to check. Or at least it does not allow to retrieve environment variables (set in .bashrc) 
+;; (use-package! exec-path-from-shell
+;;   :ensure t
+;;   :config
+;;   (when (memq window-system '(mac ns x))
+;;   (exec-path-from-shell-initialize)))
+
+;; NOTE: forgot what this does
+(setq inhibit-x-resources t)
+(setq-default inhibit-redisplay t)
+(add-hook 'window-setup-hook
+          (lambda ()
+            (setq-default inhibit-redisplay nil)
+            (redisplay))
+          100)
+
 (add-hook 'server-switch-hook #'raise-frame)
 (add-hook 'server-switch-hook (lambda () (select-frame-set-input-focus (selected-frame))))
 
@@ -97,34 +126,39 @@
   :config
   (inhibit-mouse-mode))
 
+;; (require 'dired-single)
+
+;; (use-package all-the-icons-dired
+;;   :hook (dired-mode . all-the-icons-dired-mode))
+
+(setq dired-kill-when-opening-new-dired-buffer t)
 
 (display-line-numbers-mode)
 (setq display-line-numbers-type 'relative)
 (custom-set-faces!
-  '(line-number :foreground "#5B6268")  ;; #FF9E3B
-  '(line-number-current-line :weight bold :foreground "#51afef"))
+  '(line-number :foreground "#5997c0#")  ;; #FF9E3B
+  '(line-number-current-line :weight bold :foreground "#51afef")
+  '(font-lock-keyword-face :foreground "#51afef")  ;; #FF9E3B
+  )
 
-;; (defun toggle-frame-transparency ()
-;;   "Toggle transparency of Emacs frame."
-;;   (interactive)
-;;   (let ((alpha (frame-parameter nil 'alpha)))
-;;     (set-frame-parameter
-;;      nil 'alpha
-;;      (if (eql (cond ((numberp alpha) alpha)
-;;                     ((numberp (cdr alpha)) (cdr alpha))
-;;                     ;; Also handle undocumented (<active> <inactive>) form.
-;;                     ((numberp (cadr alpha)) (cadr alpha)))
-;;               100)
-;;               '(90 . 90) '(100 . 100)))))
+(defvar lawlist-blue (make-face 'lawlist-blue))
+(set-face-attribute 'lawlist-blue nil
+  :background nil :foreground "#51afef" :bold t)
 
-;; (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
-;;(add-to-list 'default-frame-alist '(fullscreen . maximized))
-;; (add-hook 'server-after-make-frame-hook
-;;           (lambda ()
-;;             (select-frame-set-input-focus (selected-frame))))
+(defvar lawlist-orange (make-face 'lawlist-orange))
+(set-face-attribute 'lawlist-orange nil
+  :background nil :foreground "#ECBE7B" :bold t :italic nil)
 
-(add-hook 'window-setup-hook #'toggle-frame-maximized)
-;; ;; (add-hook 'window-setup-hook #'toggle-frame-fullscreen)
+(defvar lawlist-keywords-01
+  (concat "\\b\\(?:"
+    (regexp-opt (list "from" "import" "for" ))
+  "\\)\\b"))
+
+(defvar lawlist-keywords-02
+  (concat "\\b\\(?:"
+    (regexp-opt (list "foo" "bar" "def" ))
+  "\\)\\b"))
+
 ;; (add-hook 'window-setup-hook 'toggle-frame-maximized t)
 ;; (add-hook 'window-setup-hook #'toggle-frame-transparency)
 ;; (add-hook 'window-setup-hook #'toggle-transparency t)
@@ -140,7 +174,7 @@
 ;; UNSET mouse drag in evil mode
 (global-unset-key [drag-mouse-1]) 
 
-
+;; (package! eldoc :pin "a233b42b0e32154d2fe00d25a8b89329e81450f2")
 
 ;; (setq +popup--display-buffer-alist
 ;;       (append +popup--display-buffer-alist
@@ -187,11 +221,13 @@
 
 
 
-(use-package! popper
+(use-package popper
   :ensure t ; or :straight t
   :bind (("C-`"   . popper-toggle)
          ("M-`"   . popper-cycle)
-         ("C-M-`" . popper-toggle-type))
+         ("C-M-`" . popper-toggle-type)
+         ("C-<down>" . 'shrink-window)
+         ("C-<up>" . 'enlarge-window))
   :init
   (setq popper-reference-buffers
         '("^\\*Messages\\*"
@@ -205,7 +241,7 @@
   (popper-mode +1)
   (popper-echo-mode +1))                ; For echo area
 
-(setq popper-window-height (floor (* (frame-height) 0.25)))
+(setq popper-window-height (floor (* (frame-height) 0.3)))
 
 ;; Define global variables to store state
 (defvar vterm-popper-original-height nil
@@ -251,15 +287,32 @@
         (add-to-list 'default-frame-alist '(alpha-background . 100))
         (setq frame-transparency-toggle-state nil))
     (progn
-      (set-frame-parameter nil 'alpha-background 95)
-      (add-to-list 'default-frame-alist '(alpha-background . 95))
+      (set-frame-parameter nil 'alpha-background 90)
+      (add-to-list 'default-frame-alist '(alpha-background . 90))
       (setq frame-transparency-toggle-state t)))
   (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state 95 100)))
+           (if frame-transparency-toggle-state 90 100)))
 
 
-; ;; Match eshell, shell, term and/or vterm buffers
-;; (setq popper-reference-buffers
+(defvar frame-transparency-toggle-state-100 nil
+  "State of frame transparency toggle.")
+
+(defun toggle-frame-transparency-100 ()
+  "Toggle frame transparency between 100% and 95%."
+  (interactive)
+  (if frame-transparency-toggle-state-100
+      (progn
+        (set-frame-parameter nil 'alpha-background 100)
+        (add-to-list 'default-frame-alist '(alpha-background . 100))
+        (setq frame-transparency-toggle-state-100 nil))
+    (progn
+      (set-frame-parameter nil 'alpha-background 0)
+      (add-to-list 'default-frame-alist '(alpha-background . 0))
+      (setq frame-transparency-toggle-state-100 t)))
+  (message "Frame transparency toggled to %s%%"
+           (if frame-transparency-toggle-state-100 0 100)))
+;
+; (setq popper-reference-buffers
 ;;       (append popper-reference-buffers
 ;;               '("\\*eshell*\\*$" eshell-mode ;eshell as a popup
 ;;                 "\\*shell*\\*$"  shell-mode  ;shell as a popup
@@ -285,9 +338,6 @@
 ;;             (local-set-key (kbd "KEY_SEQUENCE") 'command)))
 
 
-(global-set-key (kbd "M-n") #'scroll-up-line)
-(global-set-key (kbd "M-p") #'scroll-down-line)
-
 ;; (after! python
 ;;   (map! :leader
 ;;         :desc "Send line or region to Python shell" "r r" #'python-shell-send-region))
@@ -308,6 +358,7 @@
       (forward-line 1))
     (back-to-indentation)))
 
+;; Define python keybindings. NOTE: I moved them to global map so they are always active. (they were always active anyways after first python hook call)
 (defun my-python-mode-setup ()
   "Setup keybindings for Python mode."
   (map! :map python-mode-map
@@ -384,19 +435,31 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; Keybindings
 (map! :leader
-      :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
-      :desc "Next shell buffer" "t n" #'my-next-shell-buffer
-      :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
-      :desc "Toggle transparency" "t t" #'toggle-frame-transparency
-      :desc "Wrap lines" "t w" #'toggle-truncate-lines
-      :desc "Find file at point" "f f" #'find-file-at-point
-      ;; vterm
-      :desc "New vterm (multi-vterm)" "V" #'multi-vterm
-      :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
-      :desc "Previous vterm (multi-vterm)" "v p" #'multi-vterm-prev
-      :desc "Execute region of line in vterm" "v r" #'multi-vterm-execute-region-or-current-line
-      :desc "Open citar" "o c" #'citar-open
-      )
+        :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
+        :desc "Next shell buffer" "t n" #'my-next-shell-buffer
+        :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
+        :desc "Toggle transparency" "t t" #'toggle-frame-transparency
+        :desc "Toggle 100% transparency" "t T" #'toggle-frame-transparency-100
+        :desc "Wrap lines" "t w" #'toggle-truncate-lines
+        :desc "Find file at point" "f f" #'find-file-at-point
+        ;; vterm
+        :desc "New vterm (multi-vterm)" "V" #'multi-vterm
+        :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
+        :desc "Previous vterm (multi-vterm)" "v p" #'multi-vterm-prev
+        :desc "Execute region of line in vterm" "v r" #'multi-vterm-execute-region-or-current-line
+        :desc "Open citar" "o c" #'citar-open
+        :desc "Run region or line in Python shell" "r j" #'python-shell-send-region-or-current-line
+        :desc "Run current cell in Python shell" "r [" #'code-cells-eval
+        :desc "Activate pyvenv" "r a" #'pyvenv-activate
+        :desc "Run python" "r p" #'run-python
+        :desc "Forward to next cell" "]" #'code-cells-forward-cell
+        :desc "Backward to previous cell" "[" #'code-cells-backward-cell
+        :desc "Jupyter run REPL" "r J" #'jupyter-run-repl)
+
+(global-set-key (kbd "C-<left>") 'shrink-window-horizontally)
+(global-set-key (kbd "C-<right>") 'enlarge-window-horizontally)
+(global-set-key (kbd "C-<up>") 'enlarge-window)
+(global-set-key (kbd "C-<down>") 'shrink-window)
 
 (defun my-sh-mode-setup ()
   "Setup keybindings for Python mode."
@@ -433,6 +496,17 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;       (vterm-send-string command)
 ;;       (vterm-send-return)
 ;;       (switch-to-buffer-other-window buf)
+(require 'vterm)
+(setq vterm-max-scrollback 10000)
+(setq vterm-kill-buffer-on-exit t)
+(setq vterm-visual-flash-delay 0.1)
+
+(defun my-vterm-mode-hook ()
+  (setq vterm-mouse-mode 0)
+  (setq vterm-scroll-on-output t)
+  (setq vterm-scroll-on-keystroke t))
+
+(add-hook 'vterm-mode-hook 'my-vterm-mode-hook)
 
 (defun multi-vterm-execute-region-or-current-line ()
   "Insert text of current line in multi-vterm and execute."
@@ -505,10 +579,11 @@ DIRECTION should be 1 for next, -1 for previous."
   (setq openwith-associations
         `(,(list (openwith-make-extension-regexp '("nc"))
                  "ncview"
+                 '(file))
+          ,(list (openwith-make-extension-regexp '("mp4"))
+                 "mpv"
                  '(file))))
   (openwith-mode t))
-
-
 ;; ;; Define global variables to store state
 ;; (defvar vterm-popup-original-height nil
 ;;   "Stores the original height of the vterm popup window.")
@@ -573,19 +648,30 @@ DIRECTION should be 1 for next, -1 for previous."
   :config
   (pyvenv-mode 1))
 
-;; (use-package conda
-;;   :ensure t)
-;; (setq conda-anaconda-home "/home/anthe/software/miniconda3")
-;; (conda-mode-line-setup)
+(use-package conda
+  :ensure t)
+(setq conda-anaconda-home "/home/anthe/software/miniconda3")
+(conda-mode-line-setup)
 
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)
 
 (add-hook 'python-mode-hook 'code-cells-mode-maybe)
 
-(use-package! flycheck
+(use-package flycheck
   :hook (python-mode . flycheck-mode))
 
+;; (use-package ein
+;;   :ensure t
+;;   :config
+;;   (require 'ein)
+;;   ;; Automatically start Jupyter server when opening a notebook
+;;   (add-hook 'ein:notebook-mode-hook 'ein:notebook-start-server)
+;;   ;; Optional: Split window when opening notebooks
+;;   (setq ein:notebook-split-window t)
+;;   ;; Set the default kernel to use
+;;   (setq ein:jupyter-kernel "python3" ;; Change this to "myenv" if needed
+;;         ein:jupyter-python-path "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/charibdis/bin/jupyter")) ;; Adjust the path accordingly
 ;; Enable tree-sitter for Python
 ;; (use-package treesit
 ;;   :config
@@ -609,6 +695,15 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
 
+;; disable corfu at start to avoid overlapping with company for example FIXME
+(setq! global-corfu-mode 'nil)
+(global-corfu-mode -1)
+(yas-global-mode -1)
+
+(setq dired-kill-when-opening-new-dired-buffer t)
+;; org-journal
+(setq org-journal-date-format "%a, %d.%m.%Y"
+      org-journal-file-format "%d.%m.%Y.org")
 ;; (use-package lsp-mode
 ;;   :ensure t
 ;;   :hook (python-mode . lsp-deferred)
@@ -634,10 +729,10 @@ DIRECTION should be 1 for next, -1 for previous."
 ;; ;; Enable elpy for better Python support
 ;; ;; (elpy-enable)
 
-;; ;; (use-package! jedi
-;; ;;   :init
-;; ;;   (add-hook 'python-mode-hook 'jedi:setup)
-;; ;;   (setq jedi:complete-on-dot t))
+;; (use-package! jedi
+;;   :init
+;;   (add-hook 'python-mode-hook 'jedi:setup)
+;;   (setq jedi:complete-on-dot t))
 
 
 ;; -----------------------------audio --------------------------------
@@ -667,17 +762,16 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-mp3-in-vlc))
 
+(setq large-file-warning-threshold 100000000)
 (use-package pdf-tools
   :ensure t
   :defer t
-  :commands (pdf-view-mode pdf-tools-install)
+  ;; :commands (pdf-view-mode pdf-tools-install)
   :mode ("\\.pdf\\'" . pdf-view-mode)
   :config
   (pdf-tools-install)
-  (setq-default pdf-view-display-size 'fit-width))
-
-;; (org-add-link-type "mp3" 'open-mp3-in-vlc) ; add the function to org file type
-
+  (setq-default pdf-view-display-size 'fit-height)
+  :hook (pdf-view-mode . pdf-view-midnight-minor-mode))
 
 ;; ------------------------- terminals ----------------------------
 ;;
@@ -696,12 +790,6 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 
-;; ------------------------ Specifics -----------------------------
-;; An extra file next to config.el in case there are specific configuration
-;; for a particular system such as a HPC
-
-(when (file-exists-p (expand-file-name "specifics.el" doom-user-dir))
-  (load (expand-file-name "specifics.el" doom-user-dir)))
 
 
 ;; ---------------------- treesitter languages -------------------
@@ -740,7 +828,50 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   (setq bibtex-completion-notes-field nil))
 (setq! bibtex-completion-bibliography '("~/kup/bib/kup.bib"))
 (setq! citar-bibliography '("~/kup/bib/kup.bib"))
-;; (require 'zotra)
+
+(setq! citar-notes-paths '("~/kup/bib/notes"))
+
+(defvar citar-indicator-notes-icons
+  (citar-indicator-create
+   :symbol (nerd-icons-mdicon
+            "nf-md-notebook"
+            :face 'nerd-icons-blue
+            :v-adjust -0.3)
+   :function #'citar-has-notes
+   :padding "  "
+   :tag "has:notes"))
+
+(defvar citar-indicator-links-icons
+  (citar-indicator-create
+   :symbol (nerd-icons-octicon
+            "nf-oct-link"
+            :face 'nerd-icons-orange
+            :v-adjust -0.1)
+   :function #'citar-has-links
+   :padding "  "
+   :tag "has:links"))
+
+(defvar citar-indicator-files-icons
+  (citar-indicator-create
+   :symbol (nerd-icons-faicon
+            "nf-fa-file"
+            :face 'nerd-icons-purple
+            :v-adjust -0.1)
+   :function #'citar-has-files
+   :padding "  "
+   :tag "has:files"))
+
+(setq citar-indicators
+  (list citar-indicator-files-icons
+        citar-indicator-notes-icons
+        citar-indicator-links-icons))
+
+(setq citar-templates
+      '((main . "${author editor:30%sn}   ${date year issued:4}   ${title:80}   ${journal:16}")
+        (suffix . "     ${=type=:10}  ${tags keywords:*}") ;; ${=key= id:15}
+        (preview . "${author editor:%etal} (${year issued date}) ${title}, ${journal journaltitle publisher container-title collection-title}.\n")
+        (note . "Notes on ${author editor:%etal}, ${title}")))
+
 (defun clean-bibtex-entry()
   "Format the current BibTeX entry without wrapping lines."
   (interactive)
@@ -761,11 +892,26 @@ DIRECTION should be 1 for next, -1 for previous."
         (save-excursion
           (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
             (setq max-field-width (max max-field-width (length (match-string 1))))))
-        ;; Second pass: format entries
-        (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
-          (replace-match (format "  %-*s = " max-field-width (match-string 1))))))))
+        ;; Second pass: format entries FIXME: commneted out because format does not work
+        ;; (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
+        ;;   (replace-match (format "  %-*s = " max-field-width (match-string 1))))
+        ))))
 
 ;; --------------------------- LATEX -----------------------------
+
+(defun add-file-entry ()
+  "Add a file entry to the BibTeX entry at point using the citation key."
+  (interactive)
+  (let ((key (get-citation-key)))
+    (when key
+      (save-excursion
+        ;; (search-forward (concat "}") nil t)
+        ;; (beginning-of-line)
+        ;; (forward-line 1)
+        (newline)
+        (insert (format "  file = {:papers/%s.pdf:PDF},\n" key))
+        (insert (format "  keywords = {},\n")))))
+  (re-search-forward "keywords = {"))
 
 (require 'url-http)
 (defun insert-bibtex-from-doi ()
@@ -784,7 +930,30 @@ DIRECTION should be 1 for next, -1 for previous."
         (let ((string (buffer-substring-no-properties (point) (point-max))))
           (kill-buffer)
           (decode-coding-string (string-trim string) 'utf-8))))
-    (clean-bibtex-entry)))
+    (clean-bibtex-entry)
+    (add-file-entry)))
+
+(defun get-citation-key ()
+  "Extract the citation key from the BibTeX entry at point."
+  (interactive)
+  (save-excursion
+    (re-search-backward "^@\\(Article\\|Book\\|InProceedings\\|PhdThesis\\|TechReport\\|Misc\\){\\([^,]*\\)," nil t)
+    (match-string 2)))
+
+(defvar default-bib "~/kup/bib/kup.bib")
+(defun add-doi-to-my-bib ()
+  (interactive)
+
+  (popper-toggle)
+
+  (let ((buffer (find-file default-bib)))
+    (with-current-buffer buffer
+      (goto-char (point-max))
+      (insert "\n")
+      (insert-bibtex-from-doi)
+      (save-buffer)))
+  (save-buffer))
+
 
 (setq org-latex-pdf-process
       '("pdflatex -interaction nonstopmode -output-directory %o %f"
@@ -794,3 +963,86 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (require 'tex-site)
 (add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
+(add-hook 'org-mode-hook 'org-fragtog-mode)
+
+;; (use-package org-latex-impatient
+;;   :defer t
+;;   :hook (org-mode . org-latex-impatient-mode)
+;;   :init
+;;   (setq org-latex-impatient-tex2svg-bin
+;;         ;; location of tex2svg executable
+;;         "~/node_modules/mathjax-node-cli/bin/tex2svg"))
+
+;; --------------- gptel config ---------------------------
+
+(require 'json)
+
+(defvar my-api-keys nil
+  "A list to store API keys.")
+
+;; reads my API keys from a JSON file (private) and store then in a list.
+(defun load-api-keys (file)
+  (interactive)
+  (let ((json-data (with-temp-buffer
+                     (insert-file-contents file)
+                     (goto-char (point-min))
+                     (json-read))))
+    (setq my-api-keys json-data)))
+(load-api-keys "~/.my_apis.json")
+
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/gptel-20250301.512")
+(require 'gptel)
+
+(setq gptel-default-mode 'org-mode)
+
+(gptel-make-openai "TogetherAI"
+   :host "api.together.xyz"
+   :key (alist-get 'TOGETHER_AI_API_KEY my-api-keys)
+   :stream t
+   :models '(
+        mistralai/Mistral-7B-Instruct-v0.3
+        mistralai/Mistral-7B-v0.1
+        mistralai/Mixtral-8x7B-v0.1
+        mistralai/Mixtral-8x7B-Instruct-v0.1
+        mistralai/Mixtral-8x22B-Instruct-v0.1
+        mistralai/Mistral-Small-24B-Instruct-2501
+        togethercomputer/m2-bert-80M-32k-retrieval))
+
+(gptel-make-openai "Codestral"
+ :host "codestral.mistral.ai"
+ :endpoint "/v1/chat/completions"
+ :key (alist-get 'CODESTRAL_API_KEY my-api-keys)
+ :stream t
+ :models '(
+           codestral-latest
+           ))
+
+(setq
+ gptel-model   'mistral-large-latest
+ gptel-backend
+ (gptel-make-openai "Mistral"
+ :host "api.mistral.ai"
+ :endpoint "/v1/chat/completions"
+ :key (alist-get 'MISTRAL_API_KEY my-api-keys)
+ :stream t
+ :models '(
+           mistral-large-latest
+           )))
+
+(defun my-gptel-mode-setup ()
+  "Setup keybindings for gptel mode."
+  (map! :map gptel-mode
+        :leader
+        :desc "gptel send" "e" #'gptel-send))
+
+(add-hook 'gptel-mode-hook #'my-gptel-mode-setup)
+
+(map! :leader
+      :desc "Open gptel" "o g" #'gptel
+      :desc "Eval region in gptel (gptel-send)" "m e g" #'gptel-send)
+
+;; ------------------------ Machine specific configuration -----------------------------
+;; An extra file next to config.el in case there are specific configuration for a particular machine suche as a HPC
+
+(when (file-exists-p (expand-file-name "config-machine.el" doom-user-dir))
+  (load (expand-file-name "config-machine.el" doom-user-dir)))

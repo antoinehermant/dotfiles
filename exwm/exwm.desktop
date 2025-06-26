@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=EXWM
 Comment=Emacs Window Manager
-Exec=sh /home/anthe/.config/doom/exwm/start-exwm.sh
+Exec=sh /home/anthe/.config/exwm/start-exwm.sh
 TryExec=sh
 Type=Application
 X-LightDM-DesktopName=exwm
