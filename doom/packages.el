@@ -58,6 +58,7 @@
 (package! python-mode)
 (package! company)
 (package! eglot)
+;; (package! dap-mode)
 (package! virtualenv)
 (package! pipenv)
 (package! conda)
@@ -84,5 +85,13 @@
 ;; (package! bibtex-completion)
 ;; (package! zotra)
 
-;; (package! citar)
+;; (package! sqlite3)
+(package! citar)
+;; (package! citar-org-roam)
+
+;; (package! org-roam)
 (package! org-journal)
+(package! org-bullets)
+
+(package! exwm-evil :recipe
+  (:host github :repo "LemonBreezes/exwm-evil"))

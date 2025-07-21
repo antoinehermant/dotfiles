@@ -53,6 +53,9 @@
 (setq nerd-icons-font-names '("~/.fonts/NerdFontsSymbols/SymbolsNerdFont-Regular.ttf"))
 (setq doom-font (font-spec :family "Ubuntu Sans Mono" :height 109 :path "~/.fonts/UbuntuSansMono/UbuntuSansMono-Regular-BF65bb038c1183a.otf"))
 ;; ;; default transparency does not work on ubelix but this one does
+
+(setq my-transparency-value 95)
+
 (defun toggle-frame-transparency ()
   "Toggle transparency of Emacs frame."
   (interactive)
@@ -64,7 +67,7 @@
                     ;; Also handle undocumented (<active> <inactive>) form.
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
-              '(95 . 95) '(100 . 100)))))
+              '(my-transparency-value . my-transparency-value) '(100 . 100)))))
 
 (setq popper-window-height (floor (* (frame-height) 0.33)))
 (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda3")

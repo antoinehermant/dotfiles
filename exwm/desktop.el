@@ -30,10 +30,6 @@
 ;;   :config
 ;;   (exec-path-from-shell-initialize)
 ;;   (exec-path-from-shell-copy-env '("PATH")))
-;; (use-package! exec-path-from-shell
-;;   :config
-;;   (exec-path-from-shell-initialize)
-;;   (exec-path-from-shell-copy-env '("PATH")))
 
 ;; (let ((bashrc-path (expand-file-name "~/.bashrc")))
 ;;   (unless (file-exists-p bashrc-path)
@@ -44,8 +40,11 @@
 ;;
 ;;
 
-;; (require 'exwm)
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/exwm-0.34/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.21/")
+(require 'exwm)
 ;; (require 'exwm-config)
+
 
 (defun efs/exwm-init-hook ()
   (exwm-workspace-switch-create 1))
@@ -53,7 +52,8 @@
 (defun efs/set-wallpaper ()
   (interactive)
   (start-process-shell-command
-   "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
+   ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg")
   (toggle-frame-transparency))
 
 
@@ -91,6 +91,13 @@
 ;;     (exwm-floating-toggle-floating)))
 ;;
 ;;
+;; (defun efs/configure-window-by-class ()
+;;   (interactive)
+;;   (pcase exwm-class-name
+;;     ("Ncview" (exwm-floating-toggle-floating)
+;;            (exwm-layout-toggle-mode-line))))
+
+
 
 (defvar saved-current-buffer-for-floating nil)
 (setq saved-current-buffer-for-floating nil)
@@ -112,15 +119,15 @@
   (unless (find-ncview-buffer)
   (when (string-match-p "Matplotlib" exwm-class-name)
            (exwm-floating-toggle-floating))
-      (switch-to-buffer (nth 1 (buffer-list)))
-      (switch-to-buffer (nth 1 (buffer-list)))
+      ;; (switch-to-buffer (nth 1 (buffer-list)))
+      ;; (switch-to-buffer (nth 1 (buffer-list)))
     (setq exwm-frame-toggle nil))
   (when (string-match-p "Ncview" exwm-class-name)
          (unless exwm-frame-toggle nil
              (progn
            (exwm-floating-toggle-floating)
-      (switch-to-buffer (nth 1 (buffer-list)))
-      (switch-to-buffer (nth 1 (buffer-list)))
+      ;; (switch-to-buffer (nth 1 (buffer-list)))
+      ;; (switch-to-buffer (nth 1 (buffer-list)))
            (setq exwm-frame-toggle t))))
   (pcase exwm-class-name
   ("Emacs" (exwm-workspace-move-window 2))))
@@ -227,12 +234,54 @@
 
 (global-set-key (kbd "s-t m") 'my-toggle-mouse)
 
+(require 'evil)
+(require 'exwm)
+
+(evil-define-state exwm
+  "`exwm state' interfacing exwm mode."
+  :tag " <X> "
+  :enable (motion)
+  :message "-- EXWM --"
+  :intput-method f
+  :entry-hook (evil-exwm-state/enter-exwm))
+
+(evil-define-state exwm-insert
+  "Replace insert state in `exwm state'."
+  :tag " <X> "
+  :enable (motion)
+  :message "-- EXWM-INSERT --"
+  :input-method t
+  :entry-hook (evil-exwm-state/enter-exwm-insert))
+
+(defun evil-exwm-state/escape-exwm ()
+  "Quit `evil-exwm-insert-state'."
+  (interactive)
+  (evil-exwm-state))
+
+(defun evil-exwm-state/enter-exwm-insert ()
+  "Quit `evil-exwm-insert-state'."
+  (call-interactively 'exwm-input-release-keyboard))
+
+(defun evil-exwm-state/enter-exwm ()
+  "Quit `evil-exwm-insert-state'."
+  (call-interactively 'exwm-input-grab-keyboard))
+
+(define-key evil-exwm-state-map "i" 'evil-exwm-insert-state)
+
+;; Ensure initial state is char mode / exwm-insert
+(setq exwm-manage-configurations '((t char-mode t)))
+(evil-set-initial-state 'exwm-mode 'exwm-insert)
+
+
 (use-package exwm
   :config
 
   (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
   ;; Set the default number of workspaces
-  (setq exwm-workspace-number 5)
+  (setq exwm-workspace-number 10)
+
+  ;; This is needed to switch between char and line mode (with evil in line mode)
+  (setq exwm-input-line-mode-passthrough t)
 
   ;; When window "class" updates, use it to set the buffer name
   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
@@ -269,8 +318,14 @@
       ?\M-:
       ?\C-\M-j  ;; Buffer list
       ?\C-`
-      ?\C-\ ))  ;; Ctrl+Space
+      ?\C-\ ;; Ctrl+Space
+      ?\i
+      ?\\
+      ?\M-m))
 
+        ;; (push ?\i exwm-input-prefix-keys)
+        ;; (push (kbd "C-SPC") exwm-input-prefix-keys)
+        ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
   ;; (global-set-key (kbd "s-/") 'counsel-linux-app)
@@ -297,7 +352,7 @@
 
           ([?\s-,] . switch-to-buffer)
           ([?\s-.] . find-file)
-
+          ([?\s-`] . (lambda () (interactive) (exwm-workspace-switch-create 0)))
           ([?\s-/] . counsel-linux-app)
           ([?\s-m] . exwm-toggle-local-mode)
           ;; Launch applications via shell command
@@ -386,17 +441,74 @@
         (exwm-input-set-key (kbd "s-b k") 'kill-current-buffer)
         (exwm-input-set-key (kbd "s-b R") 'rename-buffer)
         (exwm-input-set-key (kbd "s-f r") 'consult-recent-file)
-        (exwm-input-set-key (kbd "s-<left>") 'exwm-layout-shrink-window-horizontally)
-        (exwm-input-set-key (kbd "s-<right>") 'exwm-layout-enlarge-window-horizontally)
-        (exwm-input-set-key (kbd "s-<down>") 'exwm-layout-shrink-window)
-        (exwm-input-set-key (kbd "s-<up>") 'exwm-layout-enlarge-window)
+        (exwm-input-set-key (kbd "s--") (lambda () (interactive) (exwm-layout-shrink-window-horizontally 50)))
+        (exwm-input-set-key (kbd "s-=") (lambda () (interactive) (exwm-layout-enlarge-window-horizontally 50)))
+        (exwm-input-set-key (kbd "s-_") (lambda () (interactive) (exwm-layout-shrink-window 50)))
+        (exwm-input-set-key (kbd "s-+") (lambda () (interactive) (exwm-layout-enlarge-window 50)))
+        (exwm-input-set-key (kbd "s-<right>") (lambda () (interactive) (exwm-floating-move 20 0)))
+        (exwm-input-set-key (kbd "s-<left>") (lambda () (interactive) (exwm-floating-move -20 0)))
+        (exwm-input-set-key (kbd "s-<down>") (lambda () (interactive) (exwm-floating-move 0 20)))
+        (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
         (shell-command "bash ~/.dotfiles/.config-touchpad.sh")
         (exwm-input-set-key  (kbd "s-h") 'windmove-left-or-hide-floating)
         (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
 
+        (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
+        (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))
+
+        (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-release-keyboard)))
+        (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
+        (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
+        (general-define-key
+        :keymaps 'exwm-mode-map
+        :states 'normal
+        "i" #'exwm-input-release-keyboard)
+
+        ;; (exwm-input-set-key (kbd "s-<escape>") #'exwm-input-toggle-keyboard)
+        (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
+
         ;; ("matplotlib" (exwm-floating-toggle-floating))
 
-  (exwm-enable))
+  (exwm-wm-mode))
+
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/desktop-environment-20230903.1229/")
+(use-package desktop-environment
+  :after exwm
+  :config (desktop-environment-mode)
+  :custom
+  (desktop-environment-brightness-small-increment "2%+")
+  (desktop-environment-brightness-small-decrement "2%-")
+  (desktop-environment-brightness-normal-increment "5%+")
+  (desktop-environment-brightness-normal-decrement "5%-"))
+
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/evil-exwm-state.el")
+
+;; NOTE: not a solution yet, because I couldn't remap ESC which I really need in some ewxm windows (such as remote Emacs)
+;; (use-package! exwm-evil
+;;   :after exwm
+;;   :config
+;;   (add-hook 'exwm-manage-finish-hook #'enable-exwm-evil-mode)
+;;   ;; (cl-pushnew 'escape exwm-input-prefix-keys)
+
+;;   ;; If you want to force enable exwm-evil-mode in any buffer, use:
+;;   ;; (exwm-evil-enable-unconditionally)
+
+;;   ;; We will disable `C-c' in insert state.
+;;   (define-key exwm-mode-map (kbd "C-c") nil)
+;;   (define-key exwm-mode-map (kbd "ESC") nil)
+
+;;   (map! :map exwm-mode-map
+;;         :localleader
+;;         (:prefix ("d" . "debug")
+;;          :desc "Clear debug buffer" "l" #'xcb-debug:clear
+;;          :desc "Insert mark into the debug buffer" "m" #'xcb-debug:mark
+;;          :desc "Enable debug logging" "t" #'exwm-debug)
+;;         :desc "Toggle fullscreen" "f" #'exwm-layout-toggle-fullscreen
+;;         :desc "Hide floating window" "h" #'exwm-floating-hide
+;;         :desc "Send next key" "q" #'exwm-input-send-next-key
+;;         :desc "Toggle floating" "SPC" #'exwm-floating-toggle-floating
+;;         :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
+;;         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
 (defun my-exwm-workspace-switch-to-buffer (orig-func buffer-or-name &rest args)
 (when buffer-or-name
@@ -413,18 +525,10 @@
 ;; remap capslock to ctrl
 (shell-command "xmodmap ~/.dotfiles/doom/Xmodmap")
 
-(use-package desktop-environment
-  :after exwm
-  :config (desktop-environment-mode)
-  :custom
-  (desktop-environment-brightness-small-increment "2%+")
-  (desktop-environment-brightness-small-decrement "2%-")
-  (desktop-environment-brightness-normal-increment "5%+")
-  (desktop-environment-brightness-normal-decrement "5%-"))
+
 
 (global-set-key (kbd "s-l") 'windmove-right)
 (global-set-key (kbd "s-x") 'evil-window-exchange)
-
 
 (defvar is-window-floating nil
   "is the current buffer floating?")
@@ -441,6 +545,16 @@
     (windmove-left)))
 
 
+;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/desktop-environment-/")
+;; (require 'desktop-environment)
+;; (use-package desktop-environment
+;;   :after exwm
+;;   :config (desktop-environment-mode)
+;;   :custom
+;;   (desktop-environment-brightness-small-increment "2%+")
+;;   (desktop-environment-brightness-small-decrement "2%-")
+;;   (desktop-environment-brightness-normal-increment "5%+")
+;;   (desktop-environment-brightness-normal-decrement "5%-")
 
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 
@@ -485,7 +599,6 @@
 (require 'counsel)
 ;; Configure counsel
 (use-package counsel
-  :ensure t
 :custom
 (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only))
 

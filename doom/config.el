@@ -1,5 +1,3 @@
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
 
@@ -53,7 +51,6 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
@@ -101,6 +98,17 @@
 ;;   :config
 ;;   (when (memq window-system '(mac ns x))
 ;;   (exec-path-from-shell-initialize)))
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa" . "http://melpa.org/packages/") t)
+
+
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+
+;; (setq explicit-shell-file-name "/bin/bash")
+;; (setq shell-file-name "bash")
+;; (setq shell-command-switch "-ic")
 
 ;; NOTE: forgot what this does
 (setq inhibit-x-resources t)
@@ -117,47 +125,50 @@
 (set-face-attribute 'default nil :height 109)
 
 (use-package! disable-mouse
-   :ensure t
    :config
    (global-disable-mouse-mode t))
 ;; more elaborate than disable-mouse, like it handles evil better
 (use-package inhibit-mouse
-  :ensure t
   :config
   (inhibit-mouse-mode))
 
-;; (require 'dired-single)
-
-;; (use-package all-the-icons-dired
-;;   :hook (dired-mode . all-the-icons-dired-mode))
-
 (setq dired-kill-when-opening-new-dired-buffer t)
+
+(require 'dirvish)
+(setq dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln" "xcf" "ncap2.temp" "pid*"))
+
+(dirvish-define-preview nc (file ext)
+ "Preview netcdf file info with cdo sinfon
+ Require: `cdo' (executable)"
+ :require ("cdo" )
+ (cond ((equal ext "nc") `(shell . ("cdo" "-sinfon" ,file)))))
+ (add-to-list 'dirvish-preview-dispatchers 'nc)
 
 (display-line-numbers-mode)
 (setq display-line-numbers-type 'relative)
 (custom-set-faces!
-  '(line-number :foreground "#5997c0#")  ;; #FF9E3B
+  '(line-number :foreground "#ffffff")  ;; #FF9E3B
   '(line-number-current-line :weight bold :foreground "#51afef")
   '(font-lock-keyword-face :foreground "#51afef")  ;; #FF9E3B
   )
 
-(defvar lawlist-blue (make-face 'lawlist-blue))
-(set-face-attribute 'lawlist-blue nil
-  :background nil :foreground "#51afef" :bold t)
+;; (defvar lawlist-blue (make-face 'lawlist-blue))
+;; (set-face-attribute 'lawlist-blue nil
+;;   :background nil :foreground "#51afef" :bold t)
 
-(defvar lawlist-orange (make-face 'lawlist-orange))
-(set-face-attribute 'lawlist-orange nil
-  :background nil :foreground "#ECBE7B" :bold t :italic nil)
+;; (defvar lawlist-orange (make-face 'lawlist-orange))
+;; (set-face-attribute 'lawlist-orange nil
+;;   :background nil :foreground "#ECBE7B" :bold t :italic nil)
 
-(defvar lawlist-keywords-01
-  (concat "\\b\\(?:"
-    (regexp-opt (list "from" "import" "for" ))
-  "\\)\\b"))
+;; (defvar lawlist-keywords-01
+;;   (concat "\\b\\(?:"
+;;     (regexp-opt (list "from" "import" "for" ))
+;;   "\\)\\b"))
 
-(defvar lawlist-keywords-02
-  (concat "\\b\\(?:"
-    (regexp-opt (list "foo" "bar" "def" ))
-  "\\)\\b"))
+;; (defvar lawlist-keywords-02
+;;   (concat "\\b\\(?:"
+;;     (regexp-opt (list "foo" "bar" "def" ))
+;;   "\\)\\b"))
 
 ;; (add-hook 'window-setup-hook 'toggle-frame-maximized t)
 ;; (add-hook 'window-setup-hook #'toggle-frame-transparency)
@@ -174,6 +185,20 @@
 ;; UNSET mouse drag in evil mode
 (global-unset-key [drag-mouse-1]) 
 
+
+(setq ibuffer-formats
+        '((mark modified read-only locked " "
+                (name 40 40 :left :elide)
+                " "
+                (size 7 -1 :right)
+                " "
+                (mode 12 12 :left :elide)
+                " "
+                (vc-status 9 :left)
+                " " filename-and-process)
+        (mark " "
+                (name 10 -1)
+                " " filename)))
 ;; (package! eldoc :pin "a233b42b0e32154d2fe00d25a8b89329e81450f2")
 
 ;; (setq +popup--display-buffer-alist
@@ -222,7 +247,6 @@
 
 
 (use-package popper
-  :ensure t ; or :straight t
   :bind (("C-`"   . popper-toggle)
          ("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type)
@@ -278,6 +302,10 @@
 (defvar frame-transparency-toggle-state nil
   "State of frame transparency toggle.")
 
+;; Defining a variable for transparency so it can depend on certain conditions such as which theme loaded or which system we are on
+;; (defvar my-transparency-value 90
+;;   "Defines a variable for transparency")
+
 (defun toggle-frame-transparency ()
   "Toggle frame transparency between 100% and 95%."
   (interactive)
@@ -287,11 +315,11 @@
         (add-to-list 'default-frame-alist '(alpha-background . 100))
         (setq frame-transparency-toggle-state nil))
     (progn
-      (set-frame-parameter nil 'alpha-background 90)
-      (add-to-list 'default-frame-alist '(alpha-background . 90))
+      (set-frame-parameter nil 'alpha-background 85)
+      (add-to-list 'default-frame-alist '(alpha-background . 85))
       (setq frame-transparency-toggle-state t)))
   (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state 90 100)))
+           (if frame-transparency-toggle-state 85 100)))
 
 
 (defvar frame-transparency-toggle-state-100 nil
@@ -306,11 +334,11 @@
         (add-to-list 'default-frame-alist '(alpha-background . 100))
         (setq frame-transparency-toggle-state-100 nil))
     (progn
-      (set-frame-parameter nil 'alpha-background 0)
-      (add-to-list 'default-frame-alist '(alpha-background . 0))
+      (set-frame-parameter nil 'alpha-background 10)
+      (add-to-list 'default-frame-alist '(alpha-background . 10))
       (setq frame-transparency-toggle-state-100 t)))
   (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state-100 0 100)))
+           (if frame-transparency-toggle-state-100 10 100)))
 ;
 ; (setq popper-reference-buffers
 ;;       (append popper-reference-buffers
@@ -442,6 +470,10 @@ DIRECTION should be 1 for next, -1 for previous."
         :desc "Toggle 100% transparency" "t T" #'toggle-frame-transparency-100
         :desc "Wrap lines" "t w" #'toggle-truncate-lines
         :desc "Find file at point" "f f" #'find-file-at-point
+        :desc "consult-ripgrep" "r g" #'consult-ripgrep
+        :desc "consult-find" "r f" #'consult-find
+        :desc "linux apps" "\\" #'counsel-linux-app
+        :desc "popper" "`" #'popper-toggle
         ;; vterm
         :desc "New vterm (multi-vterm)" "V" #'multi-vterm
         :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
@@ -582,6 +614,9 @@ DIRECTION should be 1 for next, -1 for previous."
                  '(file))
           ,(list (openwith-make-extension-regexp '("mp4"))
                  "mpv"
+                 '(file))
+          ,(list (openwith-make-extension-regexp '("ods"))
+                 "libreoffice --calc"
                  '(file))))
   (openwith-mode t))
 ;; ;; Define global variables to store state
@@ -613,17 +648,69 @@ DIRECTION should be 1 for next, -1 for previous."
 
 
 ;; ------------------------ Python ----------------------------------
-;;
+
+;; (setq dap-auto-configure-mode t)
 
 
 (require 'python)
 
 (use-package python
-  :ensure t
   :custom
   (python-indent-offset 4)
   (python-shell-interpreter "python3"))
+  ;; (dap-python-executable "python3")
+  ;; (dap-python-debugger 'debugpy))
+  ;; :config
+  ;; (require 'dap-python)
+;; (use-package lsp-mode
+;;   :ensure t
+;;   :hook ((python-mode . lsp-deferred)
+;;          (lsp-mode . lsp-enable-which-key-integration))
+;;   :commands lsp)
+(require 'dape)
+;; Dape configs
+;;
+;;
+;;
+;;
 
+;; I had to create those functions, because the default dape-cwd functions do not work with me
+(defun dape-cwd-file ()
+  (or (buffer-file-name) default-directory))
+
+(defun dape-file-name ()
+  (let ((file-path (buffer-file-name)))
+    (if file-path
+        (file-name-nondirectory file-path)
+      (message "No file is associated with the current buffer"))))
+
+(defun dape-cwd ()
+  (let ((file-path (or (buffer-file-name) default-directory)))
+    (if (file-directory-p file-path)
+        file-path
+      (file-name-directory file-path))))
+
+(add-to-list 'dape-configs
+             `(debugpy-flask
+               modes (python-mode jinja2-mode)
+               command "python"
+               command-args ["-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport]
+               port :autoport
+               :type "python"
+               :request "launch"
+               :args ["--app" "src" "run" "--no-debugger" "--no-reload"]
+               :console "integratedTerminal"
+               :showReturnValue t
+               :justMyCode nil
+               :jinja t
+               :cwd (lambda () (dape-cwd))
+               :program (lambda () (dape-file-name))))
+
+;; (use-package dap-mode
+;;   :commands dap-mode)
+
+;; (use-package dap-python
+;;   :commands dap-python-debug-buffer)
 ;; (use-package elpy
 ;;   :ensure t
 ;;   :init
@@ -634,22 +721,18 @@ DIRECTION should be 1 for next, -1 for previous."
 (add-hook 'python-mode-hook 'flymake-mode)
 
 (use-package eglot
-  :ensure t
   :config
   (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
 (add-hook 'python-mode-hook 'eglot-ensure)
 
 (use-package yasnippet
-  :ensure t
   :hook (python-mode . yas-minor-mode))
 
 (use-package pyvenv
-  :ensure t
   :config
   (pyvenv-mode 1))
 
-(use-package conda
-  :ensure t)
+(use-package conda)
 (setq conda-anaconda-home "/home/anthe/software/miniconda3")
 (conda-mode-line-setup)
 
@@ -661,6 +744,15 @@ DIRECTION should be 1 for next, -1 for previous."
 (use-package flycheck
   :hook (python-mode . flycheck-mode))
 
+
+
+(setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --with-filename --line-number --search-zip --.") ;added --hidden to default
+
+
+;; (use-package dap-python
+;;      :ensure t
+;;      :config
+;;      (dap-python-setup))
 ;; (use-package ein
 ;;   :ensure t
 ;;   :config
@@ -701,13 +793,15 @@ DIRECTION should be 1 for next, -1 for previous."
 (yas-global-mode -1)
 
 (setq dired-kill-when-opening-new-dired-buffer t)
-;; org-journal
-(setq org-journal-date-format "%a, %d.%m.%Y"
-      org-journal-file-format "%d.%m.%Y.org")
-;; (use-package lsp-mode
-;;   :ensure t
-;;   :hook (python-mode . lsp-deferred)
-;;   :commands lsp)
+
+
+(use-package org-bullets
+  ;; :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+
 
 ;; (use-package lsp-pyright
 ;;   :ensure t
@@ -764,7 +858,6 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (setq large-file-warning-threshold 100000000)
 (use-package pdf-tools
-  :ensure t
   :defer t
   ;; :commands (pdf-view-mode pdf-tools-install)
   :mode ("\\.pdf\\'" . pdf-view-mode)
@@ -775,22 +868,16 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; ------------------------- terminals ----------------------------
 ;;
-(use-package multi-vterm :ensure t)
-(use-package org-inline-pdf :ensure t)
-;; -------------------------- TRAMP ------------------------------
+(use-package multi-vterm)
+(use-package org-inline-pdf)
 
-;; (require 'tramp)
-;; (setq tramp-default-remote-shell "/bin/bash")
-;; (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+;; -------------------------- TRAMP ------------------------------
 
 ;; (use-package tramp
 ;;   :ensure t
 ;;   :config
 ;;   (setq tramp-default-remote-shell "/bin/bash")
 ;;   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
-
-
-
 
 ;; ---------------------- treesitter languages -------------------
 
@@ -990,7 +1077,7 @@ DIRECTION should be 1 for next, -1 for previous."
     (setq my-api-keys json-data)))
 (load-api-keys "~/.my_apis.json")
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/gptel-20250301.512")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/gptel/")
 (require 'gptel)
 
 (setq gptel-default-mode 'org-mode)
@@ -1042,7 +1129,8 @@ DIRECTION should be 1 for next, -1 for previous."
       :desc "Eval region in gptel (gptel-send)" "m e g" #'gptel-send)
 
 ;; ------------------------ Machine specific configuration -----------------------------
-;; An extra file next to config.el in case there are specific configuration for a particular machine suche as a HPC
+;; An extra file next to config.el in case there are specific configuration for a particular machine such as a HPC
 
 (when (file-exists-p (expand-file-name "config-machine.el" doom-user-dir))
   (load (expand-file-name "config-machine.el" doom-user-dir)))
+

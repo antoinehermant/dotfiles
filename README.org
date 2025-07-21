@@ -1,26 +1,31 @@
 #+title: README
 #+autor: anthe
 
-Hi! Here is my desktop environment files. I am now an emacs user with evil mode enabled (vim emulator). I also use the emacs x window manager (exwm). I am happy to share my config as well as getting feedback. I am relatively new to emacs (Jan 2025), my config is still very messy but I am learning and updating it regularly.
+Hi! Here is my desktop environment files. I use emacs with evil mode enabled (vim emulator), as well as exwm (emacs X window manager). I am happy to share my config as well as getting feedback. I am relatively new to emacs (Jan 2025, burying vscode in 2024), my config is still very messy but I am learning and updating it regularly.
 
 * About me
-I am a PhD student in Physics, studying glaciology. I do numerical modelling. I am enthusiastic about machine learning and I am trying to make use of it in my project. I started using emacs a year in my PhD. I was using vscode before, during my masters. I am too far in the darkside of emacs, I will never ever switch back.
+I am a PhD student in Physics, focusing on glaciology. I do numerical modelling. I am enthusiastic about machine learning methods and trying to use them in my project.
 * Why I use emacs
-- Evil mode: the only way to go for editing files ('I use vim btw')
-- Best IDE: Python, C++, bash.
-- Best terminal emulator (vterm + multi-vterm)
-- Org mode: note taking, todos, agenda, latex rendering, presentations, programming, accountability
+- Evil mode: basically vim everywhere = goat power ('I use vim btw').
+- IDE: Python, C++, bash.
+- Terminal emulation (vterm + multi-vterm).
+- Org mode: note taking, knowledge network (roam), todos, agenda, latex rendering, presentations, programming, accountability...
+- Email client.
+- IRC
 - Scientific research:
-  - Writing: Org and Latex modes
-  - Integrated bibliography manager
-- Integrated LLM assistant: awesome gptel.el, my favorite LLM is Mistral/Codestral
-- Window manager (exwm): handling and organising my none-emacs buffers (Firefox, discord, ncview, matplotlib, Ardour...)
+  - Writing: Org and Latex
+  - Bibliography manager + integration of roam
+- LLM assistant client: awesome gptel.el, my favorite LLM is Mistral/Codestral
+- Window manager (exwm): managing my none-emacs buffers (Firefox, discord, ncview, matplotlib, Ardour...).
 
 * Notes
-I use doom as base configuration and exwm. My configuration is not that special, I try to keep it minimal and efficient, but still appealing. *One thing* that might be *special* is that I do my work on an HPC, on which I run the same emacs configuration. So I basically have an emacs session running inside my emacs. This kinda feels like *inception*. I am doing this because I find it easier to set up the whole IDE on the HPC than through tramp (even though I use it from time to time for quick edits and ediff). But so this requires some few hooks and tricks to make it smooth between the local and remote emacs sessions. This works fine, but I am still testing things and I will try to document it better. Feel free to ask!
+I use doom as base configuration and exwm. My configuration is not that special, I try to keep it minimal and efficient, but still appealing. *One thing* that might be *special* is that I do my work on an HPC, on which I run the same emacs configuration. So I basically have an emacs session running inside my emacs. This kinda feels like *inception*. I am doing this because I find it easier to set up the whole IDE on the HPC than through tramp (even though I use it from time to time for quick edits and ediff). But so this requires some few hooks and tricks to make it smooth between the local and remote emacs sessions. This works fine, but I am still testing things and I will try to document it better. And I have a specific-machine.el file which points to the reevant file containing system specific configuration or emacs packages for different purposes. Feel free to ask!
 
 ** System:
 - Laptop: Dell inspiron 14 5420
 - CPU: 12th Gen Intel i7-1255U (12) @ 4.700GHz
 - RAM: SODIMM 2x16G
-- OS: Ubuntu 24.10
+- OS: Ubuntu 24.10 (but planning to go to arch or fedora soon)
+
+* Workflow as a PhD student
+I am planing to document a bit more here my workflow in Emacs as a scholar. Make research efficient and fun!
