@@ -7,16 +7,19 @@ Hi! Here is my desktop environment files. I use emacs with evil mode enabled (vi
 I am a PhD student in Physics, focusing on glaciology. I do numerical modelling. I am enthusiastic about machine learning methods and trying to use them in my project.
 * Why I use emacs
 - Evil mode: basically vim everywhere = goat power ('I use vim btw').
-- IDE: Python, C++, bash.
-- Terminal emulation (vterm + multi-vterm).
+- IDE:
+  - Main languages: Python, C++, bash, Elips
+  - LSP and DAP
+  - Version control (magit)
+- Terminal emulation (multi-vterm).
 - Org mode: note taking, knowledge network (roam), todos, agenda, latex rendering, presentations, programming, accountability...
-- Email client.
+- Email client (mu4e).
 - IRC
 - Scientific research:
   - Writing: Org and Latex
   - Bibliography manager + integration of roam
-- LLM assistant client: awesome gptel.el, my favorite LLM is Mistral/Codestral
-- Window manager (exwm): managing my none-emacs buffers (Firefox, discord, ncview, matplotlib, Ardour...).
+- LLM assistant client (gptel, my favorite LLM is Mistral/Codestral)
+- Window manager (exwm): managing my none-emacs buffers (Firefox, discord, Spotify, ncview, matplotlib, Ardour...).
 
 * Notes
 I use doom as base configuration and exwm. My configuration is not that special, I try to keep it minimal and efficient, but still appealing. *One thing* that might be *special* is that I do my work on an HPC, on which I run the same emacs configuration. So I basically have an emacs session running inside my emacs. This kinda feels like *inception*. I am doing this because I find it easier to set up the whole IDE on the HPC than through tramp (even though I use it from time to time for quick edits and ediff). But so this requires some few hooks and tricks to make it smooth between the local and remote emacs sessions. This works fine, but I am still testing things and I will try to document it better. And I have a specific-machine.el file which points to the reevant file containing system specific configuration or emacs packages for different purposes. Feel free to ask!

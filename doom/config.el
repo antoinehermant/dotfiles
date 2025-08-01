@@ -106,6 +106,7 @@
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 
+(setq doom-scratch-initial-major-mode 'org-mode)
 ;; (setq explicit-shell-file-name "/bin/bash")
 ;; (setq shell-file-name "bash")
 ;; (setq shell-command-switch "-ic")
@@ -133,16 +134,29 @@
   (inhibit-mouse-mode))
 
 (setq dired-kill-when-opening-new-dired-buffer t)
+;; (setq dired-omit-extensions (remove "~" dired-omit-extensions))
 
 (require 'dirvish)
-(setq dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln" "xcf" "ncap2.temp" "pid*"))
+(setq dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln" "xcf" "ncap2.temp" "pid*" "odp"))
 
-(dirvish-define-preview nc (file ext)
- "Preview netcdf file info with cdo sinfon
- Require: `cdo' (executable)"
- :require ("cdo" )
- (cond ((equal ext "nc") `(shell . ("cdo" "-sinfon" ,file)))))
- (add-to-list 'dirvish-preview-dispatchers 'nc)
+(defun my-dirvish-cdo-preview ()
+  (interactive)
+  (dirvish-define-preview nc (file ext)
+  "Preview netcdf file info with cdo sinfon
+   Require: `cdo' (executable)"
+  :require ("cdo" )
+  (cond ((equal ext "nc") `(shell . ("cdo" "-sinfon" ,file))))))
+
+(defun my-dirvish-ncdump-preview ()
+  (interactive)
+  (dirvish-define-preview nc (file ext)
+  "Preview netcdf file info with ncdump -h
+   Require: `ncdump' (executable)"
+   :require ("ncdump" )
+   (cond ((equal ext "nc") `(shell . ("ncdump" "-h" ,file))))))
+
+
+(add-to-list 'dirvish-preview-dispatchers 'nc)
 
 (display-line-numbers-mode)
 (setq display-line-numbers-type 'relative)
@@ -473,8 +487,8 @@ DIRECTION should be 1 for next, -1 for previous."
         :desc "consult-ripgrep" "r g" #'consult-ripgrep
         :desc "consult-find" "r f" #'consult-find
         :desc "linux apps" "\\" #'counsel-linux-app
+        :desc "async shell" "&" #'async-shell-command
         :desc "popper" "`" #'popper-toggle
-        ;; vterm
         :desc "New vterm (multi-vterm)" "V" #'multi-vterm
         :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
         :desc "Previous vterm (multi-vterm)" "v p" #'multi-vterm-prev
@@ -614,6 +628,9 @@ DIRECTION should be 1 for next, -1 for previous."
                  '(file))
           ,(list (openwith-make-extension-regexp '("mp4"))
                  "mpv"
+                 '(file))
+          ,(list (openwith-make-extension-regexp '("WAV"))
+                 "vlc"
                  '(file))
           ,(list (openwith-make-extension-regexp '("ods"))
                  "libreoffice --calc"

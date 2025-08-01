@@ -23,8 +23,6 @@
 
 (provide 'config-machine)
 
-;; (setq my-transparency-value 90)
-
 (display-battery-mode)
 (display-time-mode)
 
@@ -101,55 +99,33 @@
 
     ("W" "Work Tasks" tags-todo "+work-email")
 
-  ("w" "Work Agenda"
-                ((agenda "PhD Agenda"
-                          ((org-agenda-start-day "0d")
-                        (org-agenda-span 7)
-                           (org-agenda-skip-function
-                        '(org-agenda-skip-entry-if 'regexp ":perso:\\|:habit:"))))
-        (todo "PROJ"
-                ((org-agenda-span 7)
-                 (org-agenda-overriding-header "Project Tasks")))
-        (tags-todo "+work-perso" ((org-agenda-overriding-header "Active Projects")))))
+  ;; ("w" "Work Agenda"
+  ;;               ((agenda "PhD Agenda"
+  ;;                         ((org-agenda-start-day "0d")
+  ;;                       (org-agenda-span 7)
+  ;;                       ;;    (org-agenda-skip-function
+  ;;                       ;; '(org-agenda-skip-entry-if 'regexp ":perso:\\|:habit:"))))
+  ;;                       ))
+  ;;      (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
+  ;;       (todo "PROJ"
+  ;;               ((org-agenda-span 7)
+  ;;                (org-agenda-overriding-header "Project Tasks")))
+  ;;      (org-agenda-tag-filter-preset '("+phd"))))
+
+        ("w" "PhD Agenda"
+        ((tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
+        (agenda "" ((org-agenda-start-day "0d")
+                    (org-agenda-span 7)
+                (org-agenda-sorting-strategy
+                (quote ((agenda time-up priority-down tag-up))))))
+        (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects"))))
+        ((org-agenda-tag-filter-preset '("-perso"))))
 
     ;; Low-effort next actions
     ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
      ((org-agenda-overriding-header "Low Effort Tasks")
       (org-agenda-max-todos 20)
-      (org-agenda-files org-agenda-files)))
-
-    ;; ("w" "Workflow Status"
-    ;;  ((todo "WAIT"
-    ;;         ((org-agenda-overriding-header "Waiting on External")
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "REVIEW"
-    ;;         ((org-agenda-overriding-header "In Review")
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "PLAN"
-    ;;         ((org-agenda-overriding-header "In Planning")
-    ;;          (org-agenda-todo-list-sublevels nil)
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "BACKLOG"
-    ;;         ((org-agenda-overriding-header "Project Backlog")
-    ;;          (org-agenda-todo-list-sublevels nil)
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "READY"
-    ;;         ((org-agenda-overriding-header "Ready for Work")
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "ACTIVE"
-    ;;         ((org-agenda-overriding-header "Active Projects")
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "COMPLETED"
-    ;;         ((org-agenda-overriding-header "Completed Projects")
-    ;;          (org-agenda-files org-agenda-files)))
-    ;;   (todo "CANC"
-    ;;         ((org-agenda-overriding-header "Cancelled Projects")
-    ;;          (org-agenda-files org-agenda-files))))))
-    ;;
-    ;;
-    ;;
-             )))
-
+      (org-agenda-files org-agenda-files))))))
 
 ;; (use-package org-super-agenda)
 ;; FIXME: testing org super agenda
@@ -170,7 +146,8 @@
 
 
 (map! :leader
-      :desc "Agenda Dashbord" "k d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d")))
+      :desc "Agenda Dashbord" "k d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
+      :desc "Agenda Dashbord" "k w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
 ;; ------------------------------ Org Roam ------------------------------
 
 (use-package org-roam
@@ -240,7 +217,7 @@
 (add-to-list 'load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.12.6/")
 (use-package mu4e
   ;; :load-path "~/.config/emacs/.local/mu4e-1.12.6/"
-  :defer 20 ; Wait until 20 seconds after startup
+  :defer 10 ; Wait until 20 seconds after startup
   :config
 
   (mu4e t)
@@ -248,14 +225,36 @@
   (setq mu4e-change-filenames-when-moving t)
   ;; (setq mu4e-marks-folders-sequentially t)
 
-  ;; Refresh mail using isync every 10 minutes
-  (setq mu4e-update-interval (* 10 60))
-  (setq mu4e-get-mail-command "mbsync -a")
+  ;; Refresh mail using isync every 5 minutes
+  (setq mu4e-update-interval (* 5 60))
+  ;; (setq mu4e-get-mail-command "mbsync -a")
   (setq mu4e-root-maildir "~/documents/mail/") ;; does not exist anymore?
+  (setq mu4e-headers-date-format "%Y/%m/%d")
 
+  ;; (setq +mu4e-gmail-accounts '(("ah74230@gmail.com" . "/Gmail")))
+  ;;                              ;; ("antoine.hermant74@gmailcom" . "/Gmail2")))
+
+  ;; (set-email-account! "ah74230@gmail.com"
+  ;;       '((mu4e-sent-folder       . "/Gmail/[Gmail]/Sent Mail")
+  ;;       (mu4e-trash-folder      . "/Gmail/[Gmail]/Bin")
+  ;;       (mu4e-refile-folder     . "/Gmail/[Gmail]/All mail")
+  ;;       ;; (smtpmail-smtp-user     . "henrik@lissner.net")
+  ;;       ;; (user-mail-address      . "henrik@lissner.net")    ;; only needed for mu < 1.4
+  ;;       ;; (mu4e-compose-signature . "---\nHenrik Lissner")
+  ;;       )
+  ;;       t)
+
+  ;; (set-email-account! "antoine.hermant74@gmail.com"
+  ;;       '((mu4e-sent-folder       . "/Gmail2/[Gmail].Sent Mail")
+  ;;       (mu4e-trash-folder      . "/Gmail2/[Gmail].Bin")
+  ;;       (mu4e-refile-folder     . "/Gmail2/[Gmail].All mail")
+  ;;       ;; (smtpmail-smtp-user     . "henrik@lissner.net")
+  ;;       ;; (user-mail-address      . "henrik@lissner.net")    ;; only needed for mu < 1.4
+  ;;       ;; (mu4e-compose-signature . "---\nHenrik Lissner")
+  ;;       )
+  ;;       t)
   (setq mu4e-contexts
-        (list
-         ;; Work account
+      (list
          (make-mu4e-context
           :name "Gmail"
           :match-func
@@ -269,26 +268,47 @@
                   (mu4e-refile-folder  . "/Gmail/[Gmail]/All Mail")
                   (mu4e-trash-folder  . "/Gmail/[Gmail]/Bin")))
 
+         (make-mu4e-context
+          :name "Work"
+          :match-func
+            (lambda (msg)
+              (when msg
+                (string-prefix-p "/Work" (mu4e-message-field msg :maildir))))
+          :vars '((user-mail-address . "antoine.hermant74@gmail.com")
+                  (user-full-name    . "Antoine Hermant")
+                  (mu4e-drafts-folder  . "/Work/[Gmail]/Drafts")
+                  (mu4e-sent-folder  . "/Work/[Gmail]/Sent Mail")
+                  (mu4e-refile-folder  . "/Work/[Gmail]/All Mail")
+                  (mu4e-trash-folder  . "/Work/[Gmail]/Bin")))
 
-  (make-mu4e-context
-        :name "Infomaniak"
-        :match-func
-          (lambda (msg)
-            (when msg
-              (string-prefix-p "/Infomaniak" (mu4e-message-field msg :maildir))))
-          :vars '((user-mail-address . "antoine.hermant@etik.com")
-                (user-full-name    . "Antoine Hermant")
-                (mu4e-drafts-folder  . "/Infomaniak/Drafts")
-                (mu4e-sent-folder  . "/Infomaniak/Sent")
-                (mu4e-refile-folder  . "/Infomaniak/Inbox")
-                (mu4e-trash-folder  . "/Infomaniak/Trash")))))
+         (make-mu4e-context
+          :name "Infomaniak"
+          :match-func
+            (lambda (msg)
+              (when msg
+                (string-prefix-p "/Infomaniak" (mu4e-message-field msg :maildir))))
+            :vars '((user-mail-address . "antoine.hermant@etik.com")
+                  (user-full-name    . "Antoine Hermant")
+                  (mu4e-drafts-folder  . "/Infomaniak/Drafts")
+                  (mu4e-sent-folder  . "/Infomaniak/Sent")
+                  (mu4e-refile-folder  . "/Infomaniak/Inbox")
+                  (mu4e-trash-folder  . "/Infomaniak/Trash")))))
 
-  (setq mu4e-maildir-shortcuts
-        '(("/Gmail/Inbox"             . ?i)
-          ("/Gmail/[Gmail]/Sent Mail" . ?s)
-          ("/Gmail/[Gmail]/Bin"     . ?b)
-          ("/Gmail/[Gmail]/Drafts"    . ?d)
-          ("/Gmail/[Gmail]/All Mail"  . ?a))))
+  (setq mu4e-bookmarks
+        `((:name "Unread messages" :query "flag:unread AND NOT flag:trashed" :key 117)
+        (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin" :key 116)
+        (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
+        (:name "Messages with images" :query "mime:image/*" :key 112)
+        (:name "Finances" :query "from:miimosa AND NOT flag:trashed AND NOT tag:\\Trash OR from:linxea AND NOT tag:\\Trash AND NOT flag:trashed OR from:iroko AND NOT flag:trashed OR from:contact@louveinvest.com AND NOT flag:trashed AND NOT tag:\\Trash" :key ?f)
+        (:name "Research News" :query "from:cryolist-request AND NOT flag:trashed OR from:scholar AND NOT flag:trashed OR from:researchgate AND NOT flag:trashed" :key ?r)))
+
+  ;; (setq mu4e-maildir-shortcuts
+  ;;       '(("/Gmail/Inbox"             . ?i)
+  ;;         ("/Gmail/[Gmail]/Sent Mail" . ?s)
+  ;;         ("/Gmail/[Gmail]/Bin"     . ?b)
+  ;;         ("/Gmail/[Gmail]/Drafts"    . ?d)
+  ;;         ("/Gmail/[Gmail]/All Mail"  . ?a)))
+  )
 
 ;; FIXME: I do not know why, but when I start up emacs now, it is not in main by default but I get 'Not in valid worksapce (nil)'
 ;; (+workspace/switch-to-0) ;; FIXME: this does not work anyways

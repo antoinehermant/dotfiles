@@ -278,7 +278,7 @@
 
   (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
   ;; Set the default number of workspaces
-  (setq exwm-workspace-number 10)
+  (setq exwm-workspace-number 11)
 
   ;; This is needed to switch between char and line mode (with evil in line mode)
   (setq exwm-input-line-mode-passthrough t)
