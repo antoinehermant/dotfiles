@@ -749,10 +749,6 @@ DIRECTION should be 1 for next, -1 for previous."
   :config
   (pyvenv-mode 1))
 
-(use-package conda)
-(setq conda-anaconda-home "/home/anthe/software/miniconda3")
-(conda-mode-line-setup)
-
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)
 
@@ -761,10 +757,7 @@ DIRECTION should be 1 for next, -1 for previous."
 (use-package flycheck
   :hook (python-mode . flycheck-mode))
 
-
-
-(setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /   --smart-case --no-heading --with-filename --line-number --search-zip --.") ;added --hidden to default
-
+(setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator --smart-case --no-heading --with-filename --line-number --search-zip --.") ;added --hidden to default
 
 ;; (use-package dap-python
 ;;      :ensure t
@@ -859,6 +852,7 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   (vlc-add (buffer-file-name)))
 ;; (add-to-list 'auto-mode-alist '("\\.mp3\\'" . open-mp3-in-vlc))
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/vlc-20200328.1143/")
 (defun open-mp3-in-vlc ()
   "Open MP3 file in VLC, starting VLC if necessary."
   (interactive)
