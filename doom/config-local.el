@@ -26,8 +26,9 @@
 (display-battery-mode)
 (display-time-mode)
 
+(use-package conda)
 (setq conda-anaconda-home "/home/anthe/software/miniconda3")
-
+(conda-mode-line-setup)
 
 ;; --------------------------- Org Mode ---------------------
 ;
@@ -45,13 +46,13 @@
 
 (defun my/set-org-agenda-files ()
   (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$")
-                               (directory-files-recursively "~/org/phd/projects/" "\\.org$"))))
+                               (directory-files-recursively "~/phd/projects/" "\\.org$"))))
 
 (use-package org
   :config
   (setq org-directory "~/org/")
   (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$")
-                               (directory-files-recursively "~/org/phd/projects/" "\\.org$")))
+                               (directory-files-recursively "~/phd/projects/" "\\.org$")))
   ;; (setq org-agenda-files  ("~/org/agenda/" "~/org/phd/"))
   (setq org-agenda-start-with-log-mode t)
   ;; (setq org-todo-keywords
@@ -91,7 +92,8 @@
     (tags-todo "phd/TODO"
                ((org-agenda-overriding-header "PhD Tasks")
                 (org-agenda-todo-ignore-deadlines 'far)))
-      (tags-todo "+perso" ((org-agenda-overriding-header "Personal Tasks")))))
+      (tags-todo "+perso" ((org-agenda-overriding-header "Personal Tasks")))
+      (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
 
     ;; ("n" "Next Tasks"
     ;;  ((todo "NEXT"
@@ -118,7 +120,10 @@
                     (org-agenda-span 7)
                 (org-agenda-sorting-strategy
                 (quote ((agenda time-up priority-down tag-up))))))
-        (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects"))))
+        (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
+        (todo "PROJ"
+                ((org-agenda-span 7)
+                 (org-agenda-overriding-header "Project Tasks"))))
         ((org-agenda-tag-filter-preset '("-perso"))))
 
     ;; Low-effort next actions
@@ -146,13 +151,14 @@
 
 
 (map! :leader
+      :desc "Open mu4e" "o m" #'mu4e
       :desc "Agenda Dashbord" "k d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
       :desc "Agenda Dashbord" "k w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
 ;; ------------------------------ Org Roam ------------------------------
 
 (use-package org-roam
   :custom
-  (org-roam-directory (file-truename "~/roam/"))
+  (org-roam-directory (file-truename "~/org/roam/"))
   :config
   (org-roam-db-autosync-enable))
 
@@ -227,7 +233,7 @@
 
   ;; Refresh mail using isync every 5 minutes
   (setq mu4e-update-interval (* 5 60))
-  ;; (setq mu4e-get-mail-command "mbsync -a")
+  (setq mu4e-get-mail-command "mbsync -a")
   (setq mu4e-root-maildir "~/documents/mail/") ;; does not exist anymore?
   (setq mu4e-headers-date-format "%Y/%m/%d")
 
@@ -295,8 +301,8 @@
                   (mu4e-trash-folder  . "/Infomaniak/Trash")))))
 
   (setq mu4e-bookmarks
-        `((:name "Unread messages" :query "flag:unread AND NOT flag:trashed" :key 117)
-        (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin" :key 116)
+        `((:name "Unread messages" :query "flag:unread AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash" :key 117)
+        (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash" :key 116)
         (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
         (:name "Messages with images" :query "mime:image/*" :key 112)
         (:name "Finances" :query "from:miimosa AND NOT flag:trashed AND NOT tag:\\Trash OR from:linxea AND NOT tag:\\Trash AND NOT flag:trashed OR from:iroko AND NOT flag:trashed OR from:contact@louveinvest.com AND NOT flag:trashed AND NOT tag:\\Trash" :key ?f)
