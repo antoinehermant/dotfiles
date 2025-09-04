@@ -636,6 +636,22 @@ DIRECTION should be 1 for next, -1 for previous."
                  "libreoffice --calc"
                  '(file))))
   (openwith-mode t))
+
+(defun my-open-current-buffer-externally ()
+  "Open current buffer's file with appropriate application."
+  (interactive)
+  (when-let ((file (buffer-file-name)))
+    (cond
+     ((string-match "\\.pdf\\'" file)
+      (start-process "" nil "evince" file))
+     ((string-match "\\.png\\'" file)
+      (start-process "" nil "eog" file))
+     (t
+      (start-process "" nil "xdg-open" file)))))
+
+(map! :leader
+      :desc "Open visited file externally" "o d" #'my-open-current-buffer-externally)
+
 ;; ;; Define global variables to store state
 ;; (defvar vterm-popup-original-height nil
 ;;   "Stores the original height of the vterm popup window.")
