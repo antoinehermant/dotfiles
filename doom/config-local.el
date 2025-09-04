@@ -26,10 +26,15 @@
 (display-battery-mode)
 (display-time-mode)
 
-(use-package conda)
-(setq conda-anaconda-home "/home/anthe/software/miniconda3")
-(conda-mode-line-setup)
+(dired-async-mode)
+;; (use-package conda)
+;; (setq conda-anaconda-home "/home/anthe/software/miniconda3")
+;; (conda-mode-line-setup)
 
+(setq pyvenv-default-virtual-env-name  "/home/anthe/software/miniconda3/envs/")
+
+(add-to-list 'load-path "~/.config/emacs/.local/")
+(require 'app-launcher)
 ;; --------------------------- Org Mode ---------------------
 ;
 (require 'org)
@@ -42,6 +47,7 @@
             (calendar-last-day-of-month month year)))
     (= day last-day-of-month)))
 
+(setq org-present-startup-folded t)
 
 
 (defun my/set-org-agenda-files ()
@@ -92,7 +98,7 @@
     (tags-todo "phd/TODO"
                ((org-agenda-overriding-header "PhD Tasks")
                 (org-agenda-todo-ignore-deadlines 'far)))
-      (tags-todo "+perso" ((org-agenda-overriding-header "Personal Tasks")))
+      (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
       (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
 
     ;; ("n" "Next Tasks"
@@ -121,10 +127,10 @@
                 (org-agenda-sorting-strategy
                 (quote ((agenda time-up priority-down tag-up))))))
         (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
-        (todo "PROJ"
+        (tags-todo "phd/PROJ"
                 ((org-agenda-span 7)
                  (org-agenda-overriding-header "Project Tasks"))))
-        ((org-agenda-tag-filter-preset '("-perso"))))
+        ((org-agenda-tag-filter-preset '("+phd"))))
 
     ;; Low-effort next actions
     ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"

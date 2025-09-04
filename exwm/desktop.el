@@ -130,7 +130,11 @@
       ;; (switch-to-buffer (nth 1 (buffer-list)))
            (setq exwm-frame-toggle t))))
   (pcase exwm-class-name
-  ("Emacs" (exwm-workspace-move-window 2))))
+  ("Emacs" (exwm-workspace-move-window 2)))
+  (pcase exwm-class-name
+  ("VirtualBox Machine" (exwm-workspace-move-window 2)))
+  (pcase exwm-class-name
+  ("VirtualBox Manager" (exwm-floating-toggle-floating))))
 
 (defun find-ncview-buffers ()
   "Returns t if an Ncview buffer exists, nil otherwise."
@@ -353,7 +357,7 @@
           ([?\s-,] . switch-to-buffer)
           ([?\s-.] . find-file)
           ([?\s-`] . (lambda () (interactive) (exwm-workspace-switch-create 0)))
-          ([?\s-/] . counsel-linux-app)
+          ([?\s-/] . app-launcher-run-app)
           ([?\s-m] . exwm-toggle-local-mode)
           ;; Launch applications via shell command
           ([?\s-&] . (lambda (command)
@@ -379,14 +383,34 @@
         ;; disable this after having saved your config with autorandr --save <name-of-confg>
         (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
 
-        (setq exwm-randr-workspace-monitor-plist '(2 "DP-1" 3 "DP-1"))
+        (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
+
+        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+        (efs/set-wallpaper)
+
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
+        ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "DP-1"
+        ;;                                            2 "eDP-1" 2 "DP-1"
+        ;;                                            3 "eDP-1" 3 "DP-1"
+        ;;                                            4 "eDP-1" 4 "DP-1"
+        ;;                                            5 "eDP-1" 5 "DP-1"
+        ;;                                            6 "eDP-1" 6 "DP-1"
+        ;;                                            0 "eDP-1" 10 "eDP-1"))
+
+        ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "HDMI-1"
+        ;;                                            2 "eDP-1" 2 "HDMI-1"
+        ;;                                            3 "eDP-1" 3 "HDMI-1"
+        ;;                                            4 "eDP-1" 4 "HDMI-1"
+        ;;                                            5 "eDP-1" 5 "HDMI-1"
+        ;;                                            6 "eDP-1" 6 "HDMI-1"
+        ;;                                            0 "eDP-1" 10 "eDP-1"))
+
+        ;; (efs/set-wallpaper)
         ;; FIXME: check whether this works
         ;; (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
         ;; (efs/update-displays)
 
-        (efs/set-wallpaper)
         ;; Function to configure touchpad settings
         ;; (defun configure-touchpad ()
         ;; "Configure touchpad settings using xinput."
@@ -596,11 +620,11 @@
 
 ;;   (counsel-mode 1))
 
-(require 'counsel)
-;; Configure counsel
-(use-package counsel
-:custom
-(counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only))
+;; (require 'counsel)
+;; ;; Configure counsel
+;; (use-package counsel
+;; :custom
+;; (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only))
 
 ;; (setq vertico-multiform-mode nil)
 

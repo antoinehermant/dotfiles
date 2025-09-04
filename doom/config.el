@@ -35,14 +35,11 @@
 ;; Removes the background color that was set in the early init (which turns the annoying white splash screen from vanilla emacs to a color)
 (setq default-frame-alist (assq-delete-all 'background-color default-frame-alist))
 (setq default-frame-alist (assq-delete-all 'foreground-color default-frame-alist))
-;; (setq doom-theme 'doom-one)
 ;; (setq doom-theme 'doom-nord)
 ;; (setq doom-theme 'doom-palenight)
-(setq doom-theme 'doom-outrun-electric)
+;; (setq doom-theme 'doom-outrun-electric)
+(setq doom-theme 'doom-material-dark)
 ;; (setq doom-theme 'doom-challenger-deep)
-;; (load-theme 'night-owl)
-;; (load-theme 'doom-outrun-electric)
-;; (setq doom-theme 'night-owl)
 
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
@@ -125,13 +122,6 @@
 
 (set-face-attribute 'default nil :height 109)
 
-(use-package! disable-mouse
-   :config
-   (global-disable-mouse-mode t))
-;; more elaborate than disable-mouse, like it handles evil better
-(use-package inhibit-mouse
-  :config
-  (inhibit-mouse-mode))
 
 (setq dired-kill-when-opening-new-dired-buffer t)
 ;; (setq dired-omit-extensions (remove "~" dired-omit-extensions))
@@ -155,6 +145,7 @@
    :require ("ncdump" )
    (cond ((equal ext "nc") `(shell . ("ncdump" "-h" ,file))))))
 
+(my-dirvish-ncdump-preview) ;; ncdump by default
 
 (add-to-list 'dirvish-preview-dispatchers 'nc)
 
@@ -196,8 +187,6 @@
 ;; (setq read-process-output-max 10000000)
 ;; (setq bidi-inhibit-bpa t)
 
-;; UNSET mouse drag in evil mode
-(global-unset-key [drag-mouse-1]) 
 
 
 (setq ibuffer-formats
@@ -486,7 +475,7 @@ DIRECTION should be 1 for next, -1 for previous."
         :desc "Find file at point" "f f" #'find-file-at-point
         :desc "consult-ripgrep" "r g" #'consult-ripgrep
         :desc "consult-find" "r f" #'consult-find
-        :desc "linux apps" "\\" #'counsel-linux-app
+        :desc "App launcher" "\\" #'app-launcher-run-app
         :desc "async shell" "&" #'async-shell-command
         :desc "popper" "`" #'popper-toggle
         :desc "New vterm (multi-vterm)" "V" #'multi-vterm
@@ -546,6 +535,19 @@ DIRECTION should be 1 for next, -1 for previous."
 (setq vterm-max-scrollback 10000)
 (setq vterm-kill-buffer-on-exit t)
 (setq vterm-visual-flash-delay 0.1)
+
+(use-package! disable-mouse
+   :config
+   ;; (global-disable-mouse-mode t)
+   )
+;; more elaborate than disable-mouse, like it handles evil better
+(use-package inhibit-mouse
+  :config
+  ;; (inhibit-mouse-mode)
+  )
+;; UNSET mouse drag in evil mode
+;; (global-unset-key [drag-mouse-1])
+;; (global-set-key [drag-mouse-1])
 
 (defun my-vterm-mode-hook ()
   (setq vterm-mouse-mode 0)
