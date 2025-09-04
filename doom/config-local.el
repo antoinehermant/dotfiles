@@ -322,6 +322,23 @@
   ;;         ("/Gmail/[Gmail]/All Mail"  . ?a)))
   )
 
+;; ----------------------- automation --------------------------------
+
+(defun my-switch-laptop-charger ()
+  (interactive)
+  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py laptop_charger")))
+    (message "%s" output)))
+
+(defun my-switch-sound-system ()
+  (interactive)
+  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py sound_sytem")))
+    (message "%s" output)))
+
+(defun my-switch-drive-1 ()
+  (interactive)
+  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py drive_1")))
+    (message "%s" output)))
+
 ;; FIXME: I do not know why, but when I start up emacs now, it is not in main by default but I get 'Not in valid worksapce (nil)'
 ;; (+workspace/switch-to-0) ;; FIXME: this does not work anyways
 ;;; config-machine ends here
