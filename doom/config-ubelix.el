@@ -21,7 +21,8 @@
 
 (provide 'machine-specific)
 
-(setq doom-theme 'doom-challenger-deep)
+;; (setq doom-theme 'doom-challenger-deep)
+(setq doom-theme 'doom-material-dark)
 ;;(add-to-list 'load-path "~/software/emacs-libvterm")
 
 (setq exec-path (append exec-path '("/software.9/software/CMake/3.26.3-GCCcore-12.3.0/bin")))
@@ -54,7 +55,8 @@
 (setq doom-font (font-spec :family "Ubuntu Sans Mono" :height 109 :path "~/.fonts/UbuntuSansMono/UbuntuSansMono-Regular-BF65bb038c1183a.otf"))
 ;; ;; default transparency does not work on ubelix but this one does
 
-(setq my-transparency-value 95)
+(defvar my-transparency-value 85
+  "Defines a variable for transparency")
 
 (defun toggle-frame-transparency ()
   "Toggle transparency of Emacs frame."
@@ -67,17 +69,25 @@
                     ;; Also handle undocumented (<active> <inactive>) form.
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
-              '(my-transparency-value . my-transparency-value) '(100 . 100)))))
+              '(85 . 85) '(100 . 100)))))
 
-(setq popper-window-height (floor (* (frame-height) 0.33)))
 (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda3")
 
+(setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda3/envs/")
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 
+(setq popper-window-height (floor (* (frame-height) 0.33)))
 ;; (add-hook 'window-setup-hook #'toggle-frame-maximized)
 
+(defun sbatch-buffer ()
+  (interactive)
+  (let ((file (buffer-file-name)))
+    (when file
+      (async-shell-command (concat "sbatch " (shell-quote-argument file))))))
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
 ;;; machine-specific.el ends here
+
+
