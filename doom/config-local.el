@@ -339,6 +339,17 @@
   (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py drive_1")))
     (message "%s" output)))
 
+(defun my-switch-desk-lamp ()
+  (interactive)
+  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_lights.py desk_lamp")))
+    (message "%s" output)))
+
+(map! :leader
+      :desc "Switch desk lamp" "k t l" #'my-switch-desk-lamp
+      :desc "Switch sound system" "k t s" #'my-switch-sound-system
+      :desc "Switch drive" "k t d" #'my-switch-drive-1
+      :desc "Switch laptop charger" "k t c" #'my-switch-laptop-charger)
+
 ;; FIXME: I do not know why, but when I start up emacs now, it is not in main by default but I get 'Not in valid worksapce (nil)'
 ;; (+workspace/switch-to-0) ;; FIXME: this does not work anyways
 ;;; config-machine ends here

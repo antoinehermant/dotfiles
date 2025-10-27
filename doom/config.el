@@ -398,6 +398,7 @@
         :desc "Run current cell in Python shell" "r [" #'code-cells-eval
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python
+        :desc "Run python" "r r" #'python-shell-restart
         :desc "Forward to next cell" "]" #'code-cells-forward-cell
         :desc "Backward to previous cell" "[" #'code-cells-backward-cell
         :desc "Jupyter run REPL" "r J" #'jupyter-run-repl))
@@ -473,7 +474,8 @@ DIRECTION should be 1 for next, -1 for previous."
         :desc "Toggle 100% transparency" "t T" #'toggle-frame-transparency-100
         :desc "Wrap lines" "t w" #'toggle-truncate-lines
         :desc "Find file at point" "f f" #'find-file-at-point
-        :desc "consult-ripgrep" "r g" #'consult-ripgrep
+        :desc "consult-ripgrep" "s p" #'consult-ripgrep
+        :desc "consult-ripgrep" "/" #'consult-ripgrep
         :desc "consult-find" "r f" #'consult-find
         :desc "App launcher" "\\" #'app-launcher-run-app
         :desc "async shell" "&" #'async-shell-command
@@ -809,7 +811,27 @@ DIRECTION should be 1 for next, -1 for previous."
    :preview-key '(:debounce 0.4 any)))
 
 (setq consult-ripgrep-args
-      "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden --glob '!.git' --glob '!.ccls-cache' --.")
+        "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden")
+
+;; (setq consult-ripgrep-args
+;;       '("rg"
+;;         "--null"
+;;         "--line-buffered"
+;;         "--color=never"
+;;         "--max-columns=1000"
+;;         "--path-separator" "/"
+;;         "--smart-case"
+;;         "--no-heading"
+;;         "--with-filename"
+;;         "--line-number"
+;;         "--search-zip"
+;;         "--hidden"
+;;         "-g" "!{**/.ccls-cache/*,**/.git/*}"))
+
+(setq consult-preview-excluded-files
+      '("\\.nc\\'"
+        "\\`/[^/|:]+:"
+        "\\.gpg\\'"))
 
 ;; (use-package dap-python
 ;;      :ensure t
@@ -1114,6 +1136,8 @@ DIRECTION should be 1 for next, -1 for previous."
 (require 'tex-site)
 (add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
 (add-hook 'org-mode-hook 'org-fragtog-mode)
+(add-hook 'org-mode-hook #'(lambda () (org-latex-preview)))
+(setq org-latex-preview-scale 2) ; Scale preview size
 
 ;; (use-package org-latex-impatient
 ;;   :defer t

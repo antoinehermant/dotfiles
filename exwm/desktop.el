@@ -47,6 +47,8 @@
 
 
 (defun efs/exwm-init-hook ()
+  (exwm-workspace-switch-create 3)
+  (toggle-frame-transparency-100)
   (exwm-workspace-switch-create 1))
 
 (defun efs/set-wallpaper ()
@@ -130,7 +132,7 @@
       ;; (switch-to-buffer (nth 1 (buffer-list)))
            (setq exwm-frame-toggle t))))
   (pcase exwm-class-name
-  ("Emacs" (exwm-workspace-move-window 2)))
+  ("Emacs" (exwm-workspace-move-window 3)))
   (pcase exwm-class-name
   ("VirtualBox Machine" (exwm-workspace-move-window 2)))
   (pcase exwm-class-name

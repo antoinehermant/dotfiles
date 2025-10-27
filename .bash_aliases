@@ -3,7 +3,7 @@
 alias gossd_anthe="cd /media/anthe/ssd_anthe"
 alias goanthe_ext_drive_1="cd /media/anthe/anthe_ext_drive_1"
 alias gomisu="cd /home/anthe/misu"
-alias da="du -sm .[^.]* * 2>/dev/null"
+alias da="du -sh .[^.]* * 2>/dev/null"
 alias ds="du -sh"
 alias e="emacsclient -n"
 alias ew="emacsclient -nw"

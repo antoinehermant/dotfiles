@@ -27,6 +27,13 @@
 
 (setq exec-path (append exec-path '("/software.9/software/CMake/3.26.3-GCCcore-12.3.0/bin")))
 
+;; ;; Force the correct LD_LIBRARY_PATH for pyright
+;; (setenv "LD_LIBRARY_PATH"
+;;         (concat
+;;          "/software.9/software/ICU/73.2-GCCcore-12.3.0/lib:"
+;;          (getenv "LD_LIBRARY_PATH")))
+
+
 ;; openwith ncview is already in the config.el but this is in case ncview is not loaded on ubelix
 ;; (use-package! openwith
 ;;   :config
@@ -69,11 +76,13 @@
                     ;; Also handle undocumented (<active> <inactive>) form.
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
-              '(85 . 85) '(100 . 100)))))
+              '(90 . 90) '(100 . 100)))))
+(toggle-frame-transparency)
+(toggle-frame-transparency)
 
-(setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda3")
+(setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
 
-(setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda3/envs/")
+(setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/")
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
@@ -83,11 +92,18 @@
 
 (defun sbatch-buffer ()
   (interactive)
+  (save-buffer)
   (let ((file (buffer-file-name)))
     (when file
-      (async-shell-command (concat "sbatch " (shell-quote-argument file))))))
+      (message "%s" (shell-command-to-string (concat "sbatch " (shell-quote-argument file)))))))
+
+(map! :leader
+        :desc "Submit batch job" "k s" #'sbatch-buffer)
+
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
+;; (add-to-list 'eglot-server-programs
+;;              `(python-mode . ("/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/bin/pyright-langserver")))
+(setq eglot-server-programs
+      `((python-mode . ("~/software/pyright-wrapper"))))
 ;;; machine-specific.el ends here
-
-
