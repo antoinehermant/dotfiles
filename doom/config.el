@@ -325,6 +325,8 @@
            (if frame-transparency-toggle-state 85 100)))
 
 
+(set-frame-parameter nil 'alpha-background 85)
+
 (defvar frame-transparency-toggle-state-100 nil
   "State of frame transparency toggle.")
 
@@ -468,6 +470,7 @@ DIRECTION should be 1 for next, -1 for previous."
 ;; Keybindings
 (map! :leader
         :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
+        :desc "Switch to Firefox buffer" "b f" #'my/switch-to-firefox-buffer
         :desc "Next shell buffer" "t n" #'my-next-shell-buffer
         :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
         :desc "Toggle transparency" "t t" #'toggle-frame-transparency
@@ -998,10 +1001,8 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;   :config
 ;;   (setq bibtex-completion-pdf-field "file")
 ;;   (setq bibtex-completion-notes-field nil))
-(setq! bibtex-completion-bibliography '("~/kup/bib/kup.bib"))
-(setq! citar-bibliography '("~/kup/bib/kup.bib"))
-
-(setq! citar-notes-paths '("~/kup/bib/notes"))
+(setq! bibtex-completion-bibliography '("~/phd/bib/phd.bib"))
+(setq! citar-bibliography '("~/phd/bib/phd.bib"))
 
 (defvar citar-indicator-notes-icons
   (citar-indicator-create
@@ -1112,7 +1113,7 @@ DIRECTION should be 1 for next, -1 for previous."
     (re-search-backward "^@\\(Article\\|Book\\|InProceedings\\|PhdThesis\\|TechReport\\|Misc\\){\\([^,]*\\)," nil t)
     (match-string 2)))
 
-(defvar default-bib "~/kup/bib/kup.bib")
+(defvar default-bib "~/phd/bib/phd.bib")
 (defun add-doi-to-my-bib ()
   (interactive)
 

@@ -47,16 +47,13 @@
 
 
 (defun efs/exwm-init-hook ()
-  (exwm-workspace-switch-create 3)
-  (toggle-frame-transparency-100)
   (exwm-workspace-switch-create 1))
 
 (defun efs/set-wallpaper ()
   (interactive)
   (start-process-shell-command
    ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
-   "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg")
-  (toggle-frame-transparency))
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
 
 
 ;; (defun toggle-frame-transparency ()
@@ -99,7 +96,18 @@
 ;;     ("Ncview" (exwm-floating-toggle-floating)
 ;;            (exwm-layout-toggle-mode-line))))
 
-
+(defun my/switch-to-firefox-buffer (&optional sources)
+  (interactive)
+  (let ((selected (consult--multi (or sources consult-buffer-sources)
+                                  :require-match
+                                  (confirm-nonexistent-file-or-buffer)
+                                  :prompt "Switch to: "
+                                  :initial "^Firefox"
+                                  :history 'consult--buffer-history
+                                  :sort nil)))
+    ;; For non-matching candidates, fall back to buffer creation.
+    (unless (plist-get (cdr selected) :match)
+      (consult--buffer-action (car selected)))))
 
 (defvar saved-current-buffer-for-floating nil)
 (setq saved-current-buffer-for-floating nil)
@@ -118,6 +126,11 @@
 
 (defun efs/configure-window-by-class ()
   (interactive)
+  (when (string-match-p "Ncview: Ncview" exwm-class-name)
+         (unless exwm-frame-toggle nil
+             (progn
+           (exwm-floating-toggle-floating)
+           (setq exwm-frame-toggle t))))
   (unless (find-ncview-buffer)
   (when (string-match-p "Matplotlib" exwm-class-name)
            (exwm-floating-toggle-floating))
@@ -128,9 +141,14 @@
          (unless exwm-frame-toggle nil
              (progn
            (exwm-floating-toggle-floating)
+                (message "In Ncview 1")
       ;; (switch-to-buffer (nth 1 (buffer-list)))
       ;; (switch-to-buffer (nth 1 (buffer-list)))
            (setq exwm-frame-toggle t))))
+  ;; (when (string-match-p "Ncview" exwm-class-name)
+  ;;          (exwm-floating-toggle-floating)
+  ;;               (message "In Ncview: Ncview")
+  ;;          (setq exwm-frame-toggle t))
   (pcase exwm-class-name
   ("Emacs" (exwm-workspace-move-window 3)))
   (pcase exwm-class-name
@@ -154,7 +172,7 @@
   (save-excursion
     (let ((found-buffer-p nil))
       (dolist (b (buffer-list))
-        (when (string-match "Ncview" (buffer-name b))
+        (when (string-match "Ncview: Ncview" (buffer-name b))
           (setq found-buffer-p t)))
       found-buffer-p)))
 
@@ -204,11 +222,11 @@
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
 (defun efs/update-displays ()
-  (efs/run-in-background "autorandr --change --force")
-  (efs/set-wallpaper)
-  (message "Display config: %s"
-           (virgin-delete-whitespace
-            (shell-command-to-string "autorandr --current"))))
+  (interactive)
+  ;; (efs/run-in-background "autorandr --change --force")
+  (shell-command "autorandr --change --force")
+  (exwm-randr-refresh)
+  (efs/set-wallpaper))
 
 ;; Hook to set transparency based on workspace
 (defun my-exwm-workspace-transparency ()
@@ -223,7 +241,9 @@
 ;; Bind the toggle function to the Super key
 (defun efs/exwm-update-title ()
   (when (string-match-p "firefox" exwm-class-name)
-    (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title))))
+    (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))
+  (when (string-match-p "Ncview" exwm-class-name)
+    (exwm-workspace-rename-buffer (format "Ncview: %s" exwm-title))))
 
 (defun my-toggle-mouse ()
   "Toggle mouse inhibition by calling several functions"
@@ -278,6 +298,20 @@
 (setq exwm-manage-configurations '((t char-mode t)))
 (evil-set-initial-state 'exwm-mode 'exwm-insert)
 
+(defun my/leave-exwm ()
+  (exwm-input-grab-keyboard))
+
+(defun my/set-exwm-to-line-mode ()
+  "Set the previous EXWM buffer to line mode."
+  (when (and (bound-and-true-p exwm--last-buffer)
+             (buffer-live-p exwm--last-buffer)
+             (with-current-buffer exwm--last-buffer exwm--buffer))
+    (with-current-buffer exwm--last-buffer
+      (exwm-input-grab-keyboard))))
+
+;; Use a timer to defer the action
+(defun my/leave-exwm ()
+  (run-at-time 0.1 nil 'exwm-input-grab-keyboard))
 
 (use-package exwm
   :config
@@ -292,13 +326,14 @@
   ;; When window "class" updates, use it to set the buffer name
   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
 
+  ;; (add-hook 'exwm-workspace-switch-hook 'my/leave-exwm)
 
+  (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
   ;; (add-hook 'exwm-manage-finish-hook #'efs/set-ncview-floating)
   (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
 
   (add-hook 'kill-buffer-hook 'efs/reset-frame-toggle-on-kill)
 ;;   (add-hook 'exwm-manage-force-tiling-hook #'efs/configure-window-by-class)
-(add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
 ;; (add-hook 'exwm-input-focus-in-hook 'efs/configure-window-by-class)
 
   (setq exwm-layout-show-all-buffers t)
@@ -388,7 +423,6 @@
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
         ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
-        (efs/set-wallpaper)
 
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
@@ -408,11 +442,12 @@
         ;;                                            6 "eDP-1" 6 "HDMI-1"
         ;;                                            0 "eDP-1" 10 "eDP-1"))
 
-        ;; (efs/set-wallpaper)
-        ;; FIXME: check whether this works
-        ;; (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
+        (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
         ;; (efs/update-displays)
 
+        (efs/set-wallpaper)
+        (set-frame-parameter nil 'alpha-background 85)
+        (add-to-list 'default-frame-alist '(alpha-background . 85))
         ;; Function to configure touchpad settings
         ;; (defun configure-touchpad ()
         ;; "Configure touchpad settings using xinput."
@@ -482,7 +517,14 @@
         (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
         (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))
 
-        (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-release-keyboard)))
+        ;; (defun my/exwm-ensure-normal-state ()
+        ;; (when (derived-mode-p 'exwm-mode)
+        ;; (evil-normal-state)))
+        ;; (add-hook 'buffer-list-update-hook #'my/exwm-ensure-normal-state)
+
+        (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+        (add-hook 'exwm-workspace-switch-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+        ;; (add-hook 'exwm-workspace-switch-hook 'exwm-input-grab-keyboard)
         (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
         (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
         (general-define-key
@@ -490,10 +532,8 @@
         :states 'normal
         "i" #'exwm-input-release-keyboard)
 
-        ;; (exwm-input-set-key (kbd "s-<escape>") #'exwm-input-toggle-keyboard)
         (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
 
-        ;; ("matplotlib" (exwm-floating-toggle-floating))
 
   (exwm-wm-mode))
 

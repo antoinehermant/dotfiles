@@ -51,14 +51,12 @@
 
 
 (defun my/set-org-agenda-files ()
-  (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$")
-                               (directory-files-recursively "~/phd/projects/" "\\.org$"))))
+  (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$"))))
 
 (use-package org
   :config
   (setq org-directory "~/org/")
-  (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$")
-                               (directory-files-recursively "~/phd/projects/" "\\.org$")))
+  (setq org-agenda-files (append (directory-files-recursively "~/org/agenda/" "\\.org$")))
   ;; (setq org-agenda-files  ("~/org/agenda/" "~/org/phd/"))
   (setq org-agenda-start-with-log-mode t)
   ;; (setq org-todo-keywords
@@ -164,7 +162,7 @@
 
 (use-package org-roam
   :custom
-  (org-roam-directory (file-truename "~/org/roam/"))
+  (org-roam-directory (file-truename "~/roam/"))
   :config
   (org-roam-db-autosync-enable))
 
@@ -242,6 +240,7 @@
   (setq mu4e-get-mail-command "mbsync -a")
   (setq mu4e-root-maildir "~/documents/mail/") ;; does not exist anymore?
   (setq mu4e-headers-date-format "%Y/%m/%d")
+  ;; (setq mu4e-headers-limit 500)
 
   ;; (setq +mu4e-gmail-accounts '(("ah74230@gmail.com" . "/Gmail")))
   ;;                              ;; ("antoine.hermant74@gmailcom" . "/Gmail2")))
@@ -331,7 +330,7 @@
 
 (defun my-switch-sound-system ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py sound_sytem")))
+  (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_devices.py sound_system")))
     (message "%s" output)))
 
 (defun my-switch-drive-1 ()
