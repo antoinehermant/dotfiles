@@ -7,6 +7,7 @@ alias da="du -sh .[^.]* * 2>/dev/null"
 alias ds="du -sh"
 alias e="emacsclient -n"
 alias ew="emacsclient -nw"
+alias v="~/software/nvim-linux-x86_64/bin/nvim"
 #alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
 if [ -n "$INSIDE_EMACS" ]; then
     export EDITOR="emacsclient -n"
