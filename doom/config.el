@@ -121,6 +121,7 @@
 (add-hook 'server-switch-hook (lambda () (select-frame-set-input-focus (selected-frame))))
 
 (set-face-attribute 'default nil :height 109)
+;; (set-face-attribute 'default nil :height 200)
 
 
 (setq dired-kill-when-opening-new-dired-buffer t)
@@ -152,10 +153,10 @@
 (display-line-numbers-mode)
 (setq display-line-numbers-type 'relative)
 (custom-set-faces!
-  '(line-number :foreground "#ffffff")  ;; #FF9E3B
-  '(line-number-current-line :weight bold :foreground "#51afef")
-  '(font-lock-keyword-face :foreground "#51afef")  ;; #FF9E3B
-  )
+  '(line-number :foreground "#ffffff")
+  '(line-number-current-line :weight bold :foreground "#51afef" :slant normal) ; Explicitly set slant
+  '(font-lock-keyword-face :foreground "#51afef")
+)
 
 ;; (defvar lawlist-blue (make-face 'lawlist-blue))
 ;; (set-face-attribute 'lawlist-blue nil
@@ -816,6 +817,22 @@ DIRECTION should be 1 for next, -1 for previous."
 (setq consult-ripgrep-args
         "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden")
 
+;; (setq read-file-name-function #'consult-find-file-with-preview)
+
+;; (defun consult-find-file-with-preview (prompt &optional dir default mustmatch initial pred)
+;;   "Like `find-file', but with consult preview and live-editable full path."
+;;   (interactive)
+;;   (let ((default-directory (or dir default-directory)))
+;;     (consult--read
+;;      #'read-file-name-internal
+;;      :state (consult--file-preview)
+;;      :prompt prompt
+;;      :initial (abbreviate-file-name default-directory)  ; Start with full path in the input field
+;;      :require-match mustmatch
+;;      :history 'file-name-history
+;;      :category 'file
+;;      :predicate pred)))
+
 ;; (setq consult-ripgrep-args
 ;;       '("rg"
 ;;         "--null"
@@ -836,6 +853,8 @@ DIRECTION should be 1 for next, -1 for previous."
         "\\`/[^/|:]+:"
         "\\.gpg\\'"))
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/consult-projectile/")
+(require 'consult-projectile)
 ;; (use-package dap-python
 ;;      :ensure t
 ;;      :config
@@ -954,6 +973,8 @@ DIRECTION should be 1 for next, -1 for previous."
   (setq-default pdf-view-display-size 'fit-height)
   :hook (pdf-view-mode . pdf-view-midnight-minor-mode))
 
+(custom-set-faces!
+ '(pdf-isearch-match :background "#ffcb6b" :foreground "#303030"))
 ;; ------------------------- terminals ----------------------------
 ;;
 (use-package multi-vterm)

@@ -418,7 +418,9 @@
         (require 'exwm-randr)
         (exwm-randr-mode)
         ;; disable this after having saved your config with autorandr --save <name-of-confg>
-        (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
+        ;; (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
+        (when (display-graphic-p)
+                (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
