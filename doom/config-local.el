@@ -343,7 +343,13 @@
   (let ((output (shell-command-to-string "/home/anthe/.dotfiles/scripts/switch_lights.py desk_lamp")))
     (message "%s" output)))
 
+(defun my-sync-pi-nas ()
+  (interactive)
+  (let ((output (async-shell-command "/home/anthe/.dotfiles/scripts/sync_nas.sh")))
+    (message "%s" output)))
+
 (map! :leader
+      :desc "Backup files to my NAS" "k b" #'my-sync-pi-nas
       :desc "Switch desk lamp" "k t l" #'my-switch-desk-lamp
       :desc "Switch sound system" "k t s" #'my-switch-sound-system
       :desc "Switch drive" "k t d" #'my-switch-drive-1
