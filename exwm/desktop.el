@@ -53,7 +53,8 @@
   (interactive)
   (start-process-shell-command
    ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
-   "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
+   ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/98315-deep-space-wallpaper-1920x1080.jpg"))
 
 
 ;; (defun toggle-frame-transparency ()
@@ -102,7 +103,7 @@
                                   :require-match
                                   (confirm-nonexistent-file-or-buffer)
                                   :prompt "Switch to: "
-                                  :initial "^Firefox"
+                                  :initial "^firefox: "
                                   :history 'consult--buffer-history
                                   :sort nil)))
     ;; For non-matching candidates, fall back to buffer creation.
@@ -263,55 +264,55 @@
 (require 'evil)
 (require 'exwm)
 
-(evil-define-state exwm
-  "`exwm state' interfacing exwm mode."
-  :tag " <X> "
-  :enable (motion)
-  :message "-- EXWM --"
-  :intput-method f
-  :entry-hook (evil-exwm-state/enter-exwm))
+;; (evil-define-state exwm
+;;   "`exwm state' interfacing exwm mode."
+;;   :tag " <X> "
+;;   :enable (motion)
+;;   :message "-- EXWM --"
+;;   :intput-method f
+;;   :entry-hook (evil-exwm-state/enter-exwm))
 
-(evil-define-state exwm-insert
-  "Replace insert state in `exwm state'."
-  :tag " <X> "
-  :enable (motion)
-  :message "-- EXWM-INSERT --"
-  :input-method t
-  :entry-hook (evil-exwm-state/enter-exwm-insert))
+;; (evil-define-state exwm-insert
+;;   "Replace insert state in `exwm state'."
+;;   :tag " <X> "
+;;   :enable (motion)
+;;   :message "-- EXWM-INSERT --"
+;;   :input-method t
+;;   :entry-hook (evil-exwm-state/enter-exwm-insert))
 
-(defun evil-exwm-state/escape-exwm ()
-  "Quit `evil-exwm-insert-state'."
-  (interactive)
-  (evil-exwm-state))
+;; (defun evil-exwm-state/escape-exwm ()
+;;   "Quit `evil-exwm-insert-state'."
+;;   (interactive)
+;;   (evil-exwm-state))
 
-(defun evil-exwm-state/enter-exwm-insert ()
-  "Quit `evil-exwm-insert-state'."
-  (call-interactively 'exwm-input-release-keyboard))
+;; (defun evil-exwm-state/enter-exwm-insert ()
+;;   "Quit `evil-exwm-insert-state'."
+;;   (call-interactively 'exwm-input-release-keyboard))
 
-(defun evil-exwm-state/enter-exwm ()
-  "Quit `evil-exwm-insert-state'."
-  (call-interactively 'exwm-input-grab-keyboard))
+;; (defun evil-exwm-state/enter-exwm ()
+;;   "Quit `evil-exwm-insert-state'."
+;;   (call-interactively 'exwm-input-grab-keyboard))
 
-(define-key evil-exwm-state-map "i" 'evil-exwm-insert-state)
+;; (define-key evil-exwm-state-map "i" 'evil-exwm-insert-state)
 
-;; Ensure initial state is char mode / exwm-insert
-(setq exwm-manage-configurations '((t char-mode t)))
-(evil-set-initial-state 'exwm-mode 'exwm-insert)
+;; ;; Ensure initial state is char mode / exwm-insert
+;; (setq exwm-manage-configurations '((t char-mode t)))
+;; (evil-set-initial-state 'exwm-mode 'exwm-insert)
 
-(defun my/leave-exwm ()
-  (exwm-input-grab-keyboard))
+;; (defun my/leave-exwm ()
+;;   (exwm-input-grab-keyboard))
 
-(defun my/set-exwm-to-line-mode ()
-  "Set the previous EXWM buffer to line mode."
-  (when (and (bound-and-true-p exwm--last-buffer)
-             (buffer-live-p exwm--last-buffer)
-             (with-current-buffer exwm--last-buffer exwm--buffer))
-    (with-current-buffer exwm--last-buffer
-      (exwm-input-grab-keyboard))))
+;; (defun my/set-exwm-to-line-mode ()
+;;   "Set the previous EXWM buffer to line mode."
+;;   (when (and (bound-and-true-p exwm--last-buffer)
+;;              (buffer-live-p exwm--last-buffer)
+;;              (with-current-buffer exwm--last-buffer exwm--buffer))
+;;     (with-current-buffer exwm--last-buffer
+;;       (exwm-input-grab-keyboard))))
 
-;; Use a timer to defer the action
-(defun my/leave-exwm ()
-  (run-at-time 0.1 nil 'exwm-input-grab-keyboard))
+;; ;; Use a timer to defer the action
+;; (defun my/leave-exwm ()
+;;   (run-at-time 2 nil 'exwm-input-grab-keyboard))
 
 (use-package exwm
   :config
@@ -321,7 +322,7 @@
   (setq exwm-workspace-number 11)
 
   ;; This is needed to switch between char and line mode (with evil in line mode)
-  (setq exwm-input-line-mode-passthrough t)
+  ;; (setq exwm-input-line-mode-passthrough t)
 
   ;; When window "class" updates, use it to set the buffer name
   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
@@ -365,7 +366,7 @@
       ?\M-m))
 
         ;; (push ?\i exwm-input-prefix-keys)
-        ;; (push (kbd "C-SPC") exwm-input-prefix-keys)
+        ;; (push (kbd "C-ESC") exwm-input-prefix-keys)
         ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
@@ -380,12 +381,14 @@
         `(
           ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
           ([?\s-r] . exwm-reset)
+          ([?\s-k] . exwm-input-release-keyboard)
+          ([?\s-l] . exwm-reset)
 
           ;; Move between windows
-          ([?\s-h] . windmove-left)
-          ([?\s-l] . windmove-right)
-          ([?\s-k] . windmove-up)
-          ([?\s-j] . windmove-down)
+          ;; ([?\s-h] . windmove-left)
+          ;; ([?\s-l] . windmove-right)
+          ;; ([?\s-k] . windmove-up)
+          ;; ([?\s-j] . windmove-down)
 
           ([?\s-v] . evil-window-vsplit)
           ([?\s-s] . evil-window-split)
@@ -424,7 +427,7 @@
 
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+        (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
@@ -515,6 +518,8 @@
         (shell-command "bash ~/.dotfiles/.config-touchpad.sh")
         (exwm-input-set-key  (kbd "s-h") 'windmove-left-or-hide-floating)
         (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
+        (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
+        (exwm-input-set-key (kbd "s-l") 'exwm-reset)
 
         (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
         (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))
@@ -524,17 +529,17 @@
         ;; (evil-normal-state)))
         ;; (add-hook 'buffer-list-update-hook #'my/exwm-ensure-normal-state)
 
-        (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
-        (add-hook 'exwm-workspace-switch-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
-        ;; (add-hook 'exwm-workspace-switch-hook 'exwm-input-grab-keyboard)
-        (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
-        (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
-        (general-define-key
-        :keymaps 'exwm-mode-map
-        :states 'normal
-        "i" #'exwm-input-release-keyboard)
+        ;; (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+        ;; (add-hook 'exwm-workspace-switch-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+        ;; ;; (add-hook 'exwm-workspace-switch-hook 'exwm-input-grab-keyboard)
+        ;; (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
+        ;; (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
+        ;; (general-define-key
+        ;; :keymaps 'exwm-mode-map
+        ;; :states 'normal
+        ;; "i" #'exwm-input-release-keyboard)
 
-        (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
+        ;; (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
 
 
   (exwm-wm-mode))
@@ -549,34 +554,34 @@
   (desktop-environment-brightness-normal-increment "5%+")
   (desktop-environment-brightness-normal-decrement "5%-"))
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/evil-exwm-state.el")
+;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/evil-exwm-state.el")
 
 ;; NOTE: not a solution yet, because I couldn't remap ESC which I really need in some ewxm windows (such as remote Emacs)
-;; (use-package! exwm-evil
-;;   :after exwm
-;;   :config
-;;   (add-hook 'exwm-manage-finish-hook #'enable-exwm-evil-mode)
-;;   ;; (cl-pushnew 'escape exwm-input-prefix-keys)
+(use-package! exwm-evil
+  :after exwm
+  :config
+  (add-hook 'exwm-manage-finish-hook #'enable-exwm-evil-mode)
+  (cl-pushnew 'escape exwm-input-prefix-keys)
 
-;;   ;; If you want to force enable exwm-evil-mode in any buffer, use:
-;;   ;; (exwm-evil-enable-unconditionally)
+  ;; If you want to force enable exwm-evil-mode in any buffer, use:
+  ;; (exwm-evil-enable-unconditionally)
 
-;;   ;; We will disable `C-c' in insert state.
-;;   (define-key exwm-mode-map (kbd "C-c") nil)
-;;   (define-key exwm-mode-map (kbd "ESC") nil)
+  ;; We will disable `C-c' in insert state.
+  (define-key exwm-mode-map (kbd "C-c") nil)
+  ;; (define-key exwm-mode-map (kbd "escape") nil)
 
-;;   (map! :map exwm-mode-map
-;;         :localleader
-;;         (:prefix ("d" . "debug")
-;;          :desc "Clear debug buffer" "l" #'xcb-debug:clear
-;;          :desc "Insert mark into the debug buffer" "m" #'xcb-debug:mark
-;;          :desc "Enable debug logging" "t" #'exwm-debug)
-;;         :desc "Toggle fullscreen" "f" #'exwm-layout-toggle-fullscreen
-;;         :desc "Hide floating window" "h" #'exwm-floating-hide
-;;         :desc "Send next key" "q" #'exwm-input-send-next-key
-;;         :desc "Toggle floating" "SPC" #'exwm-floating-toggle-floating
-;;         :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
-;;         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
+  (map! :map exwm-mode-map
+        :localleader
+        (:prefix ("d" . "debug")
+         :desc "Clear debug buffer" "l" #'xcb-debug:clear
+         :desc "Insert mark into the debug buffer" "m" #'xcb-debug:mark
+         :desc "Enable debug logging" "t" #'exwm-debug)
+        :desc "Toggle fullscreen" "f" #'exwm-layout-toggle-fullscreen
+        :desc "Hide floating window" "h" #'exwm-floating-hide
+        :desc "Send next key" "q" #'exwm-input-send-next-key
+        :desc "Toggle floating" "SPC" #'exwm-floating-toggle-floating
+        :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
+        :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
 (defun my-exwm-workspace-switch-to-buffer (orig-func buffer-or-name &rest args)
 (when buffer-or-name
@@ -595,7 +600,7 @@
 
 
 
-(global-set-key (kbd "s-l") 'windmove-right)
+;; (global-set-key (kbd "s-l") 'windmove-right)
 (global-set-key (kbd "s-x") 'evil-window-exchange)
 
 (defvar is-window-floating nil
@@ -613,18 +618,7 @@
     (windmove-left)))
 
 
-;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/desktop-environment-/")
-;; (require 'desktop-environment)
-;; (use-package desktop-environment
-;;   :after exwm
-;;   :config (desktop-environment-mode)
-;;   :custom
-;;   (desktop-environment-brightness-small-increment "2%+")
-;;   (desktop-environment-brightness-small-decrement "2%-")
-;;   (desktop-environment-brightness-normal-increment "5%+")
-;;   (desktop-environment-brightness-normal-decrement "5%-")
-
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
+;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 
 ;; ---------- ivy and counsel -------------------
 ;; Customize the appearance of the ivy-current-match face

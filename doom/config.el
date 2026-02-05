@@ -35,12 +35,8 @@
 ;; Removes the background color that was set in the early init (which turns the annoying white splash screen from vanilla emacs to a color)
 (setq default-frame-alist (assq-delete-all 'background-color default-frame-alist))
 (setq default-frame-alist (assq-delete-all 'foreground-color default-frame-alist))
-;; (setq doom-theme 'doom-nord)
-;; (setq doom-theme 'doom-palenight)
-;; (setq doom-theme 'doom-outrun-electric)
-(setq doom-theme 'doom-material-dark)
-;; (setq doom-theme 'doom-challenger-deep)
 
+(setq doom-theme 'doom-ayu-dark)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -125,7 +121,7 @@
 
 
 (setq dired-kill-when-opening-new-dired-buffer t)
-;; (setq dired-omit-extensions (remove "~" dired-omit-extensions))
+(setq dired-omit-extensions '(".o" ".bin" ".lbin" ".so" ".a" ".ln" ".blg" ".bbl" ".elc" ".lof" ".glo" ".idx" ".lot" ".svn/" ".hg/" ".git/" ".bzr/" "CVS/" "_darcs/" "_MTN/" ".fmt" ".tfm" ".class" ".fas" ".lib" ".mem" ".x86f" ".sparcf" ".dfsl" ".pfsl" ".d64fsl" ".p64fsl" ".lx64fsl" ".lx32fsl" ".dx64fsl" ".dx32fsl" ".fx64fsl" ".fx32fsl" ".sx64fsl" ".sx32fsl" ".wx64fsl" ".wx32fsl" ".fasl" ".ufsl" ".fsl" ".dxl" ".lo" ".la" ".gmo" ".mo" ".toc" ".aux" ".cp" ".fn" ".ky" ".pg" ".tp" ".vr" ".cps" ".fns" ".kys" ".pgs" ".tps" ".vrs" ".pyc" ".pyo" ".idx" ".lof" ".lot" ".glo" ".blg" ".bbl" ".cp" ".cps" ".fn" ".fns" ".ky" ".kys" ".pg" ".pgs" ".tp" ".tps" ".vr" ".vrs"))
 
 (require 'dirvish)
 (setq dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln" "xcf" "ncap2.temp" "pid*" "odp"))
@@ -262,6 +258,7 @@
           "^Output\\*$"
           "^\\*Async Shell Command\\*"
           "^\\*vterm"
+          "^\\*Python"
           ;; "^\\*vterminal<\\([0-9]+\\)>\\*"  ; Match all vterminal instances
           "^*compilation"
           help-mode
@@ -371,6 +368,15 @@
 ;;           (lambda ()
 ;;             (local-set-key (kbd "KEY_SEQUENCE") 'command)))
 
+(define-key evil-normal-state-map (kbd "C-d")
+  (lambda () (interactive) (evil-scroll-down 0.5) (evil-scroll-line-to-center nil)))
+(define-key evil-normal-state-map (kbd "C-u")
+  (lambda () (interactive) (evil-scroll-up 0.5) (evil-scroll-line-to-center nil)))
+
+(define-key evil-normal-state-map (kbd "C-w v") #'+evil/window-vsplit-and-follow)
+(define-key evil-normal-state-map (kbd "C-w s") #'+evil/window-split-and-follow)
+;; (define-key evil-normal-state-map "j" 'evil-next-visual-line)
+;; (define-key evil-normal-state-map "k" 'evil-previous-visual-line)
 
 ;; (after! python
 ;;   (map! :leader
@@ -470,6 +476,8 @@ DIRECTION should be 1 for next, -1 for previous."
 
 ;; Keybindings
 (map! :leader
+        :desc "Evil v split and follow" "w v" #'+evil/window-vsplit-and-follow
+        :desc "Evil h split and follow" "w s" #'+evil/window-split-and-follow
         :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
         :desc "Switch to Firefox buffer" "b f" #'my/switch-to-firefox-buffer
         :desc "Next shell buffer" "t n" #'my-next-shell-buffer
@@ -855,6 +863,26 @@ DIRECTION should be 1 for next, -1 for previous."
 
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/consult-projectile/")
 (require 'consult-projectile)
+
+(use-package company
+  :hook (emacs-startup . global-company-mode)
+  :bind (:map company-active-map
+              ("<tab>" . 'company-complete-selection)
+              ("C-l" . 'company-complete-selection)
+              ("C-j" . 'company-select-next)
+              ("C-k" . 'company-select-previous)
+              ("C-h" . 'company-abort))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-tooltip-align-annotations t)
+  (company-require-match 'never)
+  (company-idle-delay 0.5)
+  (company-show-numbers t))
+
+(with-eval-after-load 'company
+  (define-key company-active-map (kbd "<return>") nil)
+  (define-key company-active-map (kbd "RET") nil))
+
 ;; (use-package dap-python
 ;;      :ensure t
 ;;      :config
@@ -1066,6 +1094,13 @@ DIRECTION should be 1 for next, -1 for previous."
         (preview . "${author editor:%etal} (${year issued date}) ${title}, ${journal journaltitle publisher container-title collection-title}.\n")
         (note . "Notes on ${author editor:%etal}, ${title}")))
 
+(setq citar-open-prompt
+      '(citar-attach-files citar-open citar-open-note))
+
+(setq citar-file-open-functions
+      '(("html" . citar-file-open-external)
+        (t . find-file)))
+
 (defun clean-bibtex-entry()
   "Format the current BibTeX entry without wrapping lines."
   (interactive)
@@ -1125,7 +1160,21 @@ DIRECTION should be 1 for next, -1 for previous."
           (kill-buffer)
           (decode-coding-string (string-trim string) 'utf-8))))
     (clean-bibtex-entry)
-    (add-file-entry)))
+    (add-file-entry)
+    (let ((key (get-citation-key)))
+      (when key
+        (download-pdf-from-doi doi key)))))
+
+(defun download-pdf-from-doi (doi key)
+  "Download PDF for DOI and save as KEY.pdf using the Python script.
+The command runs asynchronously in the background."
+  (let ((command (format "python3 /home/anthe/.dotfiles/scripts/doi2pdf.py \"%s\" \"%s\""
+                         doi key)))
+    (start-process-shell-command
+     "download-pdf"  ; Name of the process (arbitrary)
+     nil              ; No output buffer
+     command)         ; Command to run
+    (message "Downloading PDF for %s in the background..." key)))
 
 (defun get-citation-key ()
   "Extract the citation key from the BibTeX entry at point."
@@ -1223,6 +1272,7 @@ DIRECTION should be 1 for next, -1 for previous."
  :stream t
  :models '(
            mistral-large-latest
+           mistral-small
            )))
 
 (defun my-gptel-mode-setup ()
