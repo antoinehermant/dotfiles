@@ -1143,10 +1143,9 @@ DIRECTION should be 1 for next, -1 for previous."
   (re-search-forward "keywords = {"))
 
 (require 'url-http)
-(defun insert-bibtex-from-doi ()
-  (interactive)
-  (let* ((doi (string-trim (gui-get-primary-selection)))
-         (url (if (string-prefix-p "https://doi.org/" doi)
+(defun insert-bibtex-from-doi (doi)
+  (interactive "sDOI: ")
+  (let* ((url (if (string-prefix-p "https://doi.org/" doi)
                   doi
                 (concat "https://doi.org/" doi)))
          (url-request-method "GET")
@@ -1183,20 +1182,27 @@ The command runs asynchronously in the background."
     (re-search-backward "^@\\(Article\\|Book\\|InProceedings\\|PhdThesis\\|TechReport\\|Misc\\){\\([^,]*\\)," nil t)
     (match-string 2)))
 
-(defvar default-bib "~/phd/bib/phd.bib")
+(defvar default-bib "/home/anthe/phd/bib/phd.bib")
 (defun add-doi-to-my-bib ()
   (interactive)
+  (let ((doi (read-string "DOI: ")))
+    (if (search-doi-in-bib doi)
+        (message "DOI already exists in the BibTeX file!")
+      (popper-toggle)
+      (let ((buffer (find-file default-bib)))
+        (with-current-buffer buffer
+          (goto-char (point-max))
+          (insert "\n")
+          (insert-bibtex-from-doi doi)
+          (save-buffer)))
+      (message "DOI added to the BibTeX file!"))))
 
-  (popper-toggle)
-
-  (let ((buffer (find-file default-bib)))
-    (with-current-buffer buffer
-      (goto-char (point-max))
-      (insert "\n")
-      (insert-bibtex-from-doi)
-      (save-buffer)))
-  (save-buffer))
-
+(defun search-doi-in-bib (doi)
+  "Check if the DOI exists in the default BibTeX file using a Python script.
+Returns t if the DOI exists, nil otherwise."
+  (let ((command (format "python3 /home/anthe/.dotfiles/scripts/doiexistsinbib.py \"%s\" \"%s\""
+                         doi default-bib)))
+    (string-equal "True" (string-trim (shell-command-to-string command)))))
 
 (setq org-latex-pdf-process
       '("pdflatex -interaction nonstopmode -output-directory %o %f"
