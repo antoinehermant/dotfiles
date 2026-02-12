@@ -27,6 +27,20 @@ def doi_to_pdf_url(doi):
         pdf_url = f"https://{journal}.copernicus.org/articles/{volume}/{page}/{year}/{journal}-{volume}-{page}-{year}.pdf"
         return pdf_url
 
+    elif "10.1007" in doi:
+        doi = doi.split("10.1007")[-1]
+        doi = "10.1007" + doi
+        doi_identifier = doi.split("/")[-1]
+        pdf_url = f"https://link.springer.com/content/pdf/{doi}.pdf"
+        return pdf_url
+
+    elif "10.1038" in doi:
+        doi = doi.split("10.1038")[-1]
+        doi = "10.1038" + doi
+        doi_identifier = doi.split("/")[-1]
+        pdf_url = f"https://www.nature.com/articles/{doi_identifier}.pdf"
+        return pdf_url
+
     for prefix in ["10.3189", "10.1017"]:
         if prefix in doi:
             doi = doi.split(f"{prefix}")[-1]
