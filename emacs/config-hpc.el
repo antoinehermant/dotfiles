@@ -19,10 +19,26 @@
 ;;
 ;;; Code:
 
-(provide 'machine-specific)
 
-;; (setq doom-theme 'doom-challenger-deep)
-(setq doom-theme 'doom-material-dark)
+(add-to-list 'load-path "~/.config/emacs/.local/")
+
+(add-to-list 'load-path "~/.dotfiles/emacs/")
+(require 'config-core)
+
+(add-to-list 'load-path "~/.dotfiles/emacs/modules")
+(require 'anthe-comp)
+(require 'anthe-consult)
+(require 'anthe-dap)
+(require 'anthe-evil)
+(require 'anthe-file-manager)
+(require 'anthe-lsp)
+(require 'anthe-org)
+(require 'anthe-pdf)
+(require 'anthe-popper)
+(require 'anthe-python)
+(require 'anthe-vterm)
+
+(setq doom-theme 'doom-ayu-dark)
 ;;(add-to-list 'load-path "~/software/emacs-libvterm")
 
 (setq exec-path (append exec-path '("/software.9/software/CMake/3.26.3-GCCcore-12.3.0/bin")))
@@ -80,8 +96,7 @@
 (toggle-frame-transparency)
 (toggle-frame-transparency)
 
-(setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
-
+;; (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
 (setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/")
 
 (when (memq window-system '(mac ns x))
@@ -106,4 +121,6 @@
 ;;              `(python-mode . ("/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/bin/pyright-langserver")))
 (setq eglot-server-programs
       `((python-mode . ("~/software/pyright-wrapper"))))
-;;; machine-specific.el ends here
+
+(provide 'config-ubelix)
+;;; config-ubelix.el ends here

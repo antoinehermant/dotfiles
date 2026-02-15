@@ -21,9 +21,6 @@ I am a PhD student in Physics, focusing on glaciology. I do numerical modelling.
 - LLM assistant client (gptel, my favorite LLM is Mistral/Codestral)
 - Window manager (exwm): managing my none-emacs buffers (Firefox, discord, Spotify, ncview, matplotlib, Ardour...).
 
-* Notes
-I use doom as base configuration and exwm. My configuration is not that special, I try to keep it minimal and efficient, but still appealing. *One thing* that might be *special* is that I do my work on an HPC, on which I run the same emacs configuration. So I basically have an emacs session running inside my emacs. This kinda feels like *inception*. I am doing this because I find it easier to set up the whole IDE on the HPC than through tramp (even though I use it from time to time for quick edits and ediff). But so this requires some few hooks and tricks to make it smooth between the local and remote emacs sessions. This works fine, but I am still testing things and I will try to document it better. And I have a specific-machine.el file which points to the reevant file containing system specific configuration or emacs packages for different purposes. Feel free to ask! *EDIT*: I am setting up a neovim config for lightweight editing. Typically when connecting to the HPC and that I don't want/need my full emacs config.
-
 ** System:
 - Laptop: Dell inspiron 14 5420
 - CPU: 12th Gen Intel i7-1255U (12) @ 4.700GHz

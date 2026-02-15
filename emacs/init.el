@@ -87,7 +87,7 @@
 
        :tools
        ;;ansible
-       biblio            ; Writes a PhD for you (citation needed)
+       ;; biblio            ; Writes a PhD for you (citation needed)
        ;;collab            ; buffers with friends
        (debugger +lsp)          ; FIXME stepping through code, to help you add bugs
        ;;direnv
@@ -154,9 +154,9 @@
        ;;nim               ; python + lisp at the speed of c
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
-        (org
-	  +roam2          ; organize your plain life in plain text
-         +journal)
+        org
+	 ;;  +roam2          ; organize your plain life in plain text
+         ;; +journal)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;graphviz          ; diagrams for confusing yourself even more
@@ -181,7 +181,7 @@
        ;;zig               ; C, but simpler
 
        :email
-       (mu4e +org)
+       ;; (mu4e +org)
              ;; +gmail)
        ;;notmuch
        ;;(wanderlust +gmail)

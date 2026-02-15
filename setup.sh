@@ -1,9 +1,19 @@
 #!/bin/bash
 
-ln -sf ~/.dotfiles/.bash_aliases ~/.bash_aliases
+ln -sf ~/.dotfiles/bash/.bash_aliases ~/.bash_aliases
+ln -sf ~/.dotfiles/bash/.bash_functions ~/.bash_functions
+ln -sf ~/.dotfiles/bash/.bash_exports ~/.bash_exports
+ln -sf ~/.dotfiles/bash/.bash_tweaks ~/.bash_tweaks
 
-#rm -f ~/.config/doom/*
-ln -sf ~/.dotfiles/doom/* ~/.config/doom/
+ln -sf ~/.dotfiles/.mbsyncrc ~/.mbsyncrc
+
+ln -sf ~/.dotfiles/.ncviewrc ~/.ncviewrc
+
+
+#RM -f ~/.config/doom/*
+ln -sf ~/.dotfiles/emacs/config-local.el ~/.config/doom/config.el
+ln -sf ~/.dotfiles/emacs/init.el ~/.config/doom/
+ln -sf ~/.dotfiles/emacs/packages.el ~/.config/doom/
 ln -sf ~/.dotfiles/exwm/* ~/.config/exwm/
 
 # I did not manage to make it a hardlink, and soft link does not work (exwm not in WM list)

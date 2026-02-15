@@ -184,40 +184,6 @@
       (setq exwm-frame-toggle nil)))
 
 
-(defvar exwm-local-mode t "Whether EXWM is in local mode.")
-
-(defun exwm-toggle-local-mode ()
-  "Toggle between local and remote mode in EXWM and update prefix keys."
-  (interactive)
-  (setq exwm-local-mode (not exwm-local-mode))
-  (if exwm-local-mode
-      (progn
-        (setq exwm-input-prefix-keys
-              '(?\C-x
-                ?\C-c
-                ;; ?\C-u
-                ?\C-h
-                ?\M-x
-                ?\M-`
-                ?\M-&
-                ?\M-:
-                ?\C-\M-j  ;; Buffer list
-                ?\C-`
-                ?\C-\ ))  ;; Ctrl+Space
-        (message "EXWM local mode"))
-    (progn
-      (setq exwm-input-prefix-keys '())  ;; Clear prefix keys for remote mode
-      (message "EXWM remote mode"))))
-
-;; Function to set transparency
-(defun set-window-transparency (transparency)
-  "Set the transparency of the current window."
-  (let ((win-id (window-id (selected-window))))
-    (call-process "xprop" nil nil nil
-                  "-id" (number-to-string win-id)
-                  "-f" "_NET_WM_WINDOW_OPACITY" "32c"
-                  "-set" "_NET_WM_WINDOW_OPACITY" (number-to-string transparency))))
-
 (defun efs/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
@@ -229,20 +195,12 @@
   (exwm-randr-refresh)
   (efs/set-wallpaper))
 
-;; Hook to set transparency based on workspace
-(defun my-exwm-workspace-transparency ()
-  "Set transparency based on the current workspace."
-  (let ((workspace (exwm-workspace-number (exwm-get-workspace))))
-    (cond
-     ((= workspace 1) (set-window-transparency 255)) ; No transparency for workspace 1
-     ((= workspace 2) (set-window-transparency 200)) ; Some transparency for workspace 2
-     ((= workspace 3) (set-window-transparency 150)) ; More transparency for workspace 3
-     ;; Add more conditions for other workspaces as needed
-     )))
 ;; Bind the toggle function to the Super key
 (defun efs/exwm-update-title ()
   (when (string-match-p "firefox" exwm-class-name)
     (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))
+  (when (string-match-p "qutebrowser" exwm-class-name)
+    (exwm-workspace-rename-buffer (format "Qutebrowser: %s" exwm-title)))
   (when (string-match-p "Ncview" exwm-class-name)
     (exwm-workspace-rename-buffer (format "Ncview: %s" exwm-title))))
 
@@ -427,7 +385,7 @@
 
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
-        (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
@@ -544,6 +502,7 @@
 
   (exwm-wm-mode))
 
+
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/desktop-environment-20230903.1229/")
 (use-package desktop-environment
   :after exwm
@@ -556,7 +515,8 @@
 
 ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/evil-exwm-state.el")
 
-;; NOTE: not a solution yet, because I couldn't remap ESC which I really need in some ewxm windows (such as remote Emacs)
+;; (use-package! exwm-evil :recipe
+;;   (:host github :repo "LemonBreezes/exwm-evil"))
 (use-package! exwm-evil
   :after exwm
   :config
@@ -596,7 +556,7 @@
 ;; (advice-add 'exwm-floating-toggle-floating :before 'delete-other-windows)
 
 ;; remap capslock to ctrl
-(shell-command "xmodmap ~/.dotfiles/doom/Xmodmap")
+(shell-command "xmodmap ~/.dotfiles/exwm/Xmodmap")
 
 
 
@@ -649,20 +609,6 @@
 ;; (use-package ivy-rich
 ;;   :init
 ;;   (ivy-rich-mode 1))
-
-;; (use-package counsel
-;;   :bind (("C-M-j" . 'counsel-switch-buffer)
-;;          :map minibuffer-local-map
-;;          ("C-r" . 'counsel-minibuffer-history))
-;;   :config
-
-;;   (counsel-mode 1))
-
-;; (require 'counsel)
-;; ;; Configure counsel
-;; (use-package counsel
-;; :custom
-;; (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only))
 
 ;; (setq vertico-multiform-mode nil)
 

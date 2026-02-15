@@ -1,0 +1,19 @@
+#!/bin/bash
+
+export NCVIEWBASE=/home/anthe/software/ncmaps/ncmaps/
+export PATH="$HOME/.config/emacs/bin:$PATH"
+export DOOMDIR=~/.config/doom
+
+if [ -n "$INSIDE_EMACS" ]; then
+    export EDITOR="emacsclient -n"
+    export VISUAL="emacsclient -n"
+else
+    export EDITOR="emacs -nw"
+    export VISUAL="emacs -nw"
+fi
+
+EMACS=/usr/local/emacs29.3-x11
+export PATH=$EMACS/bin:$PATH
+
+export PATH="$PATH:/home/anthe/.local/bin"
+export PATH="$PATH:/home/anthe/software/elsa/bin"

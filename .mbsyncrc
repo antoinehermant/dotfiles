@@ -1,0 +1,206 @@
+# ------------------ Gmail -----------------------------------
+
+IMAPAccount gmail
+Host imap.gmail.com
+User ah74230@gmail.com
+PassCmd "cat ~/.secrets/.oh-no-insecure-password"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+Subfolders Verbatim
+Path ~/documents/mail/Gmail/
+Inbox ~/documents/mail/Gmail/INBOX
+# Trash [Gmail]/Bin/
+
+# With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
+# 'Near' instead of 'Slave'.
+Channel gmail
+Far :gmail-remote:
+Near :gmail-local:
+Patterns  ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
+Expunge Both
+Create Both
+SyncState *
+
+# Channel gmail-inbox
+# Far :gmail-remote:
+# Near :gmail-local:
+# Patterns "INBOX"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail-trash
+# Far :gmail-remote:"[Gmail]/Bin"
+# Near :gmail-local:"[Gmail].Bin"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail-sent
+# Far :gmail-remote:"[Gmail]/Sent Mail"
+# Near :gmail-local:"[Gmail].Sent Mail"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail-all
+# Far :gmail-remote:"[Gmail]/All Mail"
+# Near :gmail-local:"[Gmail].All Mail"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail-starred
+# Far :gmail-remote:"[Gmail]/Starred"
+# Near :gmail-local:"[Gmail].Starred"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Group gmail
+# Channel gmail-inbox
+# Channel gmail-sent
+# Channel gmail-trash
+# Channel gmail-all
+# Channel gmail-starred
+
+# ------------------ Gmail2 -----------------------------------
+IMAPAccount work
+Host imap.gmail.com
+User antoine.hermant74@gmail.com
+PassCmd "cat ~/.secrets/.oh-no-insecure-password-gmail2"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore work-remote
+Account work
+
+MaildirStore work-local
+Subfolders Verbatim
+Path ~/documents/mail/Work/
+Inbox ~/documents/mail/Work/INBOX
+# Trash [Gmail]/Bin/
+
+# With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
+# 'Near' instead of 'Slave'.
+Channel work
+Far :work-remote:
+Near :work-local:
+Patterns ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
+Expunge Both
+Sync All
+Create Both
+SyncState *
+
+# Channel gmail2-inbox
+# Far :gmail2-remote:
+# Near :gmail2-local:
+# Patterns "INBOX"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail2-trash
+# Far :gmail2-remote:"[Gmail]/Bin"
+# Near :gmail2-local:"[Gmail].Bin"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail2-sent
+# Far :gmail2-remote:"[Gmail]/Sent Mail"
+# Near :gmail2-local:"[Gmail].Sent Mail"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail2-all
+# Far :gmail2-remote:"[Gmail]/All Mail"
+# Near :gmail2-local:"[Gmail].All Mail"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Channel gmail2-starred
+# Far :gmail2-remote:"[Gmail]/Starred"
+# Near :gmail2-local:"[Gmail].Starred"
+# Create Both
+# Expunge Both
+# SyncState *
+
+# Group gmail2
+# Channel gmail2-inbox
+# Channel gmail2-sent
+# Channel gmail2-trash
+# Channel gmail2-all
+# Channel gmail2-starred
+
+# ------------------- Infomaniak --------------------------------------------------------------------------------------------------
+IMAPAccount infomaniak
+Host mail.infomaniak.com
+Port 993
+User antoine.hermant@etik.com
+PassCmd "cat ~/.secrets/.oh-no-insecure-password-infomaniak"
+SSLType IMAPS
+SSLVersions TLSv1.2
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore infomaniak-remote
+Account infomaniak
+
+MaildirStore infomaniak-local
+Path ~/documents/mail/Infomaniak/
+Inbox ~/documents/mail/Infomaniak/Inbox/
+SubFolders Verbatim
+
+# With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
+# 'Near' instead of 'Slave'.
+Channel infomaniak
+Far :infomaniak-remote:
+Near :infomaniak-local:
+Patterns *
+Expunge Both
+CopyArrivalDate yes
+Sync All
+Create Both
+SyncState *
+
+
+# UNIBE -------------------------------------------------
+# IMAPAccount unibe
+# # Host mail.campus.unibe.ch
+# Host outlook.office365.com
+# Port 993
+# User antoine.hermant@unibe.ch
+# # PassCmd "cat ~/.oh-no-insecure-password-unibe"
+# AuthMechs OAuth2
+# SSLType IMAPS
+# SSLVersions TLSv1.2
+# CertificateFile /etc/ssl/certs/ca-certificates.crt
+# # SSLVerify None
+
+# IMAPStore unibe-remote
+# Account unibe
+
+# MaildirStore unibe-local
+# Path ~/documents/mail/unibe/
+# Inbox ~/documents/mail/unibe/Inbox/
+# Trash ~/documents/mail/unibe/Trash/
+# SubFolders Verbatim
+
+# # With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
+# # 'Near' instead of 'Slave'.
+# Channel unibe
+# Far :unibe-remote:
+# Near :unibe-local:
+# Patterns *
+# Expunge None
+# CopyArrivalDate yes
+# Sync All
+# Create Both
+# SyncState *
