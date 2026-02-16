@@ -19,9 +19,16 @@
 ;;
 ;;; Code:
 
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/elpy/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/jupyter/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/emacs-web-server/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/emacs-websocket/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/python-mode/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/virtualenv.el/")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/pipenv.el/")
 (use-package! elpy)
 (use-package! jupyter)
-(use-package! python-mode)
+;; (use-package! python-mode)
 (use-package! virtualenv)
 (use-package! pipenv)
 
@@ -62,8 +69,8 @@
 (defun my-run-cell-and-forward-cell ()
   "Run current cell in shell buffer, move to next cell and center."
   (interactive)
-  (code-cells-eval)
-  (code-cells-forward-cell)
+  (call-interactively #'code-cells-eval)
+  (call-interactively #'code-cells-forward-cell)
   (evil-scroll-line-to-center nil))
 
 (defun my-python-mode-setup ()

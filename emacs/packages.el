@@ -53,6 +53,7 @@
 (package! solaire-mode :disable t)
 (package! tldr)
 (package! code-cells)
+(package! popper)
 (package! dash)
 (package! f)
 (package! pkg-info)

@@ -19,19 +19,19 @@
 ;;
 ;;; Code:
 
-(setq ibuffer-formats
-        '((mark modified read-only locked " "
-                (name 40 40 :left :elide)
-                " "
-                (size 7 -1 :right)
-                " "
-                (mode 12 12 :left :elide)
-                " "
-                (vc-status 9 :left)
-                " " filename-and-process)
-        (mark " "
-                (name 10 -1)
-                " " filename)))
+;; (setq ibuffer-formats
+;;         '((mark modified read-only locked " "
+;;                 (name 40 40 :left :elide)
+;;                 " "
+;;                 (size 7 -1 :right)
+;;                 " "
+;;                 (mode 12 12 :left :elide)
+;;                 " "
+;;                 (vc-status 9 :left)
+;;                 " " filename-and-process)
+;;         (mark " "
+;;                 (name 10 -1)
+;;                 " " filename)))
 
 (require 'dirvish)
 
@@ -62,7 +62,7 @@
 
 (setq dired-kill-when-opening-new-dired-buffer t)
 
-(load "~/.config/emacs/.local/dired-x.el")
+;; (load "~/.config/emacs/.local/dired-x.el")
 
 (dired-async-mode)
 

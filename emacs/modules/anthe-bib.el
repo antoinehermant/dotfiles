@@ -59,6 +59,7 @@
   (re-search-forward "keywords = {"))
 
 (require 'url-http)
+(defvar default-bib-download-path "/home/anthe/library/research/papers/")
 (defun insert-bibtex-from-doi (doi)
   (interactive "sDOI: ")
   (let* ((url (if (string-prefix-p "https://doi.org/" doi)
@@ -78,13 +79,14 @@
     (add-file-entry)
     (let ((key (get-citation-key)))
       (when key
-        (download-pdf-from-doi doi key)))))
+        (download-pdf-from-doi doi key default-bib-download-path)))))
 
-(defun download-pdf-from-doi (doi key)
+;;NOTE: We could add here or in the python script an conditions to download it in inbox or preprints (could also be an option when calling add doi to bib)
+(defun download-pdf-from-doi (doi key dir)
   "Download PDF for DOI and save as KEY.pdf using the Python script.
 The command runs asynchronously in the background."
-  (let ((command (format "python3 /home/anthe/projects/personal/scripts/research/doi2pdf.py \"%s\" \"%s\""
-                         doi key)))
+  (let ((command (format "/home/anthe/software/miniconda3/envs/generic/bin/python /home/anthe/projects/personal/scripts/research/doi2pdf.py \"%s\" \"%s\" \"%s\""
+                         doi key dir)))
     (start-process-shell-command
      "download-pdf"  ; Name of the process (arbitrary)
      nil              ; No output buffer
@@ -98,6 +100,7 @@ The command runs asynchronously in the background."
     (re-search-backward "^@\\(Article\\|Book\\|InProceedings\\|PhdThesis\\|TechReport\\|Misc\\){\\([^,]*\\)," nil t)
     (match-string 2)))
 
+;;NOTE: This could be replaced by citar bib file for example
 (defvar default-bib "/home/anthe/library/research/research.bib")
 (defun add-doi-to-my-bib ()
   (interactive)

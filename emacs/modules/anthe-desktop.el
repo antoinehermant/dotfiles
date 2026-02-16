@@ -19,32 +19,17 @@
 ;;
 ;;; Code:
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/disable-mouse-20240604.900/")
 (use-package! disable-mouse
    :config
    ;; (global-disable-mouse-mode t)
    )
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/inhibit-mouse-20260215.2013/")
 ;; more elaborate than disable-mouse, like it handles evil better
 (use-package! inhibit-mouse
   :config
   ;; (inhibit-mouse-mode)
   )
-
-(use-package! openwith
-  :config
-  (setq openwith-associations
-        `(,(list (openwith-make-extension-regexp '("nc"))
-                 "ncview"
-                 '(file))
-          ,(list (openwith-make-extension-regexp '("mp4"))
-                 "mpv"
-                 '(file))
-          ,(list (openwith-make-extension-regexp '("WAV"))
-                 "vlc"
-                 '(file))
-          ,(list (openwith-make-extension-regexp '("ods"))
-                 "libreoffice --calc"
-                 '(file))))
-  (openwith-mode t))
 
 (defun my-open-current-buffer-externally ()
   "Open current buffer's file with appropriate application."

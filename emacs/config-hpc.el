@@ -32,6 +32,7 @@
 (require 'anthe-evil)
 (require 'anthe-file-manager)
 (require 'anthe-lsp)
+(require 'anthe-openwith)
 (require 'anthe-org)
 (require 'anthe-pdf)
 (require 'anthe-popper)

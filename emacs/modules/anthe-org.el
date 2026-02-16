@@ -19,6 +19,7 @@
 ;;
 ;;; Code:
 
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/org-bullets/")
 (use-package org-bullets
   ;; :after org
   :hook (org-mode . org-bullets-mode)
@@ -26,6 +27,7 @@
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/org-inline-pdf.el/")
 (use-package org-inline-pdf)
 
 (provide 'anthe-org)

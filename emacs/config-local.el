@@ -32,13 +32,14 @@
 (require 'anthe-comp)
 (require 'anthe-consult)
 (require 'anthe-dap)
-(require 'anthe-desktop)
+;; (require 'anthe-desktop)
 (require 'anthe-evil)
 (require 'anthe-file-manager)
 (require 'anthe-gptel)
 (require 'anthe-latex)
 (require 'anthe-lsp)
 (require 'anthe-mu4e)
+(require 'anthe-openwith)
 (require 'anthe-org)
 (require 'anthe-pdf)
 (require 'anthe-popper)
@@ -48,8 +49,8 @@
 (require 'anthe-vterm)
 (require 'anthe-workflow)
 
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-present/")
 (use-package! org-present)
-(use-package! org-inline-pdf)
 
 (map! :leader
       :desc "App launcher" "\\" #'app-launcher-run-app)
@@ -57,6 +58,7 @@
 (setq pyvenv-default-virtual-env-name  "/home/anthe/software/miniconda3/envs/")
 
 (setq org-present-startup-folded t)
+(setq popper-window-height (floor (* (frame-height) 0.3)))
 
 
 (defun ubelix-emacs ()

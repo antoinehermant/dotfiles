@@ -19,8 +19,6 @@
 ;;
 ;;; Code:
 
-(use-package! gptel)
-
 (require 'json)
 
 (defvar my-api-keys nil
@@ -38,6 +36,7 @@
 
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/gptel/")
 (require 'gptel)
+(require 'gptel-curl)
 
 (setq gptel-default-mode 'org-mode)
 
@@ -80,7 +79,7 @@
       (:prefix ("k g" . "gptel")
       :desc "gptel mode" " m" #'gptel-mode
       :desc "Open gptel" "o" #'gptel
-      :desc "Eval region in gptel (gptel-send)" "s" #'gptel-send)
+      :desc "Eval region in gptel (gptel-send)" "s" #'gptel-send))
 
 (provide 'anthe-gptel)
 ;;; anthe-gptel.el ends here

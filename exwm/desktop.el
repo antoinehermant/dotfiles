@@ -40,9 +40,8 @@
 ;;
 ;;
 
-;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/exwm-0.34/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.21/")
-(require 'exwm)
+;; (require 'exwm)
 ;; (require 'exwm-config)
 
 
@@ -220,7 +219,7 @@
 (global-set-key (kbd "s-t m") 'my-toggle-mouse)
 
 (require 'evil)
-(require 'exwm)
+;; (require 'exwm)
 
 ;; (evil-define-state exwm
 ;;   "`exwm state' interfacing exwm mode."
@@ -272,7 +271,9 @@
 ;; (defun my/leave-exwm ()
 ;;   (run-at-time 2 nil 'exwm-input-grab-keyboard))
 
-(use-package exwm
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/exwm/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/xelb/")
+(use-package! exwm
   :config
 
   (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
@@ -517,6 +518,7 @@
 
 ;; (use-package! exwm-evil :recipe
 ;;   (:host github :repo "LemonBreezes/exwm-evil"))
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/exwm-evil/")
 (use-package! exwm-evil
   :after exwm
   :config

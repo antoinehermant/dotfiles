@@ -19,6 +19,19 @@
 ;;
 ;;; Code:
 
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/citar/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/parsebib/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/citeproc-el/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/queue/")
+(require 'citar)
+(require 'citar-org)
+(require 'citar-capf)
+(require 'citar-capf)
+(require 'citar-cache)
+(require 'citar-citeproc)
+(require 'citar-embark)
+(require 'citar-file)
+(require 'citar-format)
 
 (setq bibtex-completion-bibliography '("~/library/research/research.bib",
                                         "~/library/textbooks/textbooks.bib"))
@@ -77,6 +90,9 @@
       (:prefix ("k c" . "citar")
        :desc "Citar open" "o" #'citar-open
        :desc "Citar open at point" "O" #'citar-open-entry))
+
+(with-eval-after-load 'oc
+  (define-key org-mode-map (kbd "RET") #'citar-dwin))
 
 (provide 'anthe-citar)
 ;;; anthe-citar.el ends here

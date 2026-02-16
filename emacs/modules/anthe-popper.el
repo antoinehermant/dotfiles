@@ -19,7 +19,9 @@
 ;;
 ;;; Code:
 
-(use-package popper
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/popper/")
+(use-package! popper)
+(use-package! popper
   :bind (("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type)
          ("C-<down>" . 'shrink-window)
@@ -34,10 +36,9 @@
           "^*compilation"
           help-mode
           compilation-mode))   ; Add closing parenthesis here
-  (popper-mode +1)
-  (popper-echo-mode +1))                ; For echo area
+  (popper-mode +1))
+  ;; (popper-echo-mode +1))                ; For echo area
 
-(setq popper-window-height (floor (* (frame-height) 0.3)))
 
 ;; Define global variables to store state
 (defvar vterm-popper-original-height nil

@@ -19,7 +19,9 @@
 ;;
 ;;; Code:
 
-
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-roam/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacsql")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/citar-org-roam/")
 (use-package org-roam
   :custom
   (org-roam-directory (file-truename "~/org/roam/"))

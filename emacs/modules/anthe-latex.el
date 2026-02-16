@@ -56,6 +56,7 @@ buffer's text scale."
 
 (add-hook 'text-scale-mode-hook #'my/text-scale-adjust-latex-previews)
 
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/org-fragtog/")
 (use-package! org-fragtog)
 ;; (use-package org-latex-impatient
 ;;   :defer t

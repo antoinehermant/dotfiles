@@ -136,6 +136,7 @@
       :desc "Agenda Dashbord" "k w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
 
 
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
 (use-package! org-journal)
 (setq org-journal-date-format "%a, %d.%m.%Y"
       org-journal-file-format "%d.%m.%Y.org")

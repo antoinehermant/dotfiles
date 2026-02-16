@@ -20,9 +20,10 @@
 ;;; Code:
 
 (require 'vterm)
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/vterm-toggle/")
 (use-package! vterm-toggle)
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/multi-vterm/")
 (use-package! multi-vterm)
-(use-package multi-vterm)
 
 (defun my-sh-mode-setup ()
   (map! :map sh-mode-map
