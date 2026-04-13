@@ -44,7 +44,7 @@
       (start-process "" nil "xdg-open" file)))))
 
 (map! :leader
-      :desc "Open visited file externally" "o d" #'my-open-current-buffer-externally)
+      :desc "Open visited file externally" "k o d" #'my-open-current-buffer-externally)
 
 
 ;; NOTE: forgot what this does

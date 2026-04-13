@@ -1,7 +1,6 @@
-#!/bin/bash
 
 function ubelix() {
-    MOUNT_POINT="$HOME/ubelix"
+    MOUNT_POINT="$HOME/ubelix"  
     REMOTE="ubelix3:/"
 
     if ! mountpoint -q "$MOUNT_POINT"; then

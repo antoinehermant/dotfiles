@@ -381,12 +381,12 @@
         (exwm-randr-mode)
         ;; disable this after having saved your config with autorandr --save <name-of-confg>
         ;; (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
-        (when (display-graphic-p)
-                (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
+        ;; (when (display-graphic-p)
+        ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+        (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
@@ -407,7 +407,6 @@
         ;;                                            0 "eDP-1" 10 "eDP-1"))
 
         (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
-        ;; (efs/update-displays)
 
         (efs/set-wallpaper)
         (set-frame-parameter nil 'alpha-background 85)

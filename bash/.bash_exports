@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export NCVIEWBASE=/home/anthe/software/ncmaps/ncmaps/
+export NCVIEWBASE=/home/anthe/software/configs/ncmaps/ncmaps/
 export PATH="$HOME/.config/emacs/bin:$PATH"
 export DOOMDIR=~/.config/doom
 

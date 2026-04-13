@@ -74,8 +74,8 @@
         citar-indicator-links-icons))
 
 (setq citar-templates
-      '((main . "${author editor:30%sn}   ${date year issued:4}   ${title:80}   ${journal:16}")
-        (suffix . "     ${=type=:10}  ${tags keywords:*}") ;; ${=key= id:15}
+      '((main . "${author editor:40%sn}  ${date year issued:4}  ${title:100}  ${journal:10} ")
+        (suffix . " ${journalgroup} ${publisher:10}  ${=type=:0}  ${tags keywords:*}") ;; ${=key= id:15}
         (preview . "${author editor:%etal} (${year issued date}) ${title}, ${journal journaltitle publisher container-title collection-title}.\n")
         (note . "Notes on ${author editor:%etal}, ${title}")))
 
@@ -88,8 +88,9 @@
 
 (map! :leader
       (:prefix ("k c" . "citar")
-       :desc "Citar open" "o" #'citar-open
-       :desc "Citar open at point" "O" #'citar-open-entry))
+       :desc "insert citation" "i" #'citar-insert-citation
+       :desc "open" "o" #'citar-open
+       :desc "open at point" "O" #'citar-open-entry))
 
 (with-eval-after-load 'oc
   (define-key org-mode-map (kbd "RET") #'citar-dwin))

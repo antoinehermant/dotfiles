@@ -19,13 +19,13 @@
 ;;
 ;;; Code:
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/elpy/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/jupyter/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/emacs-web-server/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/emacs-websocket/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/python-mode/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/virtualenv.el/")
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/straight/repos/pipenv.el/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
 (use-package! elpy)
 (use-package! jupyter)
 ;; (use-package! python-mode)
@@ -70,8 +70,9 @@
   "Run current cell in shell buffer, move to next cell and center."
   (interactive)
   (call-interactively #'code-cells-eval)
-  (call-interactively #'code-cells-forward-cell)
-  (evil-scroll-line-to-center nil))
+  ;; (call-interactively #'code-cells-forward-cell)
+  ;; (evil-scroll-line-to-center nil)
+   )
 
 (defun my-python-mode-setup ()
   "Setup keybindings for Python mode."

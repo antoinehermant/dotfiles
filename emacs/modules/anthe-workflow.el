@@ -132,8 +132,8 @@
        "* %?\n %i" :empty-line 1)))
 
 (map! :leader
-      :desc "Agenda Dashbord" "k d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
-      :desc "Agenda Dashbord" "k w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
+      :desc "Agenda Dashbord" "k a d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
+      :desc "Agenda Dashbord" "k a w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
 
 
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")

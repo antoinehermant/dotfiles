@@ -113,6 +113,7 @@
   '(line-number :foreground "#ffffff")
   '(line-number-current-line :weight bold :foreground "#51afef" :slant normal) ; Explicitly set slant
   '(font-lock-keyword-face :foreground "#51afef")
+  '(font-lock-comment-face :foreground "#5C6370")
 )
 
 (setq image-use-external-converter t)

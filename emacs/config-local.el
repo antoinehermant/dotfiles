@@ -72,5 +72,20 @@
       ;; )))
     )))
 
+(defun my-open-current-buffer-externally ()
+  "Open current buffer's file with appropriate application."
+  (interactive)
+  (when-let ((file (buffer-file-name)))
+    (cond
+     ((string-match "\\.pdf\\'" file)
+      (start-process "" nil "evince" file))
+     ((string-match "\\.png\\'" file)
+      (start-process "" nil "eog" file))
+     (t
+      (start-process "" nil "xdg-open" file)))))
+
+(map! :leader
+      :desc "Open visited file externally" "k o d" #'my-open-current-buffer-externally)
+
 (provide 'config-local)
 ;;; config-local.el ends here

@@ -38,7 +38,7 @@
       (file-name-directory file-path))))
 
 (add-to-list 'dape-configs
-             `(debugpy
+             `(debugpy-my
                modes (python-mode jinja2-mode)
                command "python"
                command-args ["-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport]

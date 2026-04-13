@@ -45,6 +45,7 @@
 (global-corfu-mode -1)
 (yas-global-mode -1)
 
+(set-face-background 'company-tooltip-selection "#2f3238")
 
 
 (use-package yasnippet

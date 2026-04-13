@@ -32,6 +32,7 @@
 (require 'anthe-evil)
 (require 'anthe-file-manager)
 (require 'anthe-lsp)
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/openwith/")
 (require 'anthe-openwith)
 (require 'anthe-org)
 (require 'anthe-pdf)
@@ -103,7 +104,7 @@
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 
-(setq popper-window-height (floor (* (frame-height) 0.33)))
+(setq popper-window-height (floor (* (frame-height) 0.25)))
 ;; (add-hook 'window-setup-hook #'toggle-frame-maximized)
 
 (defun sbatch-buffer ()

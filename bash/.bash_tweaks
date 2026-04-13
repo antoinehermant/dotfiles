@@ -75,7 +75,7 @@ if [ -x /usr/bin/dircolors ]; then
     alias egrep='egrep --color=auto'
 fi
 
-xset r rate 220 30
+command -v xset >/dev/null && xset r rate 220 30
 
 
 if ! shopt -oq posix; then

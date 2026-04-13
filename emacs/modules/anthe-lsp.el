@@ -35,5 +35,7 @@
   (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver" "--stdio"))))
 (add-hook 'python-mode-hook 'eglot-ensure)
 
+(add-to-list 'warning-suppress-types '(emacs))
+
 (provide 'anthe-lsp)
 ;;; anthe-lsp.el ends here

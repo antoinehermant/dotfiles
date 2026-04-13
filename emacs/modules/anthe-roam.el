@@ -32,6 +32,9 @@
   :after (citar org-roam)
   :config (citar-org-roam-mode))
 
+(setq citar-org-roam-note-title-template "${title}, ${author:12}")
+
+(setq citar-org-roam-capture-template-key 'nil)
 
 (add-to-list 'load-path "~/.config/emacs/.local/consult-org-roam/")
 (use-package consult-org-roam
