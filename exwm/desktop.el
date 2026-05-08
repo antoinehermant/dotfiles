@@ -1,4 +1,4 @@
-;;; desktop --- Description -*- lexical-binding: t; -*-
+
 ;;
 ;; Copyright (C) 2025 anthe
 ;;
@@ -276,7 +276,7 @@
 (use-package! exwm
   :config
 
-  (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
+  ;; (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
   ;; Set the default number of workspaces
   (setq exwm-workspace-number 11)
 
@@ -386,7 +386,7 @@
 
         (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
 
-        (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
         ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
@@ -477,7 +477,9 @@
         (exwm-input-set-key  (kbd "s-h") 'windmove-left-or-hide-floating)
         (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
         (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
+        (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
         (exwm-input-set-key (kbd "s-l") 'exwm-reset)
+        (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
 
         (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
         (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))

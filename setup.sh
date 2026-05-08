@@ -5,8 +5,10 @@ ln -sf ~/.dotfiles/bash/.bash_functions ~/.bash_functions
 ln -sf ~/.dotfiles/bash/.bash_exports ~/.bash_exports
 ln -sf ~/.dotfiles/bash/.bash_tweaks ~/.bash_tweaks
 
+# mbsync config
 ln -sf ~/.dotfiles/.mbsyncrc ~/.mbsyncrc
 
+# ncview config
 ln -sf ~/.dotfiles/.ncviewrc ~/.ncviewrc
 
 
@@ -22,3 +24,7 @@ sudo cp ~/.config/exwm/exwm.desktop /usr/share/xsessions/exwm.desktop
 # neovim + lazyvim
 ln -sf ~/.dotfiles/nvim/lua/config/* ~/.config/nvim/lua/config/
 ln -sf ~/.dotfiles/nvim/lua/plugins/* ~/.config/nvim/lua/plugins/
+
+# qutebrowser config
+ln -sf ~/.dotfiles/qutebrowser/config.py ~/.config/qutebrowser/config.py
+ln -sf ~/.dotfiles/qutebrowser/themes/* ~/.config/qutebrowser/qutebrowser-themes/themes/

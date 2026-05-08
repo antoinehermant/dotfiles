@@ -79,6 +79,7 @@
   (map! :map python-mode-map
         :leader
         :desc "Run region or line in Python shell" "r j" #'python-shell-send-region-or-current-line
+        :desc "Run buffer in Python shell" "r b" #'python-shell-send-buffer
         :desc "Run current cell in Python shell" "r [" #'my-run-cell-and-forward-cell
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python

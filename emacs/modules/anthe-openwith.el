@@ -19,10 +19,6 @@
 ;;
 ;;; Code:
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/openwith-20120531.2136/")
-
-(setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps/")
-
 (use-package! openwith
   :config
   (setq openwith-associations

@@ -34,9 +34,10 @@
     (setq my-api-keys json-data)))
 (load-api-keys "~/.secrets/.my_apis.json")
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/gptel/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/gptel-20260426.2347/")
 (require 'gptel)
-(require 'gptel-curl)
+(eval-and-compile (require 'gptel-openai-extras))
+(eval-and-compile (require 'gptel-rewrite))
 
 (setq gptel-default-mode 'org-mode)
 
@@ -51,6 +52,7 @@
         mistralai/Mixtral-8x7B-Instruct-v0.1
         mistralai/Mixtral-8x22B-Instruct-v0.1
         mistralai/Mistral-Small-24B-Instruct-2501
+        nim/nv-mistralai/mistral-nemo-12b-instruct
         togethercomputer/m2-bert-80M-32k-retrieval))
 
 (gptel-make-openai "Codestral"
@@ -75,10 +77,22 @@
            mistral-small
            )))
 
+(gptel-make-openai "Infomaniak"
+  :host "api.infomaniak.com"
+  :endpoint "/2/ai/108286/openai/v1/chat/completions"
+  :key (alist-get 'INFOMANIAK_API_KEY my-api-keys)
+  :stream t
+  :models '(
+            mistral3
+            mistralai/Ministral-3-14B-Instruct-2512
+            swiss-ai/Apertus-70B-Instruct-2509
+            ))
+
 (map! :leader
       (:prefix ("k g" . "gptel")
       :desc "gptel mode" " m" #'gptel-mode
       :desc "Open gptel" "o" #'gptel
+      :desc "gptel rewrite" "r" #'gptel-rewrite
       :desc "Eval region in gptel (gptel-send)" "s" #'gptel-send))
 
 (provide 'anthe-gptel)

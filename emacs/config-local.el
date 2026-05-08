@@ -19,6 +19,8 @@
 ;;
 ;;; Code:
 
+(setq package-install-upgrade-built-in t)
+
 (add-to-list 'load-path "~/.config/emacs/.local/")
 (require 'app-launcher)
 
@@ -39,6 +41,8 @@
 (require 'anthe-latex)
 (require 'anthe-lsp)
 (require 'anthe-mu4e)
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/openwith-20120531.2136/")
+(setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps")
 (require 'anthe-openwith)
 (require 'anthe-org)
 (require 'anthe-pdf)

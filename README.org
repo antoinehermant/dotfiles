@@ -25,7 +25,7 @@ I am a PhD student in Physics, focusing on glaciology. I do numerical modelling.
 - Laptop: Dell inspiron 14 5420
 - CPU: 12th Gen Intel i7-1255U (12) @ 4.700GHz
 - RAM: SODIMM 2x16G
-- OS: Ubuntu 24.10 (but planning to go to arch or fedora soon)
+- OS: Ubuntu 24.10 (but planning to go to arch or nix soon)
 
 * Workflow as a PhD student
 I am planing to document a bit more here my workflow in Emacs as a scholar. Make research efficient and fun!
