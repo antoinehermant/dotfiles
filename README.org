@@ -1,31 +1,36 @@
 #+title: README
 #+autor: anthe
 
-Hi! Here is my desktop environment files. I use emacs with evil mode enabled (vim emulator), as well as exwm (emacs X window manager). I am happy to share my config as well as getting feedback. I am relatively new to emacs (Jan 2025, burying vscode in 2024), my config is still very messy but I am learning and updating it regularly.
+Hi! Here is my .dotfiles, mainly composed of Emacs config files and Vim.
 
 * About me
 I am a PhD student in Physics, focusing on glaciology. I do numerical modelling. I am enthusiastic about machine learning methods and trying to use them in my project.
-* Why I use emacs
-- Evil mode: basically vim everywhere = goat power ('I use vim btw').
+* Emacs
+- Doom Emacs + Evil mode
 - IDE:
   - Main languages: Python, C++, bash, Elips
   - LSP and DAP
   - Version control (magit)
 - Terminal emulation (multi-vterm).
-- Org mode: note taking, knowledge network (roam), todos, agenda, latex rendering, presentations, programming, accountability...
+- Org mode: note taking, knowledge network (roam), todos, agenda, latex rendering, presentations, programming... 
 - Email client (mu4e).
 - IRC
 - Scientific research:
   - Writing: Org and Latex
-  - Bibliography manager + integration of roam
+  - citar for bib management + roam integration
 - LLM assistant client (gptel, my favorite LLM is Mistral/Codestral)
-- Window manager (exwm): managing my none-emacs buffers (Firefox, discord, Spotify, ncview, matplotlib, Ardour...).
+- HPC task automation:
+  - submit batch script with keybinding
+  - quick monitoring of slurm queue state
+  - open .nc file with ncview by default
+  - display .nc metadata from either ncdump or cdo as file preview
+- Window manager (exwm): managing my none-emacs buffers (qutebrowser, Spotify, ncview, matplotlib, Ardour...).
 
 ** System:
 - Laptop: Dell inspiron 14 5420
 - CPU: 12th Gen Intel i7-1255U (12) @ 4.700GHz
 - RAM: SODIMM 2x16G
-- OS: Ubuntu 24.10 (but planning to go to arch or nix soon)
+- OS: Ubuntu 24.10 (but planning to switch for arch or nix soon)
 
 * Workflow as a PhD student
-I am planing to document a bit more here my workflow in Emacs as a scholar. Make research efficient and fun!
+I am planing to document a bit more here my workflow in Emacs as a scholar, let me know if you're interested.

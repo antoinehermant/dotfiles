@@ -34,10 +34,10 @@
     (setq my-api-keys json-data)))
 (load-api-keys "~/.secrets/.my_apis.json")
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/gptel-20260426.2347/")
-(require 'gptel)
-(eval-and-compile (require 'gptel-openai-extras))
-(eval-and-compile (require 'gptel-rewrite))
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/gptel-20260426.2347/")
+;; (require 'gptel)
+;; (eval-and-compile (require 'gptel-openai-extras))
+;; (eval-and-compile (require 'gptel-rewrite))
 
 (setq gptel-default-mode 'org-mode)
 

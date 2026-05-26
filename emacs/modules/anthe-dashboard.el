@@ -1,0 +1,96 @@
+;;; anthe-dashboard.el --- Description -*- lexical-binding: t; -*-
+;;
+;; Copyright (C) 2026 anthe
+;;
+;; Author: anthe <anthe@inspiron>
+;; Maintainer: anthe <anthe@inspiron>
+;; Created: May 17, 2026
+;; Modified: May 17, 2026
+;; Version: 0.0.1
+;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
+;; Homepage: https://github.com/anthe/anthe-dashboard
+;; Package-Requires: ((emacs "24.3"))
+;;
+;; This file is not part of GNU Emacs.
+;;
+;;; Commentary:
+;;
+;;  Description
+;;
+;;; Code:
+
+;; Customize the dashboard
+
+(use-package dashboard
+  :ensure t
+  :config
+  (dashboard-setup-startup-hook))
+
+;; (setq initial-buffer-choice 'dashboard-open)
+;; (add-hook 'server-after-make-frame-hook 'dashboard-open)
+
+(setq dashboard-banner-logo-title "Emacs")
+(setq dashboard-display-icons-p t)     ; display icons on both GUI and terminal
+(setq dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
+(setq dashboard-set-heading-icons t)
+(setq dashboard-set-file-icons t)
+(setq dashboard-startup-banner "~/documents/pictures/logo-ascii.txt")
+(setq dashboard-center-content t)
+(setq dashboard-vertically-center-content t)
+
+(defun get-today-cryolist ()
+  (shell-command-to-string "/home/anthe/projects/personal/scripts/research/cryolist.py"))
+
+(defun dashboard-insert-cryolist (_)
+  (dashboard-insert-heading "   Cryolist:")  
+  (let ((content (with-temp-buffer  
+                   (get-today-cryolist)
+                   (insert-file-contents "~/projects/personal/scripts/research/cryolist.txt")
+                   (font-lock-ensure)  
+                   (buffer-string))))  
+    (dolist (line (split-string content "\n"))  
+      (insert "\n    " line)))) 
+
+
+(defun dashboard-insert-research-news (_)  
+  (dashboard-insert-heading "   Research news:")  
+  (let ((content (with-temp-buffer  
+                   (insert-file-contents "~/projects/personal/scripts/email/email_summaries/articles_of_the_day.org")  
+                   (org-mode)  
+                   (font-lock-ensure)  
+                   (org-indent-region (point-min) (point-max)) ; Applies Org indentation 
+                   (buffer-string))))  
+    (dolist (line (split-string content "\n"))  
+      (insert "\n    " line)))) 
+
+;; Add the widget to dashboard-items
+
+(setq dashboard-items '((recents   . 5)
+                        ;; (bookmarks . 5)
+                        (agenda    . 5)
+                        (projects  . 5)
+                        ;; (registers . 5)
+                        ;; (custom   . dashboard-insert-cryolist)
+                        ))
+(setq dashboard-week-agenda t)
+(setq dashboard-agenda-tags-format 'ignore)
+(setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-time)
+
+(add-to-list 'dashboard-item-generators '(cryolist . dashboard-insert-cryolist))  
+(add-to-list 'dashboard-item-generators '(research-news . dashboard-insert-research-news))  
+  
+(add-to-list 'dashboard-items '(cryolist . 5) t)  
+(add-to-list 'dashboard-items '(research-news . 3) t) 
+
+(setq dashboard-projects-switch-function 'counsel-projectile-switch-project-action)
+(setq dashboard-show-shortcuts nil)
+
+;; This is helpful as I cannot get dashboard to open agenda files otherwise
+;; One can use org-agenda-list, but here I directly display my dashboard
+(add-hook 'after-init-hook (lambda () (org-agenda nil "d")))
+
+(setq initial-buffer-choice #'dashboard-open) 
+(setq doom-fallback-buffer-name "*dashboard*")
+
+(provide 'anthe-dashboard)
+;;; anthe-dashboard.el ends here

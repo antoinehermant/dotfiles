@@ -271,8 +271,8 @@
 ;; (defun my/leave-exwm ()
 ;;   (run-at-time 2 nil 'exwm-input-grab-keyboard))
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/exwm/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/xelb/")
+(add-to-list 'load-path "~/.config/emacs/.local/other/exwm/")
+(add-to-list 'load-path "~/.config/emacs/.local/other/xelb/")
 (use-package! exwm
   :config
 
@@ -505,8 +505,8 @@
   (exwm-wm-mode))
 
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/desktop-environment-20230903.1229/")
-(use-package desktop-environment
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/desktop-environment/")
+(use-package! desktop-environment
   :after exwm
   :config (desktop-environment-mode)
   :custom
@@ -519,7 +519,7 @@
 
 ;; (use-package! exwm-evil :recipe
 ;;   (:host github :repo "LemonBreezes/exwm-evil"))
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/exwm-evil/")
+(add-to-list 'load-path "~/.config/emacs/.local/other/exwm-evil/")
 (use-package! exwm-evil
   :after exwm
   :config

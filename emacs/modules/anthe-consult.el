@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 
-(use-package consult
+(use-package! consult
   :hook (completion-list-mode . consult-preview-at-point-mode)
   :init
 
@@ -44,14 +44,22 @@
   ;; For some commands and buffer sources it is useful to configure the
   ;; :preview-key on a per-command basis using the `consult-customize' macro.
   (consult-customize
+
    consult-theme :preview-key '(:debounce 0.2 any)
-   consult-ripgrep consult-git-grep consult-grep consult-man
-   consult-bookmark consult-recent-file consult-xref consult-find
-   consult--source-bookmark consult--source-file-register
-   consult--source-recent-file consult--source-project-recent-file
+    consult-ripgrep consult-git-grep consult-grep consult-man
+    consult-bookmark consult-recent-file consult-xref
+    consult-source-bookmark consult-source-file-register
+    consult-source-recent-file consult-source-project-recent-file
+   
    ;; :preview-key "M-."
    :preview-key '(:debounce 0.4 any)))
 
+;; consult--source-bookmark
+;; consult--source-project-recent-file
+;; consult--source-file-register
+;; consult-recent-file
+;; consult--source-recent-file
+ 
 (setq consult-ripgrep-args
         "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden")
 
@@ -60,8 +68,10 @@
         "\\`/[^/|:]+:"
         "\\.gpg\\'"))
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/consult-projectile/")
-(require 'consult-projectile)
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/consult-projectile/")
+;; (require 'consult-projectile)
+(straight-use-package
+  '(consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
 
 ;; (setq read-file-name-function #'consult-find-file-with-preview)
 
@@ -82,8 +92,7 @@
 (map! :leader
         :desc "consult-ripgrep" "s p" #'consult-ripgrep
         :desc "consult-ripgrep" "/" #'consult-ripgrep
-        :desc "consult-find" "r f" #'consult-find
-      )
+        :desc "consult-find" "r f" #'consult-find)
 
 (provide 'anthe-consult)
 ;;; anthe-consult.el ends here

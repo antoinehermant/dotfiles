@@ -20,10 +20,8 @@
 ;;; Code:
 
 (require 'vterm)
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/vterm-toggle/")
-(use-package! vterm-toggle)
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/multi-vterm/")
-(use-package! multi-vterm)
+(require 'vterm-toggle)
+(require 'multi-vterm)
 
 (defun my-sh-mode-setup ()
   (map! :map sh-mode-map
@@ -62,6 +60,7 @@
 
 (setq vterm-max-scrollback 10000)
 (setq vterm-kill-buffer-on-exit t)
+(setq vterm-toggle-reset-window-configration-after-exit "Do nothing")
 (setq vterm-visual-flash-delay 0.1)
 
 ;; UNSET mouse drag in evil mode
@@ -171,6 +170,11 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;          (selected-buffer (completing-read "Switch to shell: " buffer-names nil t)))
 ;;     (when selected-buffer
 ;;       (switch-to-buffer selected-buffer))))
+
+(define-key vterm-mode-map (kbd "M-1") 'vterm-send-M-1)
+(define-key vterm-mode-map (kbd "M-2") 'vterm-send-M-2)
+(define-key vterm-mode-map (kbd "M-`") 'popper-cycle)
+
 
 (map! :leader
       :desc "New vterm (multi-vterm)" "V" #'multi-vterm

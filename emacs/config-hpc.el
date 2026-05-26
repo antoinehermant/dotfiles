@@ -32,6 +32,7 @@
 (require 'anthe-evil)
 (require 'anthe-file-manager)
 (require 'anthe-lsp)
+(setenv "NCVIEWBASE" "/storage/homefs/ah23k256/software/configs/ncmaps/ncmaps")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/openwith/")
 (require 'anthe-openwith)
 (require 'anthe-org)
@@ -100,11 +101,13 @@
 
 ;; (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
 (setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/")
+(setq pyvenv-virtual-env-name "fast")
+(pyvenv-activate "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/fast")
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
 
-(setq popper-window-height (floor (* (frame-height) 0.25)))
+(setq popper-window-height (floor (* (frame-height) 0.3)))
 ;; (add-hook 'window-setup-hook #'toggle-frame-maximized)
 
 (defun sbatch-buffer ()
@@ -116,6 +119,75 @@
 
 (map! :leader
         :desc "Submit batch job" "k s" #'sbatch-buffer)
+
+(define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
+  "Major mode for displaying slurm queue."
+  (setq buffer-undo-list t)  ; Disable undo history
+  (setq buffer-offer-save nil)  ; Disable save prompts
+  (setq buffer-read-only t)  ; Make buffer read-only
+  (local-set-key (kbd "q") 'quit-window)
+  (run-at-time nil 1 'squeue-reload))
+
+(defvar-local slurm-queue-timer nil
+  "Timer for auto-reloading slurm queue.")
+
+(defvar slurm-queue-last-update 0
+  "Timestamp of last update.")
+
+(defun squeue-reload ()
+  (interactive)
+  (when (and (buffer-live-p (get-buffer "*slurm-squeue*"))
+             (> (float-time) (+ slurm-queue-last-update 1))) ; 5s cooldown
+    (setq slurm-queue-last-update (float-time))
+    (with-current-buffer "*slurm-squeue*"
+      (let ((inhibit-read-only t)
+            (command (or my-squeue-command "squeue -u $USER")))
+        (erase-buffer)
+        (insert (shell-command-to-string command))
+        (goto-char (point-min))))))
+
+
+(defun squeue (command)
+  (interactive)
+  (let ((buf-name "*slurm-squeue*"))
+    (let ((window (get-buffer-window buf-name)))
+      (if window
+          (progn
+            (when slurm-queue-timer
+              (cancel-timer slurm-queue-timer))
+            (quit-window nil window)
+            (kill-buffer buf-name))
+        (let ((new-buf (get-buffer-create buf-name)))
+          (with-current-buffer new-buf
+            (slurm-queue-mode)
+            (setq-local my-squeue-command command)
+            (setq slurm-queue-timer (run-at-time nil 5 'squeue-reload))
+            (squeue-reload))
+          (display-buffer new-buf))))))
+
+(defvar my-squeue-commands nil
+  "A list of squeue commands")
+
+(defun load-squeue-commands (file)
+  (interactive)
+  (let ((json-data (with-temp-buffer
+                     (insert-file-contents file)
+                     (goto-char (point-min))
+                     (json-read))))
+    (setq my-squeue-commands json-data)))
+
+(load-squeue-commands "~/.squeue_commands.json")
+
+(map! :leader
+      (:prefix ("k q" . "squeue")
+        :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
+        :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
+
+(add-to-list 'popper-reference-buffers "*slurm-queue*")
+(add-to-list 'display-buffer-alist
+             '("\\*slurm-squeue\\*"
+               (display-buffer-below-selected)
+               (window-height . fit-window-to-buffer)))
 
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 

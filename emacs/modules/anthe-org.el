@@ -19,7 +19,6 @@
 ;;
 ;;; Code:
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-bullets/")
 (use-package org-bullets
   ;; :after org
   :hook (org-mode . org-bullets-mode)
@@ -28,8 +27,8 @@
 
 (set-face-foreground 'outline-3 "#7fd962")
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-inline-pdf.el/")
-(use-package org-inline-pdf)
+(require 'org-inline-pdf)
+(require 'org-present)
 
 (provide 'anthe-org)
 ;;; anthe-org.el ends here

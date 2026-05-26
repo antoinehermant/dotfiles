@@ -20,7 +20,6 @@
 ;;; Code:
 
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/popper/")
-(use-package! popper)
 (use-package! popper
   :bind (("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type)
@@ -29,11 +28,11 @@
   :init
   (setq popper-reference-buffers
         '("^\\*Messages\\*"
-          "^Output\\*$"
+          "^Output\\*"
           "^\\*Async Shell Command\\*"
           "^\\*vterm"
           "^\\*Python"
-          "^*compilation"
+          "^\\*compilation"
           help-mode
           compilation-mode))   ; Add closing parenthesis here
   (popper-mode +1))
@@ -75,13 +74,13 @@
 (map! :leader
       :desc "popper" "`" #'popper-toggle)
 
-; (setq popper-reference-buffers
-;;       (append popper-reference-buffers
-;;               '("\\*eshell*\\*$" eshell-mode ;eshell as a popup
-;;                 "\\*shell*\\*$"  shell-mode  ;shell as a popup
-;;                 "\\*term*\\*$"   term-mode   ;term as a popup
-;;                 "\\*vterm*\\*$"  vterm-mode  ;vterm as a popup
-;;                 )))
+(setq popper-reference-buffers
+      (append popper-reference-buffers
+              '("\\*eshell*\\*$" eshell-mode ;eshell as a popup
+                ;; "\\*shell*\\*$"  shell-mode  ;shell as a popup
+                ;; "\\*term*\\*$"   term-mode   ;term as a popup
+                "\\*vterm*\\*$"  vterm-mode  ;vterm as a popup
+                )))
 
 (provide 'anthe-popper)
 ;;; anthe-popper.el ends here

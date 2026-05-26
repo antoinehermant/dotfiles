@@ -8,12 +8,17 @@ config.load_autoconfig()
 config.source('qutebrowser-themes/themes/onedark.py')
 
 config.set("colors.webpage.darkmode.enabled", True)
+
 config.set("colors.webpage.darkmode.policy.images", "never")
-config.set("fonts.default_size", "14pt")
+config.set("fonts.default_size", "11.5pt")
 
 # Rebind arrow keys in popup menus (hints, downloads, etc.)
 config.bind('<Ctrl-j>', 'completion-item-focus next', mode='command')
 config.bind('<Ctrl-k>', 'completion-item-focus prev', mode='command')
+
+config.bind(',ps', 'set content.proxy socks5://localhost:1080;; reload')
+config.bind(',pd', 'set content.proxy system;; reload')
+config.bind(',d', 'config-cycle colors.webpage.darkmode.enabled')
 
 # config.set('content.dns.override_system_dns', False)
 

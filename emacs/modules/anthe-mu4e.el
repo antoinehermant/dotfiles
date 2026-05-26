@@ -22,12 +22,13 @@
 (add-to-list 'load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.12.6/")
 (use-package mu4e
   ;; :load-path "~/.config/emacs/.local/mu4e-1.12.6/"
-  :defer 10 ; Wait until 20 seconds after startup
+  :defer 20 ; Wait until 20 seconds after startup
   :config
 
   (mu4e t)
   ;; This is set to 't' to avoid mail syncing issues when using mbsync
   (setq mu4e-change-filenames-when-moving t)
+  (setq mu4e-confirm-quit nil)
   ;; (setq mu4e-marks-folders-sequentially t)
 
   ;; Refresh mail using isync every 5 minutes
@@ -106,7 +107,8 @@
         (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
         (:name "Messages with images" :query "mime:image/*" :key 112)
         (:name "Finances" :query "from:miimosa AND NOT flag:trashed AND NOT tag:\\Trash OR from:linxea AND NOT tag:\\Trash AND NOT flag:trashed OR from:iroko AND NOT flag:trashed OR from:contact@louveinvest.com AND NOT flag:trashed AND NOT tag:\\Trash" :key ?f)
-        (:name "Research News" :query "from:cryolist-request AND NOT flag:trashed OR from:scholar AND NOT flag:trashed OR from:researchgate AND NOT flag:trashed" :key ?r)))
+        (:name "Research News" :query "from:cryolist-request AND NOT flag:trashed OR from:scholar AND NOT flag:trashed OR from:researchgate AND NOT flag:trashed" :key ?r)
+        (:name "Cryolist" :query "from:cryolist-request" :key ?c)))
 
   ;; (setq mu4e-maildir-shortcuts
   ;;       '(("/Gmail/Inbox"             . ?i)

@@ -21,13 +21,12 @@
 
 (setq package-install-upgrade-built-in t)
 
-(add-to-list 'load-path "~/.config/emacs/.local/")
-(require 'app-launcher)
 
 (add-to-list 'load-path "~/.dotfiles/emacs/")
 (require 'config-core)
 
 (add-to-list 'load-path "~/.dotfiles/emacs/modules")
+(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 (require 'anthe-bib)
 (require 'anthe-citar)
 (require 'anthe-control)
@@ -35,13 +34,14 @@
 (require 'anthe-consult)
 (require 'anthe-dap)
 ;; (require 'anthe-desktop)
+(require 'anthe-dashboard)
+(require 'app-launcher)
 (require 'anthe-evil)
 (require 'anthe-file-manager)
 (require 'anthe-gptel)
 (require 'anthe-latex)
 (require 'anthe-lsp)
 (require 'anthe-mu4e)
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/openwith-20120531.2136/")
 (setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps")
 (require 'anthe-openwith)
 (require 'anthe-org)
@@ -53,8 +53,6 @@
 (require 'anthe-vterm)
 (require 'anthe-workflow)
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-present/")
-(use-package! org-present)
 
 (map! :leader
       :desc "App launcher" "\\" #'app-launcher-run-app)
@@ -62,7 +60,7 @@
 (setq pyvenv-default-virtual-env-name  "/home/anthe/software/miniconda3/envs/")
 
 (setq org-present-startup-folded t)
-(setq popper-window-height (floor (* (frame-height) 0.3)))
+(setq popper-window-height (floor (* (frame-height) 0.4)))
 
 
 (defun ubelix-emacs ()

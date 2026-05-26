@@ -19,18 +19,18 @@
 ;;
 ;;; Code:
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
-(use-package! elpy)
-(use-package! jupyter)
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
+(straight-use-package 'elpy)
+(straight-use-package 'jupyter)
 ;; (use-package! python-mode)
-(use-package! virtualenv)
-(use-package! pipenv)
+(straight-use-package 'virtualenv)
+(straight-use-package 'pipenv)
 
 (require 'python)
 

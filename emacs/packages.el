@@ -54,12 +54,15 @@
 (package! tldr)
 (package! code-cells)
 (package! popper)
-(package! dash)
+;; (package! dash)
 (package! f)
 (package! pkg-info)
 ;;(package! epl)
 (package! exec-path-from-shell)
 ;; (package! eldoc :pin "a233b42b0e32154d2fe00d25a8b89329e81450f2")
 ;; (package! zotra)
+
+(package! dashboard
+  :recipe (:host github :repo "emacs-dashboard/emacs-dashboard"))
 
 ;; (package! sqlite3)

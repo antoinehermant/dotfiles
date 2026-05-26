@@ -45,7 +45,7 @@
     (message "%s" output)))
 
 (map! :leader
-      :desc "Backup files to my NAS" "k b" #'my-sync-pi-nas
+      :desc "Backup files to my NAS" "k r b" #'my-sync-pi-nas
       :desc "Switch desk lamp" "k t l" #'my-switch-desk-lamp
       :desc "Switch sound system" "k t s" #'my-switch-sound-system
       :desc "Switch drive" "k t d" #'my-switch-drive-1

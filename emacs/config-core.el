@@ -92,6 +92,7 @@
 ;;   (when (memq window-system '(mac ns x))
 ;;   (exec-path-from-shell-initialize)))
 (require 'package)
+(require 'straight)
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.org/packages/") t)
 

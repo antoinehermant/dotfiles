@@ -1,3 +1,4 @@
+#!/bin/bash
 
 function ubelix() {
     MOUNT_POINT="$HOME/ubelix"  

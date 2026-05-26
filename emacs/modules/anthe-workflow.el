@@ -135,8 +135,12 @@
       :desc "Agenda Dashbord" "k a d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
       :desc "Agenda Dashbord" "k a w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
 
+(custom-set-faces!
+  '(org-scheduled-today :foreground "#51afef")
+)
 
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
+
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
 (use-package! org-journal)
 (setq org-journal-date-format "%a, %d.%m.%Y"
       org-journal-file-format "%d.%m.%Y.org")

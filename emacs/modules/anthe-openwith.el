@@ -25,6 +25,9 @@
         `(,(list (openwith-make-extension-regexp '("nc"))
                  "ncview"
                  '(file))
+          ,(list (openwith-make-extension-regexp '("nc~"))
+                 "ncview"
+                 '(file))
           ,(list (openwith-make-extension-regexp '("mp4"))
                  "mpv"
                  '(file))
