@@ -6,11 +6,13 @@ ln -sf ~/.dotfiles/bash/.bash_exports ~/.bash_exports
 ln -sf ~/.dotfiles/bash/.bash_tweaks ~/.bash_tweaks
 
 # mbsync config
-ln -sf ~/.dotfiles/.mbsyncrc ~/.mbsyncrc
+ln -sf ~/.dotfiles/rcfiles/.mbsyncrc ~/.mbsyncrc
 
 # ncview config
-ln -sf ~/.dotfiles/.ncviewrc ~/.ncviewrc
+ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc
 
+# matoplotlib config
+ln -sf ~/.dotfiles/rcfiles/matplotlibrc ~/.config/matplotlib/matplotlibrc
 
 #RM -f ~/.config/doom/*
 ln -sf ~/.dotfiles/emacs/config-local.el ~/.config/doom/config.el
