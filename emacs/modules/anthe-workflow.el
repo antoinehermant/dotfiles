@@ -21,35 +21,71 @@
 
 (require 'org)
 (defun diary-last-day-of-month (date)
-"Return `t` if DATE is the last day of the month."
+  "Return `t` if DATE is the last day of the month."
   (let* ((day (calendar-extract-day date))
          (month (calendar-extract-month date))
          (year (calendar-extract-year date))
          (last-day-of-month
-            (calendar-last-day-of-month month year)))
+          (calendar-last-day-of-month month year)))
     (= day last-day-of-month)))
 
-(defun my/set-org-agenda-files ()
-  (setq org-agenda-files (append (directory-files-recursively "~/org/org/agenda/" "\\.org$"))))
+;; (defun my/set-org-agenda-files ()
+;;   (setq org-agenda-files (append (directory-files-recursively "~/org/org/agenda/" "\\.org$"))))
 
 (use-package org
   :config
   (setq org-directory "~/org/org/")
-  (setq org-agenda-files (append (directory-files-recursively "~/org/org/agenda/" "\\.org$")))
   ;; (setq org-agenda-files  ("~/org/agenda/" "~/org/phd/"))
   (setq org-agenda-start-with-log-mode t)
   ;; (setq org-todo-keywords
   ;;   '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
   ;;     (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
- (add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
+  ;; (setq org-agenda-files (append (directory-files-recursively "~/org/org/agenda/" "\\.org$")))
+  ;; (add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
 
- (require 'org-habit)
- (add-to-list 'org-modules 'org-habit)
- (setq org-habit-graph-column 60)
+
+  ;; Stolen from system crafters to use org roam for org agenda files but only files with specific tag
+  (defun anthe-org-roam-filter-by-tag (tag-name)
+    (lambda (node)
+      (member tag-name (org-roam-node-tags node))))
+
+  (defun anthe-org-roam-list-notes-by-tag (tag-name)
+    (mapcar #'org-roam-node-file
+            (seq-filter
+             (anthe-org-roam-filter-by-tag tag-name)
+             (org-roam-node-list))))
+
+  (defun anthe-org-roam-refresh-agenda-list ()
+    (interactive)
+    (setq org-agenda-files (anthe-org-roam-list-notes-by-tag "agenda")))
+
+  ;; Build the agenda list the first time for the session
+  (anthe-org-roam-refresh-agenda-list)
+
+  (add-hook 'org-agenda-mode-hook 'anthe-org-roam-refresh-agenda-list)
+
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60)
+
+  (evil-set-initial-state 'org-agenda-mode 'motion)
+
+  (setq org-capture-templates
+        `(("t" "Tasks / Projects")
+          ("tt" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+           "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ("tw" "Work / PhD" entry (file+olp"~/org/roam/Tasks.org" "PhD")
+           "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ("tp" "Perso" entry (file+olp"~/org/roam/Tasks.org" "Perso")
+           "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ("te" "Emacs" entry (file+olp"~/org/roam/Tasks.org" "Emacs")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+          ("e" "Events" entry (file+olp "~/org/roam/Events.org" "Calendar")
+           "* %?\n %i" :empty-line 1)))
 
   (setq org-log-done 'time)
   (setq org-ellipsis " ▾"
-      org-hide-emphasis-markers t)
+        org-hide-emphasis-markers t)
 
   ;; Set faces for heading levels
   (dolist (face '((org-level-1 . 1.2)
@@ -63,81 +99,71 @@
     (set-face-attribute (car face) nil :weight 'bold :height (cdr face)))
 
   (setq org-agenda-custom-commands
-   '(("d" "Dashboard"
-     ((agenda "Agenda"
-              ((org-agenda-start-day "0d")
-               (org-agenda-span 7)
-               ;; (org-agenda-skip-function
-               ;; '(org-agenda-skip-entry-if 'regexp ":habit:"))
-               ))
-      ;; (tags-todo "+habit" ;; FIXME: I could'nt make move habits to a specfic section because it shows it as regular task, not habit with the tracker
-      ;;   ((org-agenda-overriding-header "Habits")))
-    (tags-todo "phd/TODO"
-               ((org-agenda-overriding-header "PhD Tasks")
-                (org-agenda-todo-ignore-deadlines 'far)))
-      (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
-      (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
+        '(("d" "Dashboard"
+           ((agenda "Agenda"
+                    ((org-agenda-start-day "0d")
+                     (org-agenda-span 7)
+                     ;; (org-agenda-skip-function
+                     ;; '(org-agenda-skip-entry-if 'regexp ":habit:"))
+                     ))
+            ;; (tags-todo "+habit" ;; FIXME: I could'nt make move habits to a specfic section because it shows it as regular task, not habit with the tracker
+            ;;   ((org-agenda-overriding-header "Habits")))
+            (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
+            (tags-todo "phd/TODO"
+                       ((org-agenda-overriding-header "PhD Tasks")
+                        (org-agenda-todo-ignore-deadlines 'far)))
+            (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
+            (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
 
-    ;; ("n" "Next Tasks"
-    ;;  ((todo "NEXT"
-    ;;     ((org-agenda-overriding-header "Next Tasks")))))
+          ;; ("n" "Next Tasks"
+          ;;  ((todo "NEXT"
+          ;;     ((org-agenda-overriding-header "Next Tasks")))))
 
-    ("W" "Work Tasks" tags-todo "+work-email")
+          ;; ("W" "Work Tasks" tags-todo "+work-emacs")
 
-  ;; ("w" "Work Agenda"
-  ;;               ((agenda "PhD Agenda"
-  ;;                         ((org-agenda-start-day "0d")
-  ;;                       (org-agenda-span 7)
-  ;;                       ;;    (org-agenda-skip-function
-  ;;                       ;; '(org-agenda-skip-entry-if 'regexp ":perso:\\|:habit:"))))
-  ;;                       ))
-  ;;      (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
-  ;;       (todo "PROJ"
-  ;;               ((org-agenda-span 7)
-  ;;                (org-agenda-overriding-header "Project Tasks")))
-  ;;      (org-agenda-tag-filter-preset '("+phd"))))
+          ;; ("w" "Work Agenda"
+          ;;               ((agenda "PhD Agenda"
+          ;;                         ((org-agenda-start-day "0d")
+          ;;                       (org-agenda-span 7)
+          ;;                       ;;    (org-agenda-skip-function
+          ;;                       ;; '(org-agenda-skip-entry-if 'regexp ":perso:\\|:habit:"))))
+          ;;                       ))
+          ;;      (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
+          ;;       (todo "PROJ"
+          ;;               ((org-agenda-span 7)
+          ;;                (org-agenda-overriding-header "Project Tasks")))
+          ;;      (org-agenda-tag-filter-preset '("+phd"))))
 
-        ("w" "PhD Agenda"
-        ((tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
-        (agenda "" ((org-agenda-start-day "0d")
-                    (org-agenda-span 7)
-                (org-agenda-sorting-strategy
-                (quote ((agenda time-up priority-down tag-up))))))
-        (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
-        (tags-todo "phd/PROJ"
-                ((org-agenda-span 7)
-                 (org-agenda-overriding-header "Project Tasks"))))
-        ((org-agenda-tag-filter-preset '("+phd"))))
+          ("w" "PhD Agenda"
+           ((tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
+            (agenda "" ((org-agenda-start-day "0d")
+                        (org-agenda-span 7)
+                        (org-agenda-sorting-strategy
+                         (quote ((agenda time-up priority-down tag-up))))))
+            (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
+            (tags-todo "phd/PROJ"
+                       ((org-agenda-span 7)
+                        (org-agenda-overriding-header "Project Tasks")))
+            (tags-todo "phd/IDEA"
+                       ((org-agenda-span 7)
+                        (org-agenda-overriding-header "Idea Tasks"))))
+           ((org-agenda-tag-filter-preset '("+phd"))))
 
-    ;; Low-effort next actions
-    ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-     ((org-agenda-overriding-header "Low Effort Tasks")
-      (org-agenda-max-todos 20)
-      (org-agenda-files org-agenda-files))))))
+          ;; Low-effort next actions
+          ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+           ((org-agenda-overriding-header "Low Effort Tasks")
+            (org-agenda-max-todos 20)
+            (org-agenda-files org-agenda-files)))))
+  )
 
-;; (use-package org-super-agenda)
-;; FIXME: testing org super agenda
-
-(setq org-capture-templates
-  `(("t" "Tasks / Projects")
-    ("tt" "Inbox" entry (file+olp"~/org/org/agenda/tasks.org" "Inbox")
-         "* TODO %?\n  %U\n  %i" :empty-lines 1)
-    ("tw" "Work / PhD" entry (file+olp"~/org/org/agenda/tasks.org" "PhD")
-         "* TODO %?\n  %U\n  %i" :empty-lines 1)
-    ("tp" "Perso" entry (file+olp"~/org/org/agenda/tasks.org" "Perso")
-         "* TODO %?\n  %U\n  %i" :empty-lines 1)
-    ("te" "Emacs" entry (file+olp"~/org/org/agenda/tasks.org" "Emacs")
-         "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
-    ("e" "Events" entry (file+olp "~/org/org/agenda/events.org" "Calendar")
-       "* %?\n %i" :empty-line 1)))
 
 (map! :leader
-      :desc "Agenda Dashbord" "k a d" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "d"))
-      :desc "Agenda Dashbord" "k a w" #'(lambda (&optional arg) (interactive "P")(org-agenda arg "w")))
+      (:prefix ("k" . "perso")
+       :desc "Org Agenda" "a" #'org-agenda))
 
-(custom-set-faces!
-  '(org-scheduled-today :foreground "#51afef")
-)
+;; (custom-set-faces!
+;;   '(org-scheduled-today :foreground "ffb454", :slant bold)
+;; )
 
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
