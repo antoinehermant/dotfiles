@@ -63,6 +63,24 @@
     (dolist (line (split-string content "\n"))  
       (insert "\n    " line)))) 
 
+(defun dashboard-filter-time-no-habits ()
+  "Include entries with future scheduled/deadline times, excluding habits."
+  (let ((scheduled-time (org-get-scheduled-time (point)))
+        (deadline-time (org-get-deadline-time (point)))
+        (entry-timestamp (dashboard-agenda--entry-timestamp (point)))
+        (due-date (dashboard-due-date-for-agenda))
+        (now (current-time)))
+    (when (or (member "habit" (org-get-tags))
+              (org-entry-is-done-p)
+              (org-in-archived-heading-p)
+              (not (or (and scheduled-time (time-less-p scheduled-time due-date))
+                       (and deadline-time (time-less-p deadline-time due-date))
+                       (and entry-timestamp
+                            (time-less-p now entry-timestamp)
+                            (time-less-p entry-timestamp due-date)))))
+      (point))))
+
+(setq dashboard-filter-agenda-entry #'dashboard-filter-time-no-habits)
 ;; Add the widget to dashboard-items
 
 (setq dashboard-items '((recents   . 5)
