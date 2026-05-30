@@ -171,8 +171,9 @@ DIRECTION should be 1 for next, -1 for previous."
 ;;     (when selected-buffer
 ;;       (switch-to-buffer selected-buffer))))
 
-(define-key vterm-mode-map (kbd "M-1") 'vterm-send-M-1)
-(define-key vterm-mode-map (kbd "M-2") 'vterm-send-M-2)
+(define-key vterm-mode-map (kbd "M-1") '+workspace/switch-to-0)
+(define-key vterm-mode-map (kbd "M-2") '+workspace/switch-to-1)
+(define-key vterm-mode-map (kbd "M-3") '+workspace/switch-to-2)
 (define-key vterm-mode-map (kbd "M-`") 'popper-cycle)
 
 

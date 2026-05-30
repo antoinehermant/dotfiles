@@ -36,7 +36,7 @@
 (setq default-frame-alist (assq-delete-all 'background-color default-frame-alist))
 (setq default-frame-alist (assq-delete-all 'foreground-color default-frame-alist))
 
-(setq doom-theme 'doom-ayu-dark)
+(setq doom-theme 'night-owl)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.

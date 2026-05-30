@@ -19,6 +19,8 @@
 ;;
 ;;; Code:
 
+(require 'openwith)
+
 (use-package! openwith
   :config
   (setq openwith-associations

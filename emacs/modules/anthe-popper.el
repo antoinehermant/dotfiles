@@ -33,6 +33,7 @@
           "^\\*vterm"
           "^\\*Python"
           "^\\*compilation"
+          "*doom eval*"
           help-mode
           compilation-mode))   ; Add closing parenthesis here
   (popper-mode +1))
