@@ -41,6 +41,7 @@
 (require 'anthe-gptel)
 (require 'anthe-latex)
 (require 'anthe-lsp)
+(require 'anthe-modeline)
 (require 'anthe-mu4e)
 (setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps")
 (require 'anthe-openwith)
@@ -52,7 +53,6 @@
 (require 'anthe-transparency)
 (require 'anthe-vterm)
 (require 'anthe-workflow)
-
 
 (map! :leader
       :desc "App launcher" "\\" #'app-launcher-run-app)
