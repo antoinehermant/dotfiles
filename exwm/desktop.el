@@ -23,9 +23,6 @@
 
 (provide 'desktop)
 
-(display-battery-mode)
-(display-time-mode)
-
 ;; (use-package! exec-path-from-shell
 ;;   :config
 ;;   (exec-path-from-shell-initialize)
@@ -310,17 +307,18 @@
   ;; These keys should always pass through to Emacs
   (setq exwm-input-prefix-keys
     '(?\C-x
-      ?\C-c
+      ;; ?\C-c
       ;; ?\C-u
       ?\C-h
       ?\M-x
+      ?\M-i
+      ?\M-k
       ?\M-`
       ?\M-&
       ?\M-:
       ?\C-\M-j  ;; Buffer list
       ?\C-`
       ?\C-\ ;; Ctrl+Space
-      ?\i
       ?\\
       ?\M-m))
 
@@ -329,6 +327,8 @@
         ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
+  (define-key exwm-mode-map [?\M-i] 'exwm-input-release-keyboard)
+  (define-key exwm-mode-map [?\M-k] 'exwm-reset)
   ;; (global-set-key (kbd "s-/") 'counsel-linux-app)
   ;; (global-set-key (kbd "s-,") 'switch-to-buffer)
 ;; (setq exwm-manage-configurations
@@ -342,6 +342,8 @@
           ([?\s-r] . exwm-reset)
           ([?\s-k] . exwm-input-release-keyboard)
           ([?\s-l] . exwm-reset)
+          ([?\M-i] . exwm-input-release-keyboard)
+          ([?\M-k] . exwm-reset)
 
           ;; Move between windows
           ;; ([?\s-h] . windmove-left)
@@ -478,6 +480,8 @@
         (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
         (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
         (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
+        (exwm-input-set-key (kbd "M-k") 'exwm-input-release-keyboard)
+        (exwm-input-set-key (kbd "M-i") 'exwm-input-release-keyboard)
         (exwm-input-set-key (kbd "s-l") 'exwm-reset)
         (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
 
@@ -504,6 +508,8 @@
 
   (exwm-wm-mode))
 
+;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/qutebrowser.el/")
+;; (require 'qutebrowser)
 
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/desktop-environment/")
 (use-package! desktop-environment
@@ -530,7 +536,7 @@
   ;; (exwm-evil-enable-unconditionally)
 
   ;; We will disable `C-c' in insert state.
-  (define-key exwm-mode-map (kbd "C-c") nil)
+  ;; (define-key exwm-mode-map (kbd "C-c") nil)
   ;; (define-key exwm-mode-map (kbd "escape") nil)
 
   (map! :map exwm-mode-map
@@ -580,6 +586,7 @@
       (exwm-floating-hide)
     (windmove-left)))
 
+(require 'anthe-qutebrowser)
 
 ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 

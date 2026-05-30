@@ -197,3 +197,5 @@
        :config
        ;;literate
        (default +bindings +smartparens))
+
+(server-start)

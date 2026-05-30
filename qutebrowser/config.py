@@ -20,6 +20,21 @@ config.bind(',ps', 'set content.proxy socks5://localhost:1080;; reload')
 config.bind(',pd', 'set content.proxy system;; reload')
 config.bind(',d', 'config-cycle colors.webpage.darkmode.enabled')
 
+c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
+
+#qutebrowser.el config
+c.tabs.tabs_are_windows = True
+c.tabs.show = 'multiple'
+c.statusbar.show = 'always'
+c.new_instance_open_target = 'tab-silent'
+config.source("emacs_theme.py")
+# config.bind("o", "emacs '(qutebrowser-launcher)'")
+# config.bind("O", "emacs '(qutebrowser-launcher-tab)'")
+# config.bind("wo", "emacs '(qutebrowser-launcher-window)'")
+# config.bind("W", "emacs '(qutebrowser-launcher-private)'")
+# config.bind("go", "emacs '(qutebrowser-launcher \"{url:pretty}\")'")
+# config.bind("gO", "emacs '(qutebrowser-launcher-tab \"{url:pretty}\")'")
+
 # config.set('content.dns.override_system_dns', False)
 
 # Enable uBlock Origin filters
