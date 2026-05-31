@@ -35,6 +35,7 @@
 (require 'python)
 
 (use-package python
+  :hook (python-mode . lsp-deferred)
   :custom
   (python-indent-offset 4)
   (python-shell-interpreter "python3"))
@@ -44,11 +45,11 @@
   (interactive)
   (let* ((region-active (region-active-p))
          (start (if (region-active-p)
-                   (region-beginning)
-                 (line-beginning-position)))
-        (end (if (region-active-p)
-                 (region-end)
-               (line-end-position))))
+                    (region-beginning)
+                  (line-beginning-position)))
+         (end (if (region-active-p)
+                  (region-end)
+                (line-end-position))))
     (python-shell-send-region start end)
     ;; (deactivate-mark)  ; Quit visual mode
     (unless region-active
@@ -62,7 +63,7 @@
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)
 
-(add-hook 'python-mode-hook 'code-cells-mode-maybe)
+(add-hook 'python-mode-hook 'code-cells-mode)
 
 (add-hook 'python-mode-hook 'flymake-mode)
 
@@ -72,7 +73,7 @@
   (call-interactively #'code-cells-eval)
   ;; (call-interactively #'code-cells-forward-cell)
   ;; (evil-scroll-line-to-center nil)
-   )
+  )
 
 (defun my-python-mode-setup ()
   "Setup keybindings for Python mode."
@@ -96,7 +97,7 @@
 (map! :leader
       :desc "Forward to next cell" "]" #'code-cells-forward-cell
       :desc "Backward to previous cell" "[" #'code-cells-backward-cell
-      :desc "Activate pyvenv" "r a" #'pyvenv-activate
+      :desc "Activate conda env" "r a" #'pyvenv-activate
       :desc "Run python" "r p" #'run-python
       :desc "Jupyter run REPL" "r J" #'jupyter-run-repl)
 

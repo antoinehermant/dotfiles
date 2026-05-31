@@ -30,7 +30,6 @@
 (require 'anthe-bib)
 (require 'anthe-citar)
 (require 'anthe-control)
-(require 'anthe-comp)
 (require 'anthe-consult)
 (require 'anthe-dap)
 ;; (require 'anthe-desktop)
@@ -72,7 +71,7 @@
       ;; (set-buffer-modified-p nil)
       ;; (bury-buffer) ;; Hide the buffer
       ;; )))
-    )))
+      )))
 
 (defun my-open-current-buffer-externally ()
   "Open current buffer's file with appropriate application."

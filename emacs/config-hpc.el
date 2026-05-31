@@ -26,7 +26,6 @@
 (require 'config-core)
 
 (add-to-list 'load-path "~/.dotfiles/emacs/modules")
-(require 'anthe-comp)
 (require 'anthe-consult)
 (require 'anthe-dap)
 (require 'anthe-evil)
@@ -96,7 +95,7 @@
                     ;; Also handle undocumented (<active> <inactive>) form.
                     ((numberp (cadr alpha)) (cadr alpha)))
               100)
-              '(90 . 90) '(100 . 100)))))
+         '(90 . 90) '(100 . 100)))))
 (toggle-frame-transparency)
 (toggle-frame-transparency)
 
@@ -119,7 +118,7 @@
       (message "%s" (shell-command-to-string (concat "sbatch " (shell-quote-argument file)))))))
 
 (map! :leader
-        :desc "Submit batch job" "k s" #'sbatch-buffer)
+      :desc "Submit batch job" "k s" #'sbatch-buffer)
 
 (define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
   "Major mode for displaying slurm queue."
@@ -181,8 +180,8 @@
 
 (map! :leader
       (:prefix ("k q" . "squeue")
-        :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
-        :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
+       :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
+       :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
 
 (add-to-list 'popper-reference-buffers "*slurm-queue*")
 (add-to-list 'display-buffer-alist
@@ -194,8 +193,12 @@
 
 ;; (add-to-list 'eglot-server-programs
 ;;              `(python-mode . ("/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/bin/pyright-langserver")))
-(setq eglot-server-programs
-      `((python-mode . ("~/software/pyright-wrapper"))))
+;; (setq eglot-server-programs
+;;       `((python-mode . ("~/software/pyright-wrapper"))))
+
+;; Lauching LSP is slow there, so we don't start it on python-mode
+(remove-hook 'python-mode-hook #'lsp-deferred)
+(remove-hook 'python-mode-local-vars-hook #'lsp!)
 
 (provide 'config-ubelix)
 ;;; config-ubelix.el ends here
