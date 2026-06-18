@@ -88,5 +88,15 @@
 (map! :leader
       :desc "Open visited file externally" "k o d" #'my-open-current-buffer-externally)
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/inhibit-mouse-20260603.1158/")
+;; more elaborate than disable-mouse, like it handles evil better
+(use-package! inhibit-mouse
+  :config
+  (inhibit-mouse-mode 1))
+
+;; (after! persp-mode
+;;   (remove-hook 'persp-add-buffer-on-after-change-major-mode-filter-functions
+;;                #'doom-unreal-buffer-p))
+
 (provide 'config-local)
 ;;; config-local.el ends here

@@ -93,112 +93,51 @@
 ;;     ("Ncview" (exwm-floating-toggle-floating)
 ;;            (exwm-layout-toggle-mode-line))))
 
-(defun my/switch-to-firefox-buffer (&optional sources)
+(defun anthe/configure-window-by-class ()
+  "Configure window properties based on application class.
+Only toggle floating for main windows, not their child dialogs."
   (interactive)
-  (let ((selected (consult--multi (or sources consult-buffer-sources)
-                                  :require-match
-                                  (confirm-nonexistent-file-or-buffer)
-                                  :prompt "Switch to: "
-                                  :initial "^firefox: "
-                                  :history 'consult--buffer-history
-                                  :sort nil)))
-    ;; For non-matching candidates, fall back to buffer creation.
-    (unless (plist-get (cdr selected) :match)
-      (consult--buffer-action (car selected)))))
-
-(defvar saved-current-buffer-for-floating nil)
-(setq saved-current-buffer-for-floating nil)
-
-(defun efs/get-previous-buffer ()
-  (interactive)
-  (let ((original-buffer (previous-buffer)))
-   (setq saved-current-buffer-for-floating original-buffer)))
-
-
-
-(defvar exwm-frame-toggle nil
-  "Save the state of exwm-frame")
-(setq exwm-frame-toggle nil)
-
-
-(defun efs/configure-window-by-class ()
-  (interactive)
-  (when (string-match-p "Ncview: Ncview" exwm-class-name)
-         (unless exwm-frame-toggle nil
-             (progn
-           (exwm-floating-toggle-floating)
-           (setq exwm-frame-toggle t))))
-  (unless (find-ncview-buffer)
-  (when (string-match-p "Matplotlib" exwm-class-name)
-           (exwm-floating-toggle-floating))
-      ;; (switch-to-buffer (nth 1 (buffer-list)))
-      ;; (switch-to-buffer (nth 1 (buffer-list)))
-    (setq exwm-frame-toggle nil))
-  (when (string-match-p "Ncview" exwm-class-name)
-         (unless exwm-frame-toggle nil
-             (progn
-           (exwm-floating-toggle-floating)
-                (message "In Ncview 1")
-      ;; (switch-to-buffer (nth 1 (buffer-list)))
-      ;; (switch-to-buffer (nth 1 (buffer-list)))
-           (setq exwm-frame-toggle t))))
-  ;; (when (string-match-p "Ncview" exwm-class-name)
-  ;;          (exwm-floating-toggle-floating)
-  ;;               (message "In Ncview: Ncview")
-  ;;          (setq exwm-frame-toggle t))
-  (pcase exwm-class-name
-  ("Emacs" (exwm-workspace-move-window 3)))
-  (pcase exwm-class-name
-  ("VirtualBox Machine" (exwm-workspace-move-window 2)))
-  (pcase exwm-class-name
-  ("VirtualBox Manager" (exwm-floating-toggle-floating))))
-
-(defun find-ncview-buffers ()
-  "Returns t if an Ncview buffer exists, nil otherwise."
-  (interactive)
-  (save-excursion
-    (let ((found-buffer-p nil))
-      (dolist (b (buffer-list))
-        (when (string-match "Ncview<" (buffer-name b))
-          (setq found-buffer-p t)))
-      found-buffer-p)))
-
-(defun find-ncview-buffer ()
-  "Returns t if an Ncview buffer exists, nil otherwise."
-  (interactive)
-  (save-excursion
-    (let ((found-buffer-p nil))
-      (dolist (b (buffer-list))
-        (when (string-match "Ncview: Ncview" (buffer-name b))
-          (setq found-buffer-p t)))
-      found-buffer-p)))
-
-(defun efs/reset-frame-toggle-on-kill ()
-  "Reset exwm-frame-toggle when the last Ncview instance is killed."
-  (interactive)
-  (unless (find-ncview-buffers)
-      (setq exwm-frame-toggle nil)))
-
+  (when (or
+         ;; Ncview: Only toggle if not already floating (main window only)
+         (and (string-match-p "Ncview" exwm-class-name)
+              (not exwm--floating-frame))
+         ;; Matplotlib: Only toggle if not already floating (main window only)
+         (and (string-match-p "Matplotlib" exwm-class-name)
+              (not exwm--floating-frame))
+         ;; VirtualBox Manager: Always toggle (no child windows to worry about)
+         (string= "VirtualBox Manager" exwm-class-name))
+    (exwm-floating-toggle-floating)))
 
 (defun efs/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
+(defun anthe/philips-display ()
+  (interactive)
+  (when (string-match-p "philips" (shell-command-to-string "autorandr --detected"))
+    (shell-command "xrandr --newmode \"2560x1440_60.00\" 312.25 2560 2752 3024 3488 1440 1443 1448 1493 -hsync +vsync")
+    (shell-command "xrandr --addmode DP-1 \"2560x1440_60.00\"")
+    (shell-command "xrandr --output DP-1 --mode \"2560x1440_60.00\"")))
+
 (defun efs/update-displays ()
   (interactive)
   ;; (efs/run-in-background "autorandr --change --force")
   (shell-command "autorandr --change --force")
+  (anthe/philips-display)
   (exwm-randr-refresh)
   (efs/set-wallpaper))
+
 
 ;; Bind the toggle function to the Super key
 (defun efs/exwm-update-title ()
   (when (string-match-p "firefox" exwm-class-name)
-    (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))
+    (exwm-workspace-rename-buffer (format "%s" exwm-title)))
   (when (string-match-p "qutebrowser" exwm-class-name)
-    (exwm-workspace-rename-buffer (format "Qutebrowser: %s" exwm-title)))
+    (exwm-workspace-rename-buffer (format "%s" exwm-title)))
+  (when (string-match-p "libreoffice-impress" exwm-class-name)
+    (exwm-workspace-rename-buffer (format "%s" exwm-title)))
   (when (string-match-p "Ncview" exwm-class-name)
-    (exwm-workspace-rename-buffer (format "Ncview: %s" exwm-title))))
+    (exwm-workspace-rename-buffer (format "%s" exwm-title))))
 
 (defun my-toggle-mouse ()
   "Toggle mouse inhibition by calling several functions"
@@ -275,7 +214,7 @@
 
   ;; (add-hook 'exwm-init-hook #'efs/exwm-init-hook)
   ;; Set the default number of workspaces
-  (setq exwm-workspace-number 11)
+  (setq exwm-workspace-number 2)
 
   ;; This is needed to switch between char and line mode (with evil in line mode)
   ;; (setq exwm-input-line-mode-passthrough t)
@@ -287,11 +226,9 @@
 
   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
   ;; (add-hook 'exwm-manage-finish-hook #'efs/set-ncview-floating)
-  (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
+  (add-hook 'exwm-manage-finish-hook #'anthe/configure-window-by-class)
 
-  (add-hook 'kill-buffer-hook 'efs/reset-frame-toggle-on-kill)
-;;   (add-hook 'exwm-manage-force-tiling-hook #'efs/configure-window-by-class)
-;; (add-hook 'exwm-input-focus-in-hook 'efs/configure-window-by-class)
+  (add-hook 'exwm-mode-hook #'doom-mark-buffer-as-real-h)
 
   (setq exwm-layout-show-all-buffers t)
   (setq exwm-workspace-show-all-buffers t)
@@ -306,34 +243,34 @@
 
   ;; These keys should always pass through to Emacs
   (setq exwm-input-prefix-keys
-    '(?\C-x
-      ;; ?\C-c
-      ;; ?\C-u
-      ?\C-h
-      ?\M-x
-      ?\M-i
-      ?\M-k
-      ?\M-`
-      ?\M-&
-      ?\M-:
-      ?\C-\M-j  ;; Buffer list
-      ?\C-`
-      ?\C-\ ;; Ctrl+Space
-      ?\\
-      ?\M-m))
+        '(?\C-x
+          ;; ?\C-c
+          ;; ?\C-u
+          ?\C-h
+          ?\M-x
+          ?\M-i
+          ?\M-k
+          ?\M-`
+          ?\M-&
+          ?\M-:
+          ?\C-\M-j  ;; Buffer list
+          ?\C-`
+          ?\C-\ ;; Ctrl+Space
+          ?\\
+          ?\M-m))
 
-        ;; (push ?\i exwm-input-prefix-keys)
-        ;; (push (kbd "C-ESC") exwm-input-prefix-keys)
-        ;; (push (kbd "M-m") exwm-input-prefix-keys)
+  ;; (push ?\i exwm-input-prefix-keys)
+  ;; (push (kbd "C-ESC") exwm-input-prefix-keys)
+  ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
   (define-key exwm-mode-map [?\M-i] 'exwm-input-release-keyboard)
   (define-key exwm-mode-map [?\M-k] 'exwm-reset)
   ;; (global-set-key (kbd "s-/") 'counsel-linux-app)
   ;; (global-set-key (kbd "s-,") 'switch-to-buffer)
-;; (setq exwm-manage-configurations
-;;       '(((equal exwm-class-name "ncview")
-;;          floating t)))
+  ;; (setq exwm-manage-configurations
+  ;;       '(((equal exwm-class-name "ncview")
+  ;;          floating t)))
   ;; Set up global key bindings.  These always work, no matter the input state!
   ;; Keep in mind that changing this list after EXWM initializes has no effect.
   (setq exwm-input-global-keys
@@ -373,138 +310,142 @@
                         (lambda ()
                           (interactive)
                           (exwm-workspace-switch-create ,i))))
-                    (number-sequence 0 9))))
+                    (number-sequence 0 1))
+          ))
 
-        ;; Execute shell commands to set keyboard repeat rate
-        (shell-command "xset r rate 220 30")
+  ;; Execute shell commands to set keyboard repeat rate
+  (shell-command "xset r rate 220 30")
 
-        ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/exwm-0.33")
-        (require 'exwm-randr)
-        (exwm-randr-mode)
-        ;; disable this after having saved your config with autorandr --save <name-of-confg>
-        ;; (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
-        ;; (when (display-graphic-p)
-        ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
+  ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/elpa/exwm-0.33")
+  (require 'exwm-randr)
+  (exwm-randr-mode)
+  ;; disable this after having saved your config with autorandr --save <name-of-confg>
+  ;; (shell-command "xrandr" nil "xrandr --output eDP-1 --primary --mode 1920x1200 --pos 0x0 --rotate normal --output HDMI-1 --off --output DP-1 --mode 2560x1440 --pos 0x0 --rotate normal --output DP-2 --off")
+  ;; (when (display-graphic-p)
+  ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
-        (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
+  (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
+                                             1 "DP-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
+  ;; (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
+  ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
+  ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "DP-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "DP-1"
-        ;;                                            2 "eDP-1" 2 "DP-1"
-        ;;                                            3 "eDP-1" 3 "DP-1"
-        ;;                                            4 "eDP-1" 4 "DP-1"
-        ;;                                            5 "eDP-1" 5 "DP-1"
-        ;;                                            6 "eDP-1" 6 "DP-1"
-        ;;                                            0 "eDP-1" 10 "eDP-1"))
+  ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "DP-1"
+  ;;                                            2 "eDP-1" 2 "DP-1"
+  ;;                                            3 "eDP-1" 3 "DP-1"
+  ;;                                            4 "eDP-1" 4 "DP-1"
+  ;;                                            5 "eDP-1" 5 "DP-1"
+  ;;                                            6 "eDP-1" 6 "DP-1"
+  ;;                                            0 "eDP-1" 10 "eDP-1"))
 
-        ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "HDMI-1"
-        ;;                                            2 "eDP-1" 2 "HDMI-1"
-        ;;                                            3 "eDP-1" 3 "HDMI-1"
-        ;;                                            4 "eDP-1" 4 "HDMI-1"
-        ;;                                            5 "eDP-1" 5 "HDMI-1"
-        ;;                                            6 "eDP-1" 6 "HDMI-1"
-        ;;                                            0 "eDP-1" 10 "eDP-1"))
+  ;; (setq exwm-randr-workspace-monitor-plist '(1 "eDP-1" 1 "HDMI-1"
+  ;;                                            2 "eDP-1" 2 "HDMI-1"
+  ;;                                            3 "eDP-1" 3 "HDMI-1"
+  ;;                                            4 "eDP-1" 4 "HDMI-1"
+  ;;                                            5 "eDP-1" 5 "HDMI-1"
+  ;;                                            6 "eDP-1" 6 "HDMI-1"
+  ;;                                            0 "eDP-1" 10 "eDP-1"))
 
-        (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
+  (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
 
-        (efs/set-wallpaper)
-        (set-frame-parameter nil 'alpha-background 85)
-        (add-to-list 'default-frame-alist '(alpha-background . 85))
-        ;; Function to configure touchpad settings
-        ;; (defun configure-touchpad ()
-        ;; "Configure touchpad settings using xinput."
-        ;; (let ((touchpad-id
-        ;;         (shell-command-to-string "xinput | rg Touchpad | awk -F'id=' '{print $2}' | awk '{print $1}'")))
-        ;; (shell-command (format "xinput set-prop %s \"libinput Tapping Enabled\" 1" touchpad-id))
-        ;; (shell-command (format "xinput set-prop %s \"libinput Natural Scrolling Enabled\" 1" touchpad-id))))
+  (efs/set-wallpaper)
+  (set-frame-parameter nil 'alpha-background 85)
+  (add-to-list 'default-frame-alist '(alpha-background . 85))
+  ;; Function to configure touchpad settings
+  ;; (defun configure-touchpad ()
+  ;; "Configure touchpad settings using xinput."
+  ;; (let ((touchpad-id
+  ;;         (shell-command-to-string "xinput | rg Touchpad | awk -F'id=' '{print $2}' | awk '{print $1}'")))
+  ;; (shell-command (format "xinput set-prop %s \"libinput Tapping Enabled\" 1" touchpad-id))
+  ;; (shell-command (format "xinput set-prop %s \"libinput Natural Scrolling Enabled\" 1" touchpad-id))))
 
-        ;; ;; Call the function to configure touchpad
-        ;; (configure-touchpad)
+  ;; ;; Call the function to configure touchpad
+  ;; (configure-touchpad)
 
-        ;; (defun brightness-up ()
-        ;;   "Increase brightness by 10%"
-        ;; (interactive)
-        ;; (shell-command "brightnessctl set +5%"))
+  ;; (defun brightness-up ()
+  ;;   "Increase brightness by 10%"
+  ;; (interactive)
+  ;; (shell-command "brightnessctl set +5%"))
 
-        ;; (defun brightness-down ()
-        ;;   "Decrease brightness by 10%"
-        ;; (interactive)
-        ;; (shell-command "brightnessctl set 5%-"))
+  ;; (defun brightness-down ()
+  ;;   "Decrease brightness by 10%"
+  ;; (interactive)
+  ;; (shell-command "brightnessctl set 5%-"))
 
-        ;; (global-set-key (kbd "<XF86MonBrightnessUp>") 'brightness-up)
-        ;; (global-set-key (kbd "<XF86MonBrightnessDown>") 'brightness-down)
+  ;; (global-set-key (kbd "<XF86MonBrightnessUp>") 'brightness-up)
+  ;; (global-set-key (kbd "<XF86MonBrightnessDown>") 'brightness-down)
 
-        (defun redshift-down ()
-          "Increase brightness by 10%"
-        (interactive)
-        (start-process-shell-command "redshift" nil "redshift -O 6000"))
+  (defun redshift-down ()
+    "Increase brightness by 10%"
+    (interactive)
+    (start-process-shell-command "redshift" nil "redshift -O 6000"))
 
-        (defun redshift-up ()
-          "Decrease brightness by 10%"
-        (interactive)
-        (start-process-shell-command "redshift" nil "redshift -x"))
+  (defun redshift-up ()
+    "Decrease brightness by 10%"
+    (interactive)
+    (start-process-shell-command "redshift" nil "redshift -x"))
 
-        (exwm-input-set-key  (kbd "M-<XF86MonBrightnessUp>") 'redshift-up)
-        (exwm-input-set-key  (kbd "M-<XF86MonBrightnessDown>") 'redshift-down)
+  (exwm-input-set-key  (kbd "M-<XF86MonBrightnessUp>") 'redshift-up)
+  (exwm-input-set-key  (kbd "M-<XF86MonBrightnessDown>") 'redshift-down)
 
-        (defun flameshot-gui ()
-        "Take a screen shot with flameshot (gui version)"
-        (interactive)
-        (start-process-shell-command "flameshot" nil "flameshot gui"))
+  (defun flameshot-gui ()
+    "Take a screen shot with flameshot (gui version)"
+    (interactive)
+    (start-process-shell-command "flameshot" nil "flameshot gui"))
 
-        (exwm-input-set-key (kbd "<print>") 'flameshot-gui)
+  (exwm-input-set-key (kbd "<print>") 'flameshot-gui)
 
-        (setq desktop-environment-screenshot-directory "~/documents/pictures/Screenshots")
+  (setq desktop-environment-screenshot-directory "~/documents/pictures/Screenshots")
 
-        (exwm-input-set-key (kbd "s-m") 'exwm-toggle-local-mode)
-        (exwm-input-set-key (kbd "s-o c") 'citar-open)
-        (exwm-input-set-key (kbd "s-o v") 'multi-vterm)
-        (exwm-input-set-key (kbd "s-o g") 'gptel)
-        ;; (exwm-input-set-key (kbd "s-.") 'find-file)
-        (exwm-input-set-key (kbd "s-b k") 'kill-current-buffer)
-        (exwm-input-set-key (kbd "s-b R") 'rename-buffer)
-        (exwm-input-set-key (kbd "s-f r") 'consult-recent-file)
-        (exwm-input-set-key (kbd "s--") (lambda () (interactive) (exwm-layout-shrink-window-horizontally 50)))
-        (exwm-input-set-key (kbd "s-=") (lambda () (interactive) (exwm-layout-enlarge-window-horizontally 50)))
-        (exwm-input-set-key (kbd "s-_") (lambda () (interactive) (exwm-layout-shrink-window 50)))
-        (exwm-input-set-key (kbd "s-+") (lambda () (interactive) (exwm-layout-enlarge-window 50)))
-        (exwm-input-set-key (kbd "s-<right>") (lambda () (interactive) (exwm-floating-move 20 0)))
-        (exwm-input-set-key (kbd "s-<left>") (lambda () (interactive) (exwm-floating-move -20 0)))
-        (exwm-input-set-key (kbd "s-<down>") (lambda () (interactive) (exwm-floating-move 0 20)))
-        (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
-        (shell-command "bash ~/.dotfiles/.config-touchpad.sh")
-        (exwm-input-set-key  (kbd "s-h") 'windmove-left-or-hide-floating)
-        (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
-        (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
-        (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
-        (exwm-input-set-key (kbd "M-k") 'exwm-input-release-keyboard)
-        (exwm-input-set-key (kbd "M-i") 'exwm-input-release-keyboard)
-        (exwm-input-set-key (kbd "s-l") 'exwm-reset)
-        (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
+  (exwm-input-set-key (kbd "s-m") 'exwm-toggle-local-mode)
+  (exwm-input-set-key (kbd "s-o c") 'citar-open)
+  (exwm-input-set-key (kbd "s-o v") 'multi-vterm)
+  (exwm-input-set-key (kbd "s-o g") 'gptel)
+  ;; (exwm-input-set-key (kbd "s-.") 'find-file)
+  (exwm-input-set-key (kbd "s-b k") 'kill-current-buffer)
+  (exwm-input-set-key (kbd "s-b R") 'rename-buffer)
+  (exwm-input-set-key (kbd "s-f r") 'consult-recent-file)
+  (exwm-input-set-key (kbd "s--") (lambda () (interactive) (exwm-layout-shrink-window-horizontally 50)))
+  (exwm-input-set-key (kbd "s-=") (lambda () (interactive) (exwm-layout-enlarge-window-horizontally 50)))
+  (exwm-input-set-key (kbd "s-_") (lambda () (interactive) (exwm-layout-shrink-window 50)))
+  (exwm-input-set-key (kbd "s-+") (lambda () (interactive) (exwm-layout-enlarge-window 50)))
+  (exwm-input-set-key (kbd "s-<right>") (lambda () (interactive) (exwm-floating-move 20 0)))
+  (exwm-input-set-key (kbd "s-<left>") (lambda () (interactive) (exwm-floating-move -20 0)))
+  (exwm-input-set-key (kbd "s-<down>") (lambda () (interactive) (exwm-floating-move 0 20)))
+  (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
+  (shell-command "bash ~/.dotfiles/.config-touchpad.sh")
+  (exwm-input-set-key  (kbd "s-h") 'anthe/windmove-left-or-hide-floating)
+  (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
+  (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
+  (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
+  (exwm-input-set-key (kbd "M-k") 'exwm-input-release-keyboard)
+  (exwm-input-set-key (kbd "M-i") 'exwm-input-release-keyboard)
+  (exwm-input-set-key (kbd "s-l") 'exwm-reset)
+  (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
 
-        (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
-        (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))
+  (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
+  ;; (exwm-input-set-key (kbd "s-0") '(lambda () (interactive) (exwm-workspace-switch-create 10)))
 
-        ;; (defun my/exwm-ensure-normal-state ()
-        ;; (when (derived-mode-p 'exwm-mode)
-        ;; (evil-normal-state)))
-        ;; (add-hook 'buffer-list-update-hook #'my/exwm-ensure-normal-state)
+  ;; (defun my/exwm-ensure-normal-state ()
+  ;; (when (derived-mode-p 'exwm-mode)
+  ;; (evil-normal-state)))
+  ;; (add-hook 'buffer-list-update-hook #'my/exwm-ensure-normal-state)
 
-        ;; (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
-        ;; (add-hook 'exwm-workspace-switch-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
-        ;; ;; (add-hook 'exwm-workspace-switch-hook 'exwm-input-grab-keyboard)
-        ;; (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
-        ;; (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
-        ;; (general-define-key
-        ;; :keymaps 'exwm-mode-map
-        ;; :states 'normal
-        ;; "i" #'exwm-input-release-keyboard)
+  ;; (add-hook 'exwm-manage-finish-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+  ;; (add-hook 'exwm-workspace-switch-hook (lambda () (call-interactively #'exwm-input-grab-keyboard)))
+  ;; ;; (add-hook 'exwm-workspace-switch-hook 'exwm-input-grab-keyboard)
+  ;; (advice-add #'exwm-input-grab-keyboard :after (lambda (&optional id) (evil-normal-state)))
+  ;; (advice-add #'exwm-input-release-keyboard :after (lambda (&optional id) (evil-insert-state)))
+  ;; (general-define-key
+  ;; :keymaps 'exwm-mode-map
+  ;; :states 'normal
+  ;; "i" #'exwm-input-release-keyboard)
 
-        ;; (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
+  ;; (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
 
+  (efs/run-in-background "dunst")
 
   (exwm-wm-mode))
 
@@ -552,22 +493,8 @@
         :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
-(defun my-exwm-workspace-switch-to-buffer (orig-func buffer-or-name &rest args)
-(when buffer-or-name
-(if (or exwm--floating-frame
-        (with-current-buffer buffer-or-name exwm--floating-frame))
-    (exwm-workspace-switch-to-buffer buffer-or-name)
-    (apply orig-func buffer-or-name args))))
-        (derived-mode-p 'exwm-mode)
-
-(advice-add 'switch-to-buffer :around 'my-exwm-workspace-switch-to-buffer)
-(advice-add 'ivy--switch-buffer-action :around 'my-exwm-workspace-switch-to-buffer)
-;; (advice-add 'exwm-floating-toggle-floating :before 'delete-other-windows)
-
 ;; remap capslock to ctrl
 (shell-command "xmodmap ~/.dotfiles/exwm/Xmodmap")
-
-
 
 ;; (global-set-key (kbd "s-l") 'windmove-right)
 (global-set-key (kbd "s-x") 'evil-window-exchange)
@@ -575,13 +502,13 @@
 (defvar is-window-floating nil
   "is the current buffer floating?")
 
-(defun windmove-left-or-hide-floating ()
+(defun anthe/windmove-left-or-hide-floating ()
   (interactive)
   (if (eq exwm--floating-frame nil)
       (progn
         (setq is-window-floating nil))
-      (progn
-        (setq is-window-floating t)))
+    (progn
+      (setq is-window-floating t)))
   (if is-window-floating
       (exwm-floating-hide)
     (windmove-left)))

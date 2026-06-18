@@ -184,8 +184,7 @@ DIRECTION should be 1 for next, -1 for previous."
       :desc "Execute region of line in vterm" "v r" #'multi-vterm-execute-region-or-current-line
       :desc "Next shell buffer" "t n" #'my-next-shell-buffer
       :desc "Previous shell buffer" "t p" #'my-previous-shell-buffer
-      :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer
-      :desc "Switch to Firefox buffer" "b f" #'my/switch-to-firefox-buffer)
+      :desc "Switch to shell buffer" ">" #'switch-to-shell-buffer)
 
 (provide 'anthe-vterm)
 ;;; anthe-vterm.el ends here

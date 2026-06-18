@@ -41,8 +41,8 @@
   (let ((selected (consult--multi (or sources consult-buffer-sources)
                                   :require-match
                                   (confirm-nonexistent-file-or-buffer)
-                                  :prompt "Switch to: "
-                                  :initial "^qutebrowser: "
+                                  :prompt "Switch to Qute: "
+                                  :initial "qutebrowser^ "
                                   :history 'consult--buffer-history
                                   :sort nil)))
     ;; For non-matching candidates, fall back to buffer creation.
@@ -55,13 +55,17 @@
 
 (map! :leader
       (:prefix ("k q" . "qutebrowser")
-        :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
-        :desc "Qutebrowser switch (tabs and bookmarks)" "s" #'anthe-switch-to-qutebrowser-buffers))
+       :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
+       :desc "Qutebrowser switch (tabs and bookmarks)" "s" #'anthe-switch-to-qutebrowser-buffers))
+
+(map! :leader
+      :desc "Qutebrowser launcher" "s q l" #'qutebrowser-launcher
+      :desc "Qutebrowser switch (tabs and bookmarks)" "s q b" #'anthe-switch-to-qutebrowser-buffers)
 
 (custom-set-faces!
   '(vertico-group-title :foreground "#51afef")
   '(completions-annotations :foreground "#d2a6ff" :slant italic)
-)
+  )
 
 (provide 'anthe-qutebrowser)
 ;;; anthe-qutebrowser.el ends here
