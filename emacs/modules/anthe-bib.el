@@ -69,12 +69,12 @@
          (url-mime-accept-string "application/x-bibtex"))
     (insert
      (with-current-buffer (url-retrieve-synchronously url t)
-        (goto-char (point-min))
-        (while (not (looking-at "\n"))
-          (forward-line 1))
-        (let ((string (buffer-substring-no-properties (point) (point-max))))
-          (kill-buffer)
-          (decode-coding-string (string-trim string) 'utf-8))))
+       (goto-char (point-min))
+       (while (not (looking-at "\n"))
+         (forward-line 1))
+       (let ((string (buffer-substring-no-properties (point) (point-max))))
+         (kill-buffer)
+         (decode-coding-string (string-trim string) 'utf-8))))
     (clean-bibtex-entry)
     (add-file-entry)
     (let ((key (get-citation-key)))
@@ -83,14 +83,10 @@
 
 ;;NOTE: We could add here or in the python script an conditions to download it in inbox or preprints (could also be an option when calling add doi to bib)
 (defun download-pdf-from-doi (doi key dir)
-  "Download PDF for DOI and save as KEY.pdf using the Python script.
-The command runs asynchronously in the background."
-  (let ((command (format "/home/anthe/software/miniconda3/envs/generic/bin/python /home/anthe/projects/personal/scripts/research/doi2pdf.py \"%s\" \"%s\" \"%s\""
+  "Download PDF for DOI and save as KEY.pdf using doi2pdf CLI."
+  (let ((command (format "doi2pdf \"%s\" \"%s\" \"%s\""
                          doi key dir)))
-    (start-process-shell-command
-     "download-pdf"  ; Name of the process (arbitrary)
-     nil              ; No output buffer
-     command)         ; Command to run
+    (start-process-shell-command "download-pdf" nil command)
     (message "Downloading PDF for %s in the background..." key)))
 
 (defun get-citation-key ()
@@ -119,12 +115,14 @@ The command runs asynchronously in the background."
 (defun search-doi-in-bib (doi)
   "Check if the DOI exists in the default BibTeX file using a Python script.
 Returns t if the DOI exists, nil otherwise."
-  (let ((command (format "python3 /home/anthe/projects/personal/scripts/research/doiexistsinbib.py \"%s\" \"%s\""
+  (let ((command (format "doiexistsinbib \"%s\" \"%s\""
                          doi default-bib)))
     (string-equal "True" (string-trim (shell-command-to-string command)))))
 
 (map! :leader
       :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
+
+(add-hook 'bibtex-mode-hook (lambda () (apheleia-mode -1)))
 
 (provide 'anthe-bib)
 ;;; anthe-bib.el ends here
