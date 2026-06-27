@@ -19,8 +19,8 @@
 ;;
 ;;; Code:
 
-;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
-;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
@@ -29,13 +29,34 @@
 (straight-use-package 'elpy)
 (straight-use-package 'jupyter)
 ;; (use-package! python-mode)
-(straight-use-package 'virtualenv)
-(straight-use-package 'pipenv)
+;; (straight-use-package 'virtualenv)
+;; (straight-use-package 'pipenv)
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/python-environment-20150310.853/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/ctable-20210128.629/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/deferred-20170901.1330/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/concurrent-20170601.435/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/epc-20140610.534/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/jedi-core-20250602.2109/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/company-jedi-20200324.25/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pyenv-mode/")
+(use-package! company-jedi)
+(add-to-list 'company-backends 'company-jedi)
+
+(use-package! elpy
+  :after python-mode
+  :config
+  (elpy-enable))
+
+;; (setq jedi:complete-on-dot 't)
 (require 'python)
+;; (require 'conda)
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/conda.el")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pythonic")
+;; (use-package! conda)
 
 (use-package python
-  :hook (python-mode . lsp-deferred)
+  ;; :hook (python-mode . lsp-deferred)
   :custom
   (python-indent-offset 4)
   (python-shell-interpreter "python3"))
@@ -56,15 +77,16 @@
       (forward-line 1))
     (back-to-indentation)))
 
-(use-package pyvenv
-  :config
-  (pyvenv-mode 1))
+;; (use-package pyvenv
+;;   :config
+;;   (pyvenv-mode 1))
 
 (use-package! jupyter)
 (setq jupyter-repl-echo-eval-p t)
 
 (add-hook 'python-mode-hook 'code-cells-mode)
 
+(require 'flymake)
 (add-hook 'python-mode-hook 'flymake-mode)
 
 (defun my-run-cell-and-forward-cell ()

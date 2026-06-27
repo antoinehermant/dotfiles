@@ -37,40 +37,15 @@
           help-mode
           compilation-mode))   ; Add closing parenthesis here
   (popper-mode +1))
-  ;; (popper-echo-mode +1))                ; For echo area
+;; (popper-echo-mode +1))                ; For echo area
 
-
-;; Define global variables to store state
-(defvar vterm-popper-original-height nil
-  "Stores the original height of the vterm popup window.")
-(defvar vterm-popper-expanded nil
-  "Boolean flag to track if the vterm popup is expanded.")
-(defvar vterm-popper-original-height nil
-  "Stores the original height of the vterm popup window.")
-(defvar vterm-popper-expanded nil
-  "Boolean flag to track if the vterm popup is expanded.")
-
-(defun toggle-vterm-popper-size ()
-  "Toggle vterm popup window size between default and 3/4 of the screen height."
-  (interactive)
-  (let* ((vterm-window (seq-find (lambda (window)
-                                   (string-match-p "^\\*vterm" (buffer-name (window-buffer window))))
-                                 (window-list)))
-         (frame-height (frame-height))
-         (expanded-height (floor (* frame-height 0.80))))
-    (when vterm-window
-      (if vterm-popper-expanded
-          (progn
-            (window-resize vterm-window
-                           (- vterm-popper-original-height (window-height vterm-window)))
-            (setq vterm-popper-expanded nil))
-        (setq vterm-popper-original-height (window-height vterm-window))
-        (window-resize vterm-window
-                       (- expanded-height (window-height vterm-window)))
-        (setq vterm-popper-expanded t)))))
-
-;; Bind the function to a key
-(global-set-key (kbd "C-c `") 'toggle-vterm-popper-size)
+;; (setq popper-group-function #'popper-group-by-project) ; project.el projects
+(setq popper-group-function #'popper-group-by-projectile) ; projectile projects
+;; (setq popper-group-function #'popper-group-by-directory) ; group by project.el
+;;                                         ; project root, with
+;;                                         ; fall back to
+;;                                         ; default-directory
+;; (setq popper-group-function #'popper-group-by-perspective) ; group by perspective
 
 (map! :leader
       :desc "popper" "`" #'popper-toggle)

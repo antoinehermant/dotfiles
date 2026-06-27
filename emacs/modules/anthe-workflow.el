@@ -12,7 +12,7 @@
 ;; Package-Requires: ((emacs "24.3"))
 ;;
 ;; This file is not part of GNU Emacs.
-;;
+
 ;;; Commentary:
 ;;
 ;;  Description
@@ -45,19 +45,20 @@
 
 
   ;; Stolen from system crafters to use org roam for org agenda files but only files with specific tag
-  (defun anthe-org-roam-filter-by-tag (tag-name)
+  (defun anthe-org-roam-filter-by-tags (tag-list)
     (lambda (node)
-      (member tag-name (org-roam-node-tags node))))
+      (seq-some (lambda (tag) (member tag (org-roam-node-tags node))) tag-list)))
 
-  (defun anthe-org-roam-list-notes-by-tag (tag-name)
+  (defun anthe-org-roam-list-notes-by-tag (tag-list)
     (mapcar #'org-roam-node-file
             (seq-filter
-             (anthe-org-roam-filter-by-tag tag-name)
+             (anthe-org-roam-filter-by-tags tag-list)
              (org-roam-node-list))))
 
   (defun anthe-org-roam-refresh-agenda-list ()
     (interactive)
-    (setq org-agenda-files (anthe-org-roam-list-notes-by-tag "agenda")))
+    (setq org-agenda-files (anthe-org-roam-list-notes-by-tag '("ice_core" "roadmap" "agenda" "todo" "phd" "project" "training")))
+    (add-to-list 'org-agenda-files (expand-file-name "~/org/calendar.org")))
 
   ;; Build the agenda list the first time for the session
   (anthe-org-roam-refresh-agenda-list)
@@ -72,16 +73,19 @@
 
   (setq org-capture-templates
         `(("t" "Tasks / Projects")
-          ("tt" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+          ("ti" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
-          ("tw" "Work / PhD" entry (file+olp"~/org/roam/Tasks.org" "PhD")
+          ("tw" "Work / PhD" entry (file+olp"~/org/roam/PhDRoadmap.org" "TODOLIST")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
           ("tp" "Perso" entry (file+olp"~/org/roam/Tasks.org" "Perso")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
-          ("te" "Emacs" entry (file+olp"~/org/roam/Tasks.org" "Emacs")
+          ("te" "Emacs" entry (file+olp"~/org/roam/Emacs.org" "TODOLIST")
            "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
-          ("e" "Events" entry (file+olp "~/org/roam/Events.org" "Calendar")
-           "* %?\n %i" :empty-line 1)))
+          ;; ("e" "Events" entry (file+olp "~/org/roam/Events.org" "Calendar")
+          ;;  "* %?\n %i" :empty-line 1)
+          ))
+
+  (setq org-agenda-skip-scheduled-if-done t)
 
   (setq org-log-done 'time)
   (setq org-ellipsis " ▾"
@@ -113,6 +117,7 @@
                        ((org-agenda-overriding-header "PhD Tasks")
                         (org-agenda-todo-ignore-deadlines 'far)))
             (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
+            (tags-todo "+piano" ((org-agenda-overriding-header "Piano")))
             (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
 
           ;; ("n" "Next Tasks"
@@ -133,21 +138,29 @@
           ;;               ((org-agenda-span 7)
           ;;                (org-agenda-overriding-header "Project Tasks")))
           ;;      (org-agenda-tag-filter-preset '("+phd"))))
-
           ("w" "PhD Agenda"
-           ((tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
+           (
+            ;; (tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
             (agenda "" ((org-agenda-start-day "0d")
                         (org-agenda-span 7)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
-            (tags-todo "phd/TODO" ((org-agenda-overriding-header "Active Projects")))
+            (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
+            (tags-todo "phd+ice_core/TODO" ((org-agenda-overriding-header "  Ice Core")
+                                            (org-agenda-compact-blocks t)))
+            (tags-todo "phd+database/TODO" ((org-agenda-overriding-header "  AntADatabase")
+                                            (org-agenda-compact-blocks t)))
             (tags-todo "phd/PROJ"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Project Tasks")))
             (tags-todo "phd/IDEA"
                        ((org-agenda-span 7)
+                        (org-agenda-overriding-header "Idea Tasks")))
+            (tags-todo "phd+admin"
+                       ((org-agenda-span 7)
                         (org-agenda-overriding-header "Idea Tasks"))))
-           ((org-agenda-tag-filter-preset '("+phd"))))
+           ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
+           )
 
           ;; Low-effort next actions
           ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
@@ -156,6 +169,17 @@
             (org-agenda-files org-agenda-files)))))
   )
 
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-wild-notifier-20260127.533/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/alert-20260316.2025/")
+(use-package! org-wild-notifier)
+
+(setq org-wild-notifier-alert-time '(0 10 30)) 
+(setq org-wild-notifier-alert-times-property "NOTIF") 
+;; (setq org-wild-notifier-extra-alert-plist '(:persistent t))
+
+(setq alert-default-style 'notifications)
+(org-wild-notifier-mode)
+(add-to-list 'org-default-properties "NOTIF")
 
 (map! :leader
       (:prefix ("k" . "perso")
@@ -168,8 +192,89 @@
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
 (use-package! org-journal)
-(setq org-journal-date-format "%a, %d.%m.%Y"
-      org-journal-file-format "%d.%m.%Y.org")
+(setq org-journal-date-format "%a, %Y.%m.%d"
+      org-journal-file-format "%Y.%m.%d.org")
+(setq org-journal-dir "~/org/roam/journal")
+(map! :leader
+      :desc "Open current journal file" "n j o" #'org-journal-open-current-journal-file)
+
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-vcard-20250828.809/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-contacts-20260221.852/")
+(require 'org-vcard)
+(require 'org-contacts)
+;; (org-vcard-import-directory "~/documents/contacts/66d789c6-a165-408a-a658-5ed3d7170583" "~/org/contacts.org")
+
+;; (setq org-contacts-directory '"~/org/org/contacts/")
+(setq org-contacts-files '("~/org/org/contacts/test.org"))
+
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/khalel-20250910.946/")
+(use-package khalel
+  :after org
+  :config
+  ;; Import events in org
+  (khalel-add-capture-template)
+  (setq khalel-capture-key "e")
+  (setq khalel-import-org-file (expand-file-name "~/org/calendar.org"))
+  (setq khalel-import-start-date "-365")
+  (setq khalel-import-end-date "+365d")
+  (setq khalel-import-org-file-confirm-overwrite nil)
+  (setq khalel-default-calendar "infomaniak")
+  (setq khalel-run-vdirsyncer-after-capture t)
+  (setq khalel-import-org-file-header "#+TITLE: khalel imported calendar events\n\n#+COLUMNS: %ITEM %TIMESTAMP %LOCATION %CALENDAR\n\n")
+  ;; (khalel-run-vdirsyncer)
+  )
+
+(defun anthe/import-birthday-events ()
+  "Import birthdays via `khalel-import-events` in a specific birthday.org."
+  (interactive)
+  (let ((current-prefix-arg '(4))
+        (khalel-default-calendar "birthdays")
+        (khalel-import-org-file (concat org-directory "birthdays.org")))
+    (call-interactively #'khalel-import-events)))
+
+(defun khalel-run-vdirsyncer-silent ()
+  "Run vdirsyncer silently in background and import events."
+  (interactive)
+  (let ((vdirsyncer (or khalel-vdirsyncer-command
+                        (executable-find "vdirsyncer")))
+        (buf (get-buffer-create " *khalel-vdirsyncer-silent*")))
+    (make-process
+     :name "khalel-vdirsyncer-silent"
+     :buffer buf
+     :noquery t
+     :command (remq nil (flatten-list
+                         `(,vdirsyncer
+                           ,@(when khalel-vdirsyncer-extra-options
+                               (split-string khalel-vdirsyncer-extra-options))
+                           "sync"
+                           ,@(when khalel-vdirsyncer-collections
+                               (split-string khalel-vdirsyncer-collections)))))
+     :sentinel (lambda (p e)
+                 (when (and (eq 'exit (process-status p))
+                            (zerop (process-exit-status p)))
+                   (when khalel-import-events-after-vdirsyncer
+                     (khalel-import-events)))
+                 (kill-buffer buf)))))
+
+;; (run-at-time nil 600 'khalel-run-vdirsyncer-silent)
+
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-caldav-20260501.8/")
+(require 'org-caldav)
+
+;; URL of the caldav server
+(setq org-caldav-url "https://sync.infomaniak.com/calendars/AH07332")
+
+;; calendar ID on server
+(setq org-caldav-calendar-id "8f599f55-213b-43b2-a84f-ba16a2aa36f6")
+
+;; Org filename where new entries from calendar stored
+(setq org-caldav-inbox "~/org/org-calendar.org")
+
+;; Additional Org files to check for calendar events
+(setq org-caldav-files nil)
+
+;; Usually a good idea to set the timezone manually
+(setq org-icalendar-timezone "Europe/Berlin")
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here

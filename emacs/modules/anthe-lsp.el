@@ -28,10 +28,12 @@
 (use-package! lsp-mode
   :commands (lsp lsp-deferred)
   :config
-  (lsp-enable-which-key-integration t)
+  ;; (lsp-enable-which-key-integration nil)
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
   (lsp-headerline-breadcrumb-mode 1)
   (setq lsp-headerline-breadcrumb-enable t))
+
+(setq lsp-disabled-clients '(ruff ty))
 
 ;; (use-package eglot
 ;;   :config
@@ -67,11 +69,13 @@
   (company-minimum-prefix-length 1)
   (company-tooltip-align-annotations t)
   (company-require-match 'never)
-  (company-idle-delay 0)
-  (company-tooltip-idle-delay 0)
+  (company-idle-delay 0.2)
+  (company-tooltip-idle-delay 2)
   (company-show-numbers t))
 
 (add-to-list '+lsp-company-backends 'company-files t)
+
+(add-to-list 'company-backends '(company-files company-dabbrev))
 
 (add-to-list 'load-path "~/.config/emacs/.local/other/cape/")
 (use-package cape
@@ -101,6 +105,11 @@
 (with-eval-after-load 'company
   (define-key company-active-map (kbd "<return>") nil)
   (define-key company-active-map (kbd "RET") nil))
+
+(with-eval-after-load 'company
+  (add-hook 'inferior-python-mode-hook
+            (lambda ()
+              (setq-local company-backends '(company-capf company-jedi (company-files company-dabbrev))))))
 
 (provide 'anthe-lsp)
 ;;; anthe-lsp.el ends here

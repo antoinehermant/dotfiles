@@ -67,5 +67,7 @@ buffer's text scale."
 ;;         ;; location of tex2svg executable
 ;;         "~/node_modules/mathjax-node-cli/bin/tex2svg"))
 
+(add-hook 'bibtex-mode-hook (lambda () (setq format-on-save nil)))
+
 (provide 'anthe-latex)
 ;;; anthe-latex.el ends here

@@ -36,6 +36,7 @@
   (setq mu4e-get-mail-command "mbsync -a")
   (setq mu4e-root-maildir "~/documents/mail/") ;; does not exist anymore?
   (setq mu4e-headers-date-format "%Y/%m/%d")
+  (setq mu4e-index-update-error-warning 'nil)
   ;; (setq mu4e-headers-limit 500)
 
   ;; (setq +mu4e-gmail-accounts '(("ah74230@gmail.com" . "/Gmail")))
@@ -61,13 +62,13 @@
   ;;       )
   ;;       t)
   (setq mu4e-contexts
-      (list
+        (list
          (make-mu4e-context
           :name "Gmail"
           :match-func
-            (lambda (msg)
-              (when msg
-                (string-prefix-p "/Gmail" (mu4e-message-field msg :maildir))))
+          (lambda (msg)
+            (when msg
+              (string-prefix-p "/Gmail" (mu4e-message-field msg :maildir))))
           :vars '((user-mail-address . "ah74230@gmail.com")
                   (user-full-name    . "Antoine Hermant")
                   (mu4e-drafts-folder  . "/Gmail/[Gmail]/Drafts")
@@ -78,9 +79,9 @@
          (make-mu4e-context
           :name "Work"
           :match-func
-            (lambda (msg)
-              (when msg
-                (string-prefix-p "/Work" (mu4e-message-field msg :maildir))))
+          (lambda (msg)
+            (when msg
+              (string-prefix-p "/Work" (mu4e-message-field msg :maildir))))
           :vars '((user-mail-address . "antoine.hermant74@gmail.com")
                   (user-full-name    . "Antoine Hermant")
                   (mu4e-drafts-folder  . "/Work/[Gmail]/Drafts")
@@ -91,10 +92,10 @@
          (make-mu4e-context
           :name "Infomaniak"
           :match-func
-            (lambda (msg)
-              (when msg
-                (string-prefix-p "/Infomaniak" (mu4e-message-field msg :maildir))))
-            :vars '((user-mail-address . "antoine.hermant@etik.com")
+          (lambda (msg)
+            (when msg
+              (string-prefix-p "/Infomaniak" (mu4e-message-field msg :maildir))))
+          :vars '((user-mail-address . "antoine.hermant@etik.com")
                   (user-full-name    . "Antoine Hermant")
                   (mu4e-drafts-folder  . "/Infomaniak/Drafts")
                   (mu4e-sent-folder  . "/Infomaniak/Sent")
@@ -103,12 +104,12 @@
 
   (setq mu4e-bookmarks
         `((:name "Unread messages" :query "flag:unread AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash" :key 117)
-        (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash" :key 116)
-        (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
-        (:name "Messages with images" :query "mime:image/*" :key 112)
-        (:name "Finances" :query "from:miimosa AND NOT flag:trashed AND NOT tag:\\Trash OR from:linxea AND NOT tag:\\Trash AND NOT flag:trashed OR from:iroko AND NOT flag:trashed OR from:contact@louveinvest.com AND NOT flag:trashed AND NOT tag:\\Trash" :key ?f)
-        (:name "Research News" :query "from:cryolist-request AND NOT flag:trashed OR from:scholar AND NOT flag:trashed OR from:researchgate AND NOT flag:trashed" :key ?r)
-        (:name "Cryolist" :query "from:cryolist-request" :key ?c)))
+          (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash" :key 116)
+          (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
+          (:name "Messages with images" :query "mime:image/*" :key 112)
+          (:name "Finances" :query "from:miimosa AND NOT flag:trashed AND NOT tag:\\Trash OR from:linxea AND NOT tag:\\Trash AND NOT flag:trashed OR from:iroko AND NOT flag:trashed OR from:contact@louveinvest.com AND NOT flag:trashed AND NOT tag:\\Trash" :key ?f)
+          (:name "Research News" :query "from:cryolist-request AND NOT flag:trashed OR from:scholar AND NOT flag:trashed OR from:researchgate AND NOT flag:trashed" :key ?r)
+          (:name "Cryolist" :query "from:cryolist-request" :key ?c)))
 
   ;; (setq mu4e-maildir-shortcuts
   ;;       '(("/Gmail/Inbox"             . ?i)

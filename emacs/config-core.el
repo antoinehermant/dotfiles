@@ -1,19 +1,4 @@
-;; Place your private configuration here! Remember, you do not need to run 'doom
-;; sync' after modifying this file!
-
-
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets. It is optional.
-;; (setq user-full-name "John Doe"
-;;       user-mail-address "john@doe.com")
-
-;; Doom exposes five (optional) variables for controlling fonts in Doom:
-;;
-;; - `doom-font' -- the primary font to use
-;; - `doom-variable-pitch-font' -- a non-monospace font (where applicable)
-;; - `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;; - `doom-symbol-font' -- for symbols
+;; Place your private configuration here! Remember, you do not need to run 'doom sync' after modifying this file! Some functionality uses this to identify you, e.g. GPG configuration, email clients, file templates and snippets. It is optional. (setq user-full-name "John Doe" user-mail-address "john@doe.com") Doom exposes five (optional) variables for controlling fonts in Doom: - `doom-font' -- the primary font to use - `doom-variable-pitch-font' -- a non-monospace font (where applicable) - `doom-big-font' -- used for `doom-big-font-mode'; use this for presentations or streaming. - `doom-symbol-font' -- for symbols
 ;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
 ;;
 ;; See 'C-h v doom-font' for documentation and more examples of what they
@@ -32,11 +17,17 @@
 ;; `load-theme' function. This is the default:
 ;;
 
+(setq doom-theme 'night-owl)
+
+(custom-set-faces!
+  '(org-level-2 :foreground "#C792EA" )
+  '(org-list-dt :foreground "#F78C6C" :weight bold)
+  )
+
 ;; Removes the background color that was set in the early init (which turns the annoying white splash screen from vanilla emacs to a color)
 (setq default-frame-alist (assq-delete-all 'background-color default-frame-alist))
 (setq default-frame-alist (assq-delete-all 'foreground-color default-frame-alist))
 
-(setq doom-theme 'night-owl)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -101,8 +92,16 @@
 
 (setq doom-scratch-initial-major-mode 'org-mode)
 
-(set-face-attribute 'default nil :height 109)
+(set-face-attribute 'default nil :height 120)
 ;; (set-face-attribute 'default nil :height 200)
+
+(defun anthe/set-face-height-interactively (height)
+  "Set default face height to HEIGHT interactively."
+  (interactive (list (read-number "Height: " (face-attribute 'default :height))))
+  (set-face-attribute 'default nil :height height))
+
+(map! :leader
+      :desc "Set global face height" "k s f" #'anthe/set-face-height-interactively)
 
 (display-battery-mode)
 (display-time-mode)
@@ -115,7 +114,23 @@
   '(line-number-current-line :weight bold :foreground "#51afef" :slant normal) ; Explicitly set slant
   '(font-lock-keyword-face :foreground "#51afef")
   '(font-lock-comment-face :foreground "#5C6370")
-)
+  )
+
+;;Ibuffer format
+
+(with-eval-after-load 'ibuffer
+  (setq ibuffer-formats '((mark modified read-only locked " "
+                           (name 30 30 :left :elide)
+                           " "
+                           (size 9 -1 :right)
+                           " "
+                           (mode 16 16 :left :elide)
+                           " "
+                           (vc-status 12 :left)
+                           " " filename-and-process)
+                          (mark " "
+                                (name 16 -1)
+                                " " filename))))
 
 (setq image-use-external-converter t)
 (setq image-converter 'imagemagick)

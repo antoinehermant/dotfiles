@@ -183,7 +183,7 @@
        :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
        :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
 
-(add-to-list 'popper-reference-buffers "*slurm-queue*")
+(add-to-list 'popper-reference-buffers "*slurm-squeue*")
 (add-to-list 'display-buffer-alist
              '("\\*slurm-squeue\\*"
                (display-buffer-below-selected)

@@ -21,27 +21,27 @@
 
 (defun my-switch-laptop-charger ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/personal/scripts/home/switch_devices.py laptop_charger")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py laptop_charger")))
     (message "%s" output)))
 
 (defun my-switch-sound-system ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/personal/scripts/home/switch_devices.py sound_system")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py sound_system")))
     (message "%s" output)))
 
 (defun my-switch-drive-1 ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/personal/scripts/home/switch_devices.py drive_1")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py drive_1")))
     (message "%s" output)))
 
 (defun my-switch-desk-lamp ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/personal/scripts/home/switch_lights.py desk_lamp")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_lights.py desk_lamp")))
     (message "%s" output)))
 
 (defun my-sync-pi-nas ()
   (interactive)
-  (let ((output (async-shell-command "/home/anthe/projects/personal/scripts/system/sync_nas.sh")))
+  (let ((output (async-shell-command "/home/anthe/projects/perso/scripts/system/sync_nas.sh")))
     (message "%s" output)))
 
 (map! :leader

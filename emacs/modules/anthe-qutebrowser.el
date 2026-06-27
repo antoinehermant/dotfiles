@@ -53,14 +53,16 @@
 (global-qutebrowser-doom-modeline-mode)
 (qutebrowser-theme-export-mode)
 
-(map! :leader
-      (:prefix ("k q" . "qutebrowser")
-       :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
-       :desc "Qutebrowser switch (tabs and bookmarks)" "s" #'anthe-switch-to-qutebrowser-buffers))
+;; (map! :leader
+;;       (:prefix ("k q" . "qutebrowser")
+;;        :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
+;;        :desc "Qutebrowser switch (tabs and bookmarks)" "s" #'anthe-switch-to-qutebrowser-buffers))
 
 (map! :leader
-      :desc "Qutebrowser launcher" "s q l" #'qutebrowser-launcher
-      :desc "Qutebrowser switch (tabs and bookmarks)" "s q b" #'anthe-switch-to-qutebrowser-buffers)
+      (:prefix ("k q" . "qutebrowser")
+       :desc "Qutebrowser launcher" "o" #'qutebrowser-launcher
+       :desc "Qutebrowser launcher" "O" #'qutebrowser-launcher-window        
+       :desc "Qutebrowser switch (tabs and bookmarks)" "b" #'anthe-switch-to-qutebrowser-buffers))
 
 (custom-set-faces!
   '(vertico-group-title :foreground "#51afef")
