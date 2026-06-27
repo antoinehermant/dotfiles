@@ -27,6 +27,7 @@
 
 (add-to-list 'load-path "~/.dotfiles/emacs/modules")
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
+(require 'anthe-agents)
 (require 'anthe-bib)
 (require 'anthe-citar)
 (require 'anthe-control)
@@ -37,7 +38,6 @@
 (require 'app-launcher)
 (require 'anthe-evil)
 (require 'anthe-file-manager)
-(require 'anthe-gptel)
 (require 'anthe-latex)
 (require 'anthe-lsp)
 (require 'anthe-modeline)
