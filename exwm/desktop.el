@@ -414,7 +414,6 @@ Only toggle floating for main windows, not their child dialogs."
   (exwm-input-set-key (kbd "s-<left>") (lambda () (interactive) (exwm-floating-move -20 0)))
   (exwm-input-set-key (kbd "s-<down>") (lambda () (interactive) (exwm-floating-move 0 20)))
   (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
-  (shell-command "bash ~/.dotfiles/.config-touchpad.sh")
   (exwm-input-set-key  (kbd "s-h") 'anthe/windmove-left-or-hide-floating)
   (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
   (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
