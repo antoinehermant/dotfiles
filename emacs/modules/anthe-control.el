@@ -21,22 +21,22 @@
 
 (defun my-switch-laptop-charger ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py laptop_charger")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py laptop_charger")))
     (message "%s" output)))
 
 (defun my-switch-sound-system ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py sound_system")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py sound_system")))
     (message "%s" output)))
 
 (defun my-switch-drive-1 ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_devices.py drive_1")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py drive_1")))
     (message "%s" output)))
 
 (defun my-switch-desk-lamp ()
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/home/switch_lights.py desk_lamp")))
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_lights.py desk_lamp")))
     (message "%s" output)))
 
 (defun my-sync-pi-nas ()
@@ -44,11 +44,17 @@
   (let ((output (async-shell-command "/home/anthe/projects/perso/scripts/system/sync_nas.sh")))
     (message "%s" output)))
 
+(defun anthe/pivpn-toggle ()
+  (interactive)
+  (let ((output (shell-command-to-string "/home/anthe/projects/perso/scripts/system/toggle_pivpn.sh")))
+    (message "%s" output)))
+
 (map! :leader
       :desc "Backup files to my NAS" "k r b" #'my-sync-pi-nas
       :desc "Switch desk lamp" "k t l" #'my-switch-desk-lamp
       :desc "Switch sound system" "k t s" #'my-switch-sound-system
       :desc "Switch drive" "k t d" #'my-switch-drive-1
+      :desc "Switch pi VPN" "k t v" #'anthe/pivpn-toggle
       :desc "Switch laptop charger" "k t c" #'my-switch-laptop-charger)
 
 
