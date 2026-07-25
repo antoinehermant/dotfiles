@@ -321,11 +321,11 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (when (display-graphic-p)
   ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
-  ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
-  ;;                                            1 "DP-1"))
-
   (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
-                                             1 "HDMI-1"))
+                                             1 "DP-1"))
+
+  ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
+  ;;                                            1 "HDMI-1"))
   ;; (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
   ;; (setq exwm-randr-workspace-monitor-plist '(1 "HDMI-1" 2 "HDMI-1" 3 "HDMI-1" 4 "HDMI-1" 5 "HDMI-1"))
 
@@ -492,7 +492,7 @@ Only toggle floating for main windows, not their child dialogs."
         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
 ;; remap capslock to ctrl
-(shell-command "xmodmap ~/.dotfiles/exwm/Xmodmap")
+(shell-command "xmodmap ~/.dotfiles/.xmodmap")
 ;; Execute shell commands to set keyboard repeat rate
 (shell-command "xset r rate 220 30")
 

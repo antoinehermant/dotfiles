@@ -849,7 +849,8 @@ Also affects 'linum-mode' background."
      ((t (:inherit italic :foreground ,anthe-night-owl-emphasis))))
 
    `(font-latex-math-face
-     ((t (:foreground ,anthe-night-owl-violet))))
+     ((t (:foreground ,anthe-night-owl-magenta
+          :weight bold))))
 
    `(font-latex-sectioning-0-face
      ((t (:inherit font-latex-sectioning-1-face
@@ -3233,7 +3234,7 @@ Also affects 'linum-mode' background."
 
    `(org-block
      ((t (:foreground ,anthe-night-owl-emphasis
-          :background ,anthe-night-owl-highlight-alt))))
+          :background ,anthe-night-owl-gray-d))))
 
    `(org-block-background
      ((t (:background ,anthe-night-owl-highlight-alt))))
@@ -3246,6 +3247,7 @@ Also affects 'linum-mode' background."
    `(org-block-end-line
      ((t (:foreground ,anthe-night-owl-gray-l
           :background ,anthe-night-owl-gray-d
+          :underline ,anthe-night-owl-gray-d
           :slant italic))))
 
    `(org-checkbox

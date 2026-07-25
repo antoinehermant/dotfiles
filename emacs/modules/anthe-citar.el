@@ -34,7 +34,7 @@
 (require 'citar-format)
 
 (setq bibtex-completion-bibliography '("~/library/research/research.bib",
-                                        "~/library/textbooks/textbooks.bib"))
+                                       "~/library/textbooks/textbooks.bib"))
 (setq citar-bibliography '("~/library/research/research.bib"
                            "~/library/textbooks/textbooks.bib"))
 
@@ -69,9 +69,9 @@
    :tag "has:files"))
 
 (setq citar-indicators
-  (list citar-indicator-files-icons
-        citar-indicator-notes-icons
-        citar-indicator-links-icons))
+      (list citar-indicator-files-icons
+            citar-indicator-notes-icons
+            citar-indicator-links-icons))
 
 (setq citar-templates
       '((main . "${author editor:40%sn}  ${date year issued:4}  ${title:100}  ${journal:10} ")
@@ -90,6 +90,7 @@
       (:prefix ("k c" . "citar")
        :desc "insert citation" "i" #'citar-insert-citation
        :desc "open" "o" #'citar-open
+       :desc "dwim" "d" #'citar-dwim
        :desc "open at point" "O" #'citar-open-entry))
 
 (with-eval-after-load 'oc

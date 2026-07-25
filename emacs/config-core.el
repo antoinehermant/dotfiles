@@ -18,6 +18,7 @@
 ;;
 
 (setq doom-theme 'night-owl)
+;; (setq doom-theme 'doom-night-owl)
 
 (custom-set-faces!
   '(org-level-2 :foreground "#C792EA" )

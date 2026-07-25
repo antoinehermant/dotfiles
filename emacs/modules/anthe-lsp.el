@@ -69,7 +69,7 @@
   (company-minimum-prefix-length 1)
   (company-tooltip-align-annotations t)
   (company-require-match 'never)
-  (company-idle-delay 0.2)
+  (company-idle-delay 0.5)
   (company-tooltip-idle-delay 2)
   (company-show-numbers t))
 

@@ -26,6 +26,8 @@
         "pdflatex -interaction nonstopmode -output-directory %o %f"
         "pdflatex -interaction nonstopmode -output-directory %o %f"))
 
+(setq +latex-viewers '(pdf-tools evince sumatrapdf zathura okular))
+
 (require 'tex-site)
 (add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
 
