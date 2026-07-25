@@ -8,12 +8,13 @@ alias ds="du -sh"
 alias e="emacsclient -n"
 alias ew="emacsclient -nw"
 alias v="~/software/nvim-linux-x86_64/bin/nvim"
+alias pivpnup="sudo wg-quick up inspiron"
+alias pivpndown="sudo wg-quick down inspiron"
 #alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
 
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
-
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
