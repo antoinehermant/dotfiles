@@ -21,7 +21,6 @@
 
 
 
-(provide 'desktop)
 
 ;; (use-package! exec-path-from-shell
 ;;   :config
@@ -50,7 +49,8 @@
   (start-process-shell-command
    ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
    ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
-   "feh" nil "feh --bg-scale /usr/share/backgrounds/98315-deep-space-wallpaper-1920x1080.jpg"))
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png"))
+;; "feh" nil "feh --bg-scale /usr/share/backgrounds/98315-deep-space-wallpaper-1920x1080.jpg"))
 
 
 ;; (defun toggle-frame-transparency ()
@@ -207,8 +207,8 @@ Only toggle floating for main windows, not their child dialogs."
 ;; (defun my/leave-exwm ()
 ;;   (run-at-time 2 nil 'exwm-input-grab-keyboard))
 
-(add-to-list 'load-path "~/.config/emacs/.local/other/exwm/")
-(add-to-list 'load-path "~/.config/emacs/.local/other/xelb/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/exwm-0.35/")
+(add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.23")
 (use-package! exwm
   :config
 
@@ -324,6 +324,9 @@ Only toggle floating for main windows, not their child dialogs."
   (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
                                              1 "DP-1"))
 
+  ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
+  ;;                                            1 "DP-1-2-2"
+  ;;                                            2 "DP-1-3-3"))
   ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
   ;;                                            1 "HDMI-1"))
   ;; (setq exwm-randr-workspace-monitor-plist '(1 "DP-1" 2 "DP-1" 3 "DP-1" 4 "DP-1" 5 "DP-1"))
@@ -450,7 +453,7 @@ Only toggle floating for main windows, not their child dialogs."
 ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/qutebrowser.el/")
 ;; (require 'qutebrowser)
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/desktop-environment/")
+;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/desktop-environment/")
 (use-package! desktop-environment
   :after exwm
   :config (desktop-environment-mode)
@@ -465,7 +468,7 @@ Only toggle floating for main windows, not their child dialogs."
 ;; (use-package! exwm-evil :recipe
 ;;   (:host github :repo "LemonBreezes/exwm-evil"))
 (add-to-list 'load-path "~/.config/emacs/.local/other/exwm-evil/")
-(use-package! exwm-evil
+(use-package exwm-evil
   :after exwm
   :config
   (add-hook 'exwm-manage-finish-hook #'enable-exwm-evil-mode)
@@ -492,6 +495,7 @@ Only toggle floating for main windows, not their child dialogs."
         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
 ;; remap capslock to ctrl
+(shell-command "setxkbmap -layout us -variant altgr-intl")
 (shell-command "xmodmap ~/.dotfiles/.xmodmap")
 ;; Execute shell commands to set keyboard repeat rate
 (shell-command "xset r rate 220 30")
@@ -519,8 +523,8 @@ Only toggle floating for main windows, not their child dialogs."
 
 ;; ---------- ivy and counsel -------------------
 ;; Customize the appearance of the ivy-current-match face
-(custom-set-faces!
-  '(ivy-current-match :background "#21242b"))
+;; (custom-set-faces!
+;;   '(ivy-current-match :background "#21242b"))
 
 ;; Bind s-SPC to counsel-linux-app globally
 
@@ -549,4 +553,5 @@ Only toggle floating for main windows, not their child dialogs."
 
 ;; (setq vertico-multiform-mode nil)
 
+(provide 'exwm-desktop)
 ;;; desktop.el ends here

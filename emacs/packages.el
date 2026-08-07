@@ -65,4 +65,24 @@
 (package! dashboard
   :recipe (:host github :repo "emacs-dashboard/emacs-dashboard"))
 
+(package! shell-maker)
+(package! acp)
+(package! agent-shell)
+(package! org-vcard)
+                                        ; (package! org-contacts)
+(package! org-caldav)
+(package! khalel)
+(package! org-wild-notifier)
+(package! alert)
+
+(package! cape)
+
+
+;; (package! exwm)
+;; (package! xelb)
+;; (package! exwm-evil)
+(package! desktop-environment)
+
+;; (package! agent-shell)
+
 ;; (package! sqlite3)

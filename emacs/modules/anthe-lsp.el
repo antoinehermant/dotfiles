@@ -77,7 +77,7 @@
 
 (add-to-list 'company-backends '(company-files company-dabbrev))
 
-(add-to-list 'load-path "~/.config/emacs/.local/other/cape/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/other/cape/")
 (use-package cape
   ;; Bind prefix keymap providing all Cape commands under a mnemonic key.
   ;; Press C-c p ? to for help.

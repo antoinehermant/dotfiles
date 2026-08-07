@@ -25,16 +25,16 @@
 (require 'qutebrowser-evil)
 (require 'qutebrowser-doom-modeline)
 
-(defun qutebrowser-commandline-send (commands &optional start)
-  "Send COMMANDS to Qutebrowser via commandline."
-  (let ((running (qutebrowser-is-running-p)))
-    (if (or start running)
-        (progn
-          (unless running
-            (message "Starting new Qutebrowser instance."))
-          (apply #'start-process "qutebrowser" nil
-                 "/home/anthe/software/qutebrowser/.venv/bin/python3" "-m" "qutebrowser" commands))
-      (message "Qutebrowser is not running, not going to send commands via commandline."))))
+;; (defun qutebrowser-commandline-send (commands &optional start)
+;;   "Send COMMANDS to Qutebrowser via commandline."
+;;   (let ((running (qutebrowser-is-running-p)))
+;;     (if (or start running)
+;;         (progn
+;;           (unless running
+;;             (message "Starting new Qutebrowser instance."))
+;;           (apply #'start-process "qutebrowser" nil
+;;                  "/home/anthe/software/qutebrowser/.venv/bin/python3" "-m" "qutebrowser" commands))
+;;       (message "Qutebrowser is not running, not going to send commands via commandline."))))
 
 (defun anthe-switch-to-qutebrowser-buffers (&optional sources)
   (interactive)

@@ -22,9 +22,9 @@
 
 (require 'json)
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/agent-shell-20260604.855")
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/acp-20260527.2132/")
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/shell-maker-20260601.1034/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/agent-shell-20260604.855")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/acp-20260527.2132/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/shell-maker-20260601.1034/")
 
 (use-package agent-shell
   :config

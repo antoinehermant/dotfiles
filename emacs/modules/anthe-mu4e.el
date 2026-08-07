@@ -19,10 +19,11 @@
 ;;
 ;;; Code:
 
-(add-to-list 'load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.12.6/")
+;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.12.14/")
 (use-package mu4e
   ;; :load-path "~/.config/emacs/.local/mu4e-1.12.6/"
   :defer 20 ; Wait until 20 seconds after startup
+  :load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.12.14/"
   :config
 
   (mu4e t)

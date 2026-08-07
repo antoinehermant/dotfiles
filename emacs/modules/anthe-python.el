@@ -27,7 +27,7 @@
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
 (straight-use-package 'elpy)
-(straight-use-package 'jupyter)
+;; (straight-use-package 'jupyter)
 ;; (use-package! python-mode)
 ;; (straight-use-package 'virtualenv)
 ;; (straight-use-package 'pipenv)
@@ -81,8 +81,8 @@
 ;;   :config
 ;;   (pyvenv-mode 1))
 
-(use-package! jupyter)
-(setq jupyter-repl-echo-eval-p t)
+;; (use-package! jupyter)
+;; (setq jupyter-repl-echo-eval-p t)
 
 (add-hook 'python-mode-hook 'code-cells-mode)
 

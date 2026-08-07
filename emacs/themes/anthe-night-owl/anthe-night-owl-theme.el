@@ -602,7 +602,7 @@ Also affects 'linum-mode' background."
 
    `(dirvish-hl-line
      ((t (:foreground "#011627"
-          :background "#FFEB95"))))
+          :background ,anthe-night-owl-magenta))))
 
    ;; dired+ {{{
    `(diredp-compressed-file-suffix

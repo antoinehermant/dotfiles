@@ -31,7 +31,7 @@
 (require 'tex-site)
 (add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/org-fragtog/")
+; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/org-fragtog/")
 (use-package org-fragtog)
 (add-hook 'org-mode-hook 'org-fragtog-mode)
 

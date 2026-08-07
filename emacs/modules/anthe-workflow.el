@@ -20,14 +20,14 @@
 ;;; Code:
 
 (require 'org)
-(defun diary-last-day-of-month (date)
-  "Return `t` if DATE is the last day of the month."
-  (let* ((day (calendar-extract-day date))
-         (month (calendar-extract-month date))
-         (year (calendar-extract-year date))
-         (last-day-of-month
-          (calendar-last-day-of-month month year)))
-    (= day last-day-of-month)))
+;; (defun diary-last-day-of-month (date)
+;;   "Return `t` if DATE is the last day of the month."
+;;   (let* ((day (calendar-extract-day date))
+;;          (month (calendar-extract-month date))
+;;          (year (calendar-extract-year date))
+;;          (last-day-of-month
+;;           (calendar-last-day-of-month month year)))
+;;     (= day last-day-of-month)))
 
 ;; (defun my/set-org-agenda-files ()
 ;;   (setq org-agenda-files (append (directory-files-recursively "~/org/org/agenda/" "\\.org$"))))
@@ -169,21 +169,19 @@
             (org-agenda-files org-agenda-files)))))
   )
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-wild-notifier-20260127.533/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/org-wild-notifier-20260127.533/")
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/alert-20260316.2025/")
-(use-package! org-wild-notifier)
+(use-package org-wild-notifier)
 
 (setq org-wild-notifier-alert-time '(0 10 30)) 
 (setq org-wild-notifier-alert-times-property "NOTIF") 
-;; (setq org-wild-notifier-extra-alert-plist '(:persistent t))
 
 (setq alert-default-style 'notifications)
 (org-wild-notifier-mode)
 (add-to-list 'org-default-properties "NOTIF")
 
 (map! :leader
-      (:prefix ("k" . "perso")
-       :desc "Org Agenda" "a" #'org-agenda))
+      :desc "Org Agenda" "k a" #'org-agenda)
 
 ;; (custom-set-faces!
 ;;   '(org-scheduled-today :foreground "ffb454", :slant bold)
@@ -191,23 +189,22 @@
 
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
-(use-package! org-journal)
+(use-package org-journal)
 (setq org-journal-date-format "%a, %Y.%m.%d"
       org-journal-file-format "%Y.%m.%d.org")
 (setq org-journal-dir "~/org/roam/journal")
 (map! :leader
       :desc "Open current journal file" "n j o" #'org-journal-open-current-journal-file)
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-vcard-20250828.809/")
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-contacts-20260221.852/")
-(require 'org-vcard)
-(require 'org-contacts)
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/org-vcard-20250828.809/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/org-contacts-20260221.852/")
+;; (require 'org-vcard)
+;; (require 'org-contacts)
 ;; (org-vcard-import-directory "~/documents/contacts/66d789c6-a165-408a-a658-5ed3d7170583" "~/org/contacts.org")
 
 ;; (setq org-contacts-directory '"~/org/org/contacts/")
-(setq org-contacts-files '("~/org/org/contacts/test.org"))
+;; (setq org-contacts-files '("~/org/org/contacts/test.org"))
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/khalel-20250910.946/")
 (use-package khalel
   :after org
   :config
@@ -221,7 +218,6 @@
   (setq khalel-default-calendar "infomaniak")
   (setq khalel-run-vdirsyncer-after-capture t)
   (setq khalel-import-org-file-header "#+TITLE: khalel imported calendar events\n\n#+COLUMNS: %ITEM %TIMESTAMP %LOCATION %CALENDAR\n\n")
-  ;; (khalel-run-vdirsyncer)
   )
 
 (defun anthe/import-birthday-events ()
@@ -258,23 +254,26 @@
 
 ;; (run-at-time nil 600 'khalel-run-vdirsyncer-silent)
 
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/org-caldav-20260501.8/")
-(require 'org-caldav)
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/org-caldav-20260501.8/")
+;; (require 'org-caldav)
 
-;; URL of the caldav server
-(setq org-caldav-url "https://sync.infomaniak.com/calendars/AH07332")
+;; ;; URL of the caldav server
+;; (setq org-caldav-url "https://sync.infomaniak.com/calendars/AH07332")
 
-;; calendar ID on server
-(setq org-caldav-calendar-id "8f599f55-213b-43b2-a84f-ba16a2aa36f6")
+;; ;; calendar ID on server
+;; (setq org-caldav-calendar-id "8f599f55-213b-43b2-a84f-ba16a2aa36f6")
 
-;; Org filename where new entries from calendar stored
-(setq org-caldav-inbox "~/org/org-calendar.org")
+;; ;; Org filename where new entries from calendar stored
+;; (setq org-caldav-inbox "~/org/calendar.org")
 
-;; Additional Org files to check for calendar events
-(setq org-caldav-files nil)
+;; ;; Additional Org files to check for calendar events
+;; (setq org-caldav-files nil)
 
-;; Usually a good idea to set the timezone manually
-(setq org-icalendar-timezone "Europe/Berlin")
+;; ;; Usually a good idea to set the timezone manually
+;; (setq org-icalendar-timezone "Europe/Berlin")
+
+(map! :leader
+      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here
