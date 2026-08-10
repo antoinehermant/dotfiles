@@ -36,7 +36,8 @@
 (setq bibtex-completion-bibliography '("~/library/research/research.bib",
                                        "~/library/textbooks/textbooks.bib"))
 (setq citar-bibliography '("~/library/research/research.bib"
-                           "~/library/textbooks/textbooks.bib"))
+                           "~/library/textbooks/textbooks.bib"
+                           "~/library/cheatsheets/cheatsheets.bib"))
 
 (defvar citar-indicator-notes-icons
   (citar-indicator-create

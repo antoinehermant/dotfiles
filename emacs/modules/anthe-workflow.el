@@ -58,8 +58,11 @@
   (defun anthe-org-roam-refresh-agenda-list ()
     (interactive)
     (setq org-agenda-files (anthe-org-roam-list-notes-by-tag '("ice_core" "roadmap" "agenda" "todo" "phd" "project" "training")))
-    (add-to-list 'org-agenda-files (expand-file-name "~/org/calendar.org")))
-
+    (add-to-list 'org-agenda-files (expand-file-name "~/org/calendar.org"))
+    (add-to-list 'org-agenda-files (expand-file-name(format-time-string "%Y-%m-%d.org") "~/org/roam/daily/"))
+    (add-to-list 'org-agenda-files (expand-file-name(format-time-string "%Y-%m-%d.org" (time-subtract (current-time) (days-to-time 1))) "~/org/roam/daily/"))
+    )
+  
   ;; Build the agenda list the first time for the session
   (anthe-org-roam-refresh-agenda-list)
 
@@ -112,6 +115,7 @@
                      ))
             ;; (tags-todo "+habit" ;; FIXME: I could'nt make move habits to a specfic section because it shows it as regular task, not habit with the tracker
             ;;   ((org-agenda-overriding-header "Habits")))
+            (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
             (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
             (tags-todo "phd/TODO"
                        ((org-agenda-overriding-header "PhD Tasks")
@@ -145,6 +149,7 @@
                         (org-agenda-span 7)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
+            (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
             (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
             (tags-todo "phd+ice_core/TODO" ((org-agenda-overriding-header "  Ice Core")
                                             (org-agenda-compact-blocks t)))
