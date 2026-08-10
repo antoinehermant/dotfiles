@@ -1,4 +1,3 @@
-
 ;;
 ;; Copyright (C) 2025 anthe
 ;;
@@ -208,7 +207,7 @@ Only toggle floating for main windows, not their child dialogs."
 ;;   (run-at-time 2 nil 'exwm-input-grab-keyboard))
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/exwm-0.35/")
-(add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.23")
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.23")
 (use-package! exwm
   :config
 

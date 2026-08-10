@@ -78,8 +78,8 @@
 (package! cape)
 
 
-;; (package! exwm)
-;; (package! xelb)
+(package! exwm)
+(package! xelb)
 ;; (package! exwm-evil)
 (package! desktop-environment)
 
