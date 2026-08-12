@@ -5,8 +5,8 @@
 ;; Author: anthe <anthe@inspiron>
 ;; Maintainer: anthe <anthe@inspiron>
 ;; Created: February 15, 2026
-;; Modified: August 10, 2026
-;; Version: 0.1.0
+;; Modified: August 12, 2026
+;; Version: 0.2.0
 ;; Keywords: bibtex, bibliography, doi, research
 ;; Homepage: https://github.com/anthe/anthe-bib
 ;; Package-Requires: ((emacs "24.3"))
@@ -82,28 +82,6 @@
 
 ;; Python backend integration
 
-(defun python-process-doi (doi bib-file pdf-dir)
-  "Call Python bibliography manager to process a DOI.
-This function calls the Python bibliography manager which handles:
-- Fetching BibTeX from DOI
-- Cleaning the entry
-- Generating unique citation keys (Author_YYYYa, Author_YYYYb, etc.)
-- Adding to BibTeX file
-- Downloading PDF
-
-Returns a list of (success message citation-key bibtex-entry pdf-path)."
-  (let* ((command (format "python3 -m python_utils.research.bibliography process \"%s\" --bib \"%s\" --pdf-dir \"%s\" 2>/dev/null"
-                          doi bib-file pdf-dir))
-         (result (shell-command-to-string command)))
-    ;; Parse the JSON result
-    (let ((json-result (json-parse-string result)))
-      (list (gethash "success" json-result)
-            (gethash "message" json-result)
-            (gethash "citation_key" json-result)
-            (gethash "bibtex_entry" json-result)
-            (gethash "pdf_path" json-result)))))
-
-
 (defun python-check-doi-exists (doi bib-file)
   "Check if DOI exists in BibTeX file using Python."
   (let ((command (format "python3 -m python_utils.research.bibliography check \"%s\" --bib \"%s\" 2>/dev/null"
@@ -111,44 +89,70 @@ Returns a list of (success message citation-key bibtex-entry pdf-path)."
     (string-equal "True" (string-trim (shell-command-to-string command)))))
 
 
+(defun python-fetch-and-clean-doi (doi bib-file)
+  """Fetch BibTeX from DOI, clean it, and generate citation key.
+Does NOT add to BibTeX file or download PDF.
+
+Returns a list of (success message citation-key bibtex-entry)."""
+  (let* ((command (format "python3 -m python_utils.research.bibliography fetch-clean \"%s\" --bib \"%s\" 2>/dev/null"
+                          doi bib-file))
+         (result (shell-command-to-string command)))
+    ;; Parse the JSON result
+    (let ((json-result (json-parse-string result)))
+      (list (gethash "success" json-result)
+            (gethash "message" json-result)
+            (gethash "citation_key" json-result)
+            (gethash "bibtex_entry" json-result)))))
+
+
+(defun python-download-pdf (doi citation-key pdf-dir)
+  """Download PDF for DOI in the background."""
+  (let ((command (format "python3 -m python_utils.research.bibliography download-pdf \"%s\" \"%s\" --pdf-dir \"%s\" 2>/dev/null &"
+                         doi citation-key pdf-dir)))
+    (start-process-shell-command "download-pdf" nil command)
+    (message "Downloading PDF for %s in the background..." citation-key)))
+
+
 (defun insert-bibtex-from-doi (doi)
-  "Insert BibTeX entry from DOI at point using Python backend."
+  """Insert BibTeX entry from DOI at point using Python backend."""
   (interactive "sDOI: ")
-  (let* ((url (if (string-prefix-p "https://doi.org/" doi)
-                  doi
-                (concat "https://doi.org/" doi)))
-         (result (python-process-doi doi default-bib default-bib-download-path)))
+  (let* ((result (python-fetch-and-clean-doi doi default-bib)))
     
     (let ((success (nth 0 result))
           (message (nth 1 result))
           (citation-key (nth 2 result))
-          (bibtex-entry (nth 3 result))
-          (pdf-path (nth 4 result)))
+          (bibtex-entry (nth 3 result)))
       
       (if success
           (progn
             (insert bibtex-entry)
             (clean-bibtex-entry)
-            (message "BibTeX entry inserted: %s" citation-key))
+            (add-file-entry)
+            (message "BibTeX entry inserted: %s" citation-key)
+            ;; Start PDF download in background
+            (python-download-pdf doi citation-key default-bib-download-path))
         (message "Failed to insert BibTeX entry: %s" message)))))
 
 
 (defun add-doi-to-my-bib ()
-  "Add a DOI to the default BibTeX file using Python backend.
+  """Add a DOI to the default BibTeX file using Python backend.
 
 This is the main function for adding new bibliography entries.
-It will:
-1. Check if DOI already exists
+Workflow:
+1. Check if DOI already exists - if yes, abort immediately
 2. Fetch BibTeX entry from DOI
 3. Clean and format the entry
 4. Generate a unique citation key (handling duplicates with a, b, c suffixes)
-5. Add entry to BibTeX file
-6. Download PDF
-7. Add file and keywords fields"
+5. Add entry to BibTeX file with file and keywords fields
+6. Start PDF download in background
+
+The PDF download runs asynchronously so Emacs doesn't freeze."""
   (interactive)
   (let ((doi (read-string "DOI: ")))
+    ;; First check if DOI already exists - synchronous, abort if true
     (if (python-check-doi-exists doi default-bib)
         (message "DOI already exists in the BibTeX file!")
+      ;; DOI doesn't exist, proceed with processing
       (popper-toggle)
       (let ((buffer (find-file default-bib)))
         (with-current-buffer buffer
@@ -156,7 +160,7 @@ It will:
           (insert "\n")
           (insert-bibtex-from-doi doi)
           (save-buffer))
-        (message "DOI added to the BibTeX file!")))))
+        (message "DOI added to the BibTeX file! PDF download started in background.")))))
 
 
 ;; Keybindings
