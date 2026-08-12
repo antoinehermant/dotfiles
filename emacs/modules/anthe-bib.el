@@ -107,9 +107,11 @@ Returns a list of (success message citation-key bibtex-entry)."""
 
 (defun python-download-pdf (doi citation-key pdf-dir)
   """Download PDF for DOI in the background."""
-  (let ((command (format "python3 -m python_utils.research.bibliography download-pdf \"%s\" \"%s\" --pdf-dir \"%s\" 2>/dev/null &"
-                         doi citation-key pdf-dir)))
-    (start-process-shell-command "download-pdf" nil command)
+  (let ((proc (start-process "bib-pdf-dl" nil "python3" "-m" "python_utils.research.bibliography" "download-pdf" doi citation-key "--pdf-dir" pdf-dir)))
+    (set-process-sentinel proc (lambda (p _)
+                                 (if (eq (process-exit-status p) 0)
+                                     (message "PDF downloaded successfully for %s" citation-key)
+                                   (message "PDF download failed for %s" citation-key))))
     (message "Downloading PDF for %s in the background..." citation-key)))
 
 
