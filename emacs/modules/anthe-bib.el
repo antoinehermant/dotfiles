@@ -1,13 +1,13 @@
-;;; anthe-bib.el --- Description -*- lexical-binding: t; -*-
+;;; anthe-bib.el --- Bibliography management for Emacs -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2026 anthe
 ;;
 ;; Author: anthe <anthe@inspiron>
 ;; Maintainer: anthe <anthe@inspiron>
 ;; Created: February 15, 2026
-;; Modified: February 15, 2026
-;; Version: 0.0.1
-;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
+;; Modified: August 10, 2026
+;; Version: 0.1.0
+;; Keywords: bibtex, bibliography, doi, research
 ;; Homepage: https://github.com/anthe/anthe-bib
 ;; Package-Requires: ((emacs "24.3"))
 ;;
@@ -15,11 +15,26 @@
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;;  This module provides bibliography management functions that interface
+;;  with a Python backend for robust DOI processing, BibTeX entry fetching,
+;;  citation key management, and PDF downloading.
+;;
+;;  Main functions:
+;;  - add-doi-to-my-bib: Add a DOI to the bibliography (bound to k c a)
+;;  - insert-bibtex-from-doi: Insert BibTeX entry from DOI at point
+;;  - clean-bibtex-entry: Format the current BibTeX entry
 ;;
 ;;; Code:
 
-(defun clean-bibtex-entry()
+;; Configuration variables
+(defvar default-bib-download-path "/home/anthe/library/research/papers/"
+  "Default directory for downloading PDFs.")
+
+(defvar default-bib "/home/anthe/library/research/research.bib"
+  "Default BibTeX file for adding new entries.")
+
+
+(defun clean-bibtex-entry ()
   "Format the current BibTeX entry without wrapping lines."
   (interactive)
   (save-excursion
@@ -39,55 +54,11 @@
         (save-excursion
           (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
             (setq max-field-width (max max-field-width (length (match-string 1))))))
-        ;; Second pass: format entries FIXME: commneted out because format does not work
+        ;; Second pass: format entries FIXME: commented out because format does not work
         ;; (while (re-search-forward "^\\s-*\\(\\w+\\)\\s-*=" end t)
         ;;   (replace-match (format "  %-*s = " max-field-width (match-string 1))))
         ))))
 
-(defun add-file-entry ()
-  "Add a file entry to the BibTeX entry at point using the citation key."
-  (interactive)
-  (let ((key (get-citation-key)))
-    (when key
-      (save-excursion
-        ;; (search-forward (concat "}") nil t)
-        ;; (beginning-of-line)
-        ;; (forward-line 1)
-        (newline)
-        (insert (format "  file = {:papers/%s.pdf:PDF},\n" key))
-        (insert (format "  keywords = {},\n")))))
-  (re-search-forward "keywords = {"))
-
-(require 'url-http)
-(defvar default-bib-download-path "/home/anthe/library/research/papers/")
-(defun insert-bibtex-from-doi (doi)
-  (interactive "sDOI: ")
-  (let* ((url (if (string-prefix-p "https://doi.org/" doi)
-                  doi
-                (concat "https://doi.org/" doi)))
-         (url-request-method "GET")
-         (url-mime-accept-string "application/x-bibtex"))
-    (insert
-     (with-current-buffer (url-retrieve-synchronously url t)
-       (goto-char (point-min))
-       (while (not (looking-at "\n"))
-         (forward-line 1))
-       (let ((string (buffer-substring-no-properties (point) (point-max))))
-         (kill-buffer)
-         (decode-coding-string (string-trim string) 'utf-8))))
-    (clean-bibtex-entry)
-    (add-file-entry)
-    (let ((key (get-citation-key)))
-      (when key
-        (download-pdf-from-doi doi key default-bib-download-path)))))
-
-;;NOTE: We could add here or in the python script an conditions to download it in inbox or preprints (could also be an option when calling add doi to bib)
-(defun download-pdf-from-doi (doi key dir)
-  "Download PDF for DOI and save as KEY.pdf using doi2pdf CLI."
-  (let ((command (format "doi2pdf \"%s\" \"%s\" \"%s\""
-                         doi key dir)))
-    (start-process-shell-command "download-pdf" nil command)
-    (message "Downloading PDF for %s in the background..." key)))
 
 (defun get-citation-key ()
   "Extract the citation key from the BibTeX entry at point."
@@ -96,12 +67,87 @@
     (re-search-backward "^@\\(Article\\|Book\\|InProceedings\\|PhdThesis\\|TechReport\\|Misc\\){\\([^,]*\\)," nil t)
     (match-string 2)))
 
-;;NOTE: This could be replaced by citar bib file for example
-(defvar default-bib "/home/anthe/library/research/research.bib")
+
+(defun add-file-entry ()
+  "Add a file entry to the BibTeX entry at point using the citation key."
+  (interactive)
+  (let ((key (get-citation-key)))
+    (when key
+      (save-excursion
+        (newline)
+        (insert (format "  file = {:papers/%s.pdf:PDF},\n" key))
+        (insert (format "  keywords = {},\n")))))
+  (re-search-forward "keywords = {"))
+
+
+;; Python backend integration
+
+(defun python-process-doi (doi bib-file pdf-dir)
+  "Call Python bibliography manager to process a DOI.
+This function calls the Python bibliography manager which handles:
+- Fetching BibTeX from DOI
+- Cleaning the entry
+- Generating unique citation keys (Author_YYYYa, Author_YYYYb, etc.)
+- Adding to BibTeX file
+- Downloading PDF
+
+Returns a list of (success message citation-key bibtex-entry pdf-path)."
+  (let* ((command (format "python3 -m python_utils.research.bibliography process \"%s\" --bib \"%s\" --pdf-dir \"%s\" 2>/dev/null"
+                          doi bib-file pdf-dir))
+         (result (shell-command-to-string command)))
+    ;; Parse the JSON result
+    (let ((json-result (json-parse-string result)))
+      (list (gethash "success" json-result)
+            (gethash "message" json-result)
+            (gethash "citation_key" json-result)
+            (gethash "bibtex_entry" json-result)
+            (gethash "pdf_path" json-result)))))
+
+
+(defun python-check-doi-exists (doi bib-file)
+  "Check if DOI exists in BibTeX file using Python."
+  (let ((command (format "python3 -m python_utils.research.bibliography check \"%s\" --bib \"%s\" 2>/dev/null"
+                         doi bib-file)))
+    (string-equal "True" (string-trim (shell-command-to-string command)))))
+
+
+(defun insert-bibtex-from-doi (doi)
+  "Insert BibTeX entry from DOI at point using Python backend."
+  (interactive "sDOI: ")
+  (let* ((url (if (string-prefix-p "https://doi.org/" doi)
+                  doi
+                (concat "https://doi.org/" doi)))
+         (result (python-process-doi doi default-bib default-bib-download-path)))
+    
+    (let ((success (nth 0 result))
+          (message (nth 1 result))
+          (citation-key (nth 2 result))
+          (bibtex-entry (nth 3 result))
+          (pdf-path (nth 4 result)))
+      
+      (if success
+          (progn
+            (insert bibtex-entry)
+            (clean-bibtex-entry)
+            (message "BibTeX entry inserted: %s" citation-key))
+        (message "Failed to insert BibTeX entry: %s" message)))))
+
+
 (defun add-doi-to-my-bib ()
+  "Add a DOI to the default BibTeX file using Python backend.
+
+This is the main function for adding new bibliography entries.
+It will:
+1. Check if DOI already exists
+2. Fetch BibTeX entry from DOI
+3. Clean and format the entry
+4. Generate a unique citation key (handling duplicates with a, b, c suffixes)
+5. Add entry to BibTeX file
+6. Download PDF
+7. Add file and keywords fields"
   (interactive)
   (let ((doi (read-string "DOI: ")))
-    (if (search-doi-in-bib doi)
+    (if (python-check-doi-exists doi default-bib)
         (message "DOI already exists in the BibTeX file!")
       (popper-toggle)
       (let ((buffer (find-file default-bib)))
@@ -109,19 +155,15 @@
           (goto-char (point-max))
           (insert "\n")
           (insert-bibtex-from-doi doi)
-          (save-buffer)))
-      (message "DOI added to the BibTeX file!"))))
+          (save-buffer))
+        (message "DOI added to the BibTeX file!")))))
 
-(defun search-doi-in-bib (doi)
-  "Check if the DOI exists in the default BibTeX file using a Python script.
-Returns t if the DOI exists, nil otherwise."
-  (let ((command (format "doiexistsinbib \"%s\" \"%s\""
-                         doi default-bib)))
-    (string-equal "True" (string-trim (shell-command-to-string command)))))
 
+;; Keybindings
 (map! :leader
       :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
 
+;; Hooks
 (add-hook 'bibtex-mode-hook (lambda () (apheleia-mode -1)))
 
 (provide 'anthe-bib)
