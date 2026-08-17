@@ -144,6 +144,7 @@
         (user-error "Already at the first daily note")
       
       ;; Kill current buffer
+      (save-buffer)
       (kill-current-buffer)
       
       ;; Open previous note
@@ -168,6 +169,7 @@
         (user-error "Already at the last daily note")
       
       ;; Kill current buffer
+      (save-buffer)
       (kill-current-buffer)
       
       ;; Open next note

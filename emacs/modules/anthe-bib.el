@@ -119,9 +119,6 @@ Returns t if the DOI exists, nil otherwise."
                          doi default-bib)))
     (string-equal "True" (string-trim (shell-command-to-string command)))))
 
-(map! :leader
-      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
-
 (add-hook 'bibtex-mode-hook (lambda () (apheleia-mode -1)))
 
 (provide 'anthe-bib)

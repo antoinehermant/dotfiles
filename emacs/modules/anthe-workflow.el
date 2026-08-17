@@ -55,13 +55,13 @@
              (anthe-org-roam-filter-by-tags tag-list)
              (org-roam-node-list))))
 
-  (defun anthe-org-roam-refresh-agenda-list ()
+  (defun anthe-org-roam-refresh-agenda-list (&optional tags)
     (interactive)
-    (setq org-agenda-files (anthe-org-roam-list-notes-by-tag '("ice_core" "roadmap" "agenda" "todo" "phd" "project" "training")))
-    (add-to-list 'org-agenda-files (expand-file-name "~/org/calendar.org"))
-    (add-to-list 'org-agenda-files (expand-file-name(format-time-string "%Y-%m-%d.org") "~/org/roam/daily/"))
-    (add-to-list 'org-agenda-files (expand-file-name(format-time-string "%Y-%m-%d.org" (time-subtract (current-time) (days-to-time 1))) "~/org/roam/daily/"))
-    )
+    (let ((tags-list (or tags '("ice_core" "roadmap" "agenda" "todo" "phd" "project" "training"))))
+      (setq org-agenda-files (anthe-org-roam-list-notes-by-tag tags-list))
+      (add-to-list 'org-agenda-files (expand-file-name "~/org/calendar.org"))
+      (add-to-list 'org-agenda-files (expand-file-name (format-time-string "%Y-%m-%d.org") "~/org/roam/daily/"))
+      (add-to-list 'org-agenda-files (expand-file-name (format-time-string "%Y-%m-%d.org" (time-subtract (current-time) (days-to-time 1))) "~/org/roam/daily/"))))
   
   ;; Build the agenda list the first time for the session
   (anthe-org-roam-refresh-agenda-list)
@@ -109,7 +109,9 @@
         '(("d" "Dashboard"
            ((agenda "Agenda"
                     ((org-agenda-start-day "0d")
-                     (org-agenda-span 7)
+                     (org-agenda-span (- 8  (string-to-number (format-time-string "%u"))))
+                     (org-agenda-start-on-weekday nil)
+                     ;; (org-agenda-start-day "0")
                      ;; (org-agenda-skip-function
                      ;; '(org-agenda-skip-entry-if 'regexp ":habit:"))
                      ))
@@ -145,6 +147,7 @@
           ("w" "PhD Agenda"
            (
             ;; (tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
+            (anthe-org-roam-refresh-agenda-list '("phd" "calendar"))
             (agenda "" ((org-agenda-start-day "0d")
                         (org-agenda-span 7)
                         (org-agenda-sorting-strategy
@@ -164,7 +167,7 @@
             (tags-todo "phd+admin"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Idea Tasks"))))
-           ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
+           ;; ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
            )
 
           ;; Low-effort next actions
@@ -184,9 +187,6 @@
 (setq alert-default-style 'notifications)
 (org-wild-notifier-mode)
 (add-to-list 'org-default-properties "NOTIF")
-
-(map! :leader
-      :desc "Org Agenda" "k a" #'org-agenda)
 
 ;; (custom-set-faces!
 ;;   '(org-scheduled-today :foreground "ffb454", :slant bold)
@@ -278,7 +278,13 @@
 ;; (setq org-icalendar-timezone "Europe/Berlin")
 
 (map! :leader
-      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
+      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib
+      :desc "View citation network" "k c v" #'view-citation-network
+      :desc "Batch process bib entries" "k c b" #'batch-process-bib-entries
+      :desc "Goto today's notes" "k n d" (lambda () (interactive) (org-roam-dailies-goto-today "d"))
+      :desc "Goto today's journal" "k n j" #'anthe-roam-journal-goto-today
+      :desc "Org capture" "k x" #'org-capture
+      :desc "Org Agenda" "k a" #'org-agenda)
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here
