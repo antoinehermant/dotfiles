@@ -406,6 +406,7 @@ This makes them visible to org-roam."
         (user-error "Already at the first journal note")
       
       ;; Kill current buffer
+      (save-buffer)
       (kill-current-buffer)
       
       ;; Open previous note
@@ -432,6 +433,7 @@ This makes them visible to org-roam."
         (user-error "Already at the last journal note")
       
       ;; Kill current buffer
+      (save-buffer)
       (kill-current-buffer)
       
       ;; Open next note
