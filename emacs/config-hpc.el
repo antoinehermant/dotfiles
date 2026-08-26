@@ -101,8 +101,8 @@
 
 ;; (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
 (setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/")
-(setq pyvenv-virtual-env-name "fast")
-(pyvenv-activate "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/fast")
+(setq pyvenv-virtual-env-name "processing")
+(pyvenv-activate "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/processing")
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
@@ -183,12 +183,20 @@
        :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
        :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
 
-(add-to-list 'popper-reference-buffers "*slurm-queue*")
 (add-to-list 'display-buffer-alist
              '("\\*slurm-squeue\\*"
                (display-buffer-below-selected)
                (window-height . fit-window-to-buffer)))
 
+(use-package dirvish
+  :ensure t
+  :init
+  (dirvish-override-dired-mode)
+  :custom
+  (dirvish-quick-access-entries 
+   '(("h" "~/"                          "Home")
+     ("d" "/storage/workspaces/climate_charibdis/climate_ism/hermant/"  "hermant/")
+     )))
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
 ;; (add-to-list 'eglot-server-programs
