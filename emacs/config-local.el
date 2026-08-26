@@ -27,17 +27,17 @@
 
 (add-to-list 'load-path "~/.dotfiles/emacs/modules")
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
+(require 'anthe-agents)
 (require 'anthe-bib)
 (require 'anthe-citar)
 (require 'anthe-control)
 (require 'anthe-consult)
 (require 'anthe-dap)
-;; (require 'anthe-desktop)
+(require 'anthe-desktop)
 (require 'anthe-dashboard)
 (require 'app-launcher)
 (require 'anthe-evil)
 (require 'anthe-file-manager)
-(require 'anthe-gptel)
 (require 'anthe-latex)
 (require 'anthe-lsp)
 (require 'anthe-modeline)
@@ -87,6 +87,16 @@
 
 (map! :leader
       :desc "Open visited file externally" "k o d" #'my-open-current-buffer-externally)
+
+;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/inhibit-mouse-20260603.1158/")
+;; more elaborate than disable-mouse, like it handles evil better
+                                        ; (use-package! inhibit-mouse
+                                        ;   :config
+                                        ;   (inhibit-mouse-mode 1))
+
+;; (after! persp-mode
+;;   (remove-hook 'persp-add-buffer-on-after-change-major-mode-filter-functions
+;;                #'doom-unreal-buffer-p))
 
 (provide 'config-local)
 ;;; config-local.el ends here

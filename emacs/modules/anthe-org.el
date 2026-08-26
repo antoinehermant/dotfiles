@@ -27,8 +27,8 @@
 
 (set-face-foreground 'outline-3 "#7fd962")
 
-(require 'org-inline-pdf)
-(require 'org-present)
+;; (require 'org-inline-pdf)
+;; (require 'org-present)
 
 (provide 'anthe-org)
 ;;; anthe-org.el ends here

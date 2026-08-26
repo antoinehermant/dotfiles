@@ -26,10 +26,12 @@
         "pdflatex -interaction nonstopmode -output-directory %o %f"
         "pdflatex -interaction nonstopmode -output-directory %o %f"))
 
+(setq +latex-viewers '(pdf-tools evince sumatrapdf zathura okular))
+
 (require 'tex-site)
 (add-to-list 'auto-mode-alist '("\\.tex\\'" . LaTeX-mode))
 
-(add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/org-fragtog/")
+; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/org-fragtog/")
 (use-package org-fragtog)
 (add-hook 'org-mode-hook 'org-fragtog-mode)
 
@@ -66,6 +68,8 @@ buffer's text scale."
 ;;   (setq org-latex-impatient-tex2svg-bin
 ;;         ;; location of tex2svg executable
 ;;         "~/node_modules/mathjax-node-cli/bin/tex2svg"))
+
+(add-hook 'bibtex-mode-hook (lambda () (setq format-on-save nil)))
 
 (provide 'anthe-latex)
 ;;; anthe-latex.el ends here

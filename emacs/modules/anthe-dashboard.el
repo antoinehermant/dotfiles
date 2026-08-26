@@ -39,13 +39,13 @@
 (setq dashboard-vertically-center-content t)
 
 (defun get-today-cryolist ()
-  (shell-command-to-string "/home/anthe/projects/personal/scripts/research/cryolist.py"))
+  (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/research/cryolist.py"))
 
 (defun dashboard-insert-cryolist (_)
   (dashboard-insert-heading "   Cryolist:")  
   (let ((content (with-temp-buffer  
                    (get-today-cryolist)
-                   (insert-file-contents "~/projects/personal/scripts/research/cryolist.txt")
+                   (insert-file-contents "~/projects/perso/python/python-utils/python_utils/research/cryolist.txt")
                    (font-lock-ensure)  
                    (buffer-string))))  
     (dolist (line (split-string content "\n"))  
@@ -55,7 +55,7 @@
 (defun dashboard-insert-research-news (_)  
   (dashboard-insert-heading "   Research news:")  
   (let ((content (with-temp-buffer  
-                   (insert-file-contents "~/projects/personal/scripts/email/email_summaries/articles_of_the_day.org")  
+                   (insert-file-contents "~/org/roam/digest/articles_of_the_day.org")  
                    (org-mode)  
                    (font-lock-ensure)  
                    (org-indent-region (point-min) (point-max)) ; Applies Org indentation 
@@ -96,11 +96,12 @@
 
 (add-to-list 'dashboard-item-generators '(cryolist . dashboard-insert-cryolist))  
 (add-to-list 'dashboard-item-generators '(research-news . dashboard-insert-research-news))  
-  
+
 (add-to-list 'dashboard-items '(cryolist . 5) t)  
 (add-to-list 'dashboard-items '(research-news . 3) t) 
 
-(setq dashboard-projects-switch-function 'counsel-projectile-switch-project-action)
+(setq dashboard-projects-switch-function 'projectile-persp-switch-project)
+(setq dashboard-projects-backend 'projectile)
 (setq dashboard-show-shortcuts nil)
 
 ;; This is helpful as I cannot get dashboard to open agenda files otherwise
@@ -109,6 +110,21 @@
 
 (setq initial-buffer-choice #'dashboard-open) 
 (setq doom-fallback-buffer-name "*dashboard*")
+
+(defun anthe-refresh-dashboard-buffer ()
+  (interactive)
+  "Refresh the dashboard buffer without switching to it."
+  (when-let ((buf (get-buffer "*dashboard*")))
+    (save-excursion
+      (save-window-excursion
+        (with-current-buffer buf
+          (dashboard-refresh-buffer))))))
+
+(map! :leader
+      (:prefix ("k d" . "dashboard")
+       :desc "refrech dashboard buffer" "r" #'anthe-refresh-dashboard-buffer
+       :desc "Open dashboard" "o" #'dashboard-open))
+;; (run-at-time nil 120 'anthe-refresh-dashboard-buffer)
 
 (provide 'anthe-dashboard)
 ;;; anthe-dashboard.el ends here

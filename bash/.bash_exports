@@ -17,3 +17,7 @@ export PATH=$EMACS/bin:$PATH
 
 export PATH="$PATH:/home/anthe/.local/bin"
 export PATH="$PATH:/home/anthe/software/elsa/bin"
+
+
+export $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' ~/.secrets/.my_apis.json)
+         
