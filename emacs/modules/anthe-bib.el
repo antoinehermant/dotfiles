@@ -115,8 +115,28 @@ Returns a list of (success message citation-key bibtex-entry)."""
     (message "Downloading PDF for %s in the background..." citation-key)))
 
 
+(defun python-extract-references-background (doi citation-key)
+  """Extract cited DOIs from a DOI in the background using Python backend."""
+  (let ((proc (start-process "bib-ref-extract" nil
+                             "python3" "-m" "python_utils.research.bibliography"
+                             "extract-references" doi "--key" citation-key)))
+    (set-process-sentinel proc (lambda (p _)
+                                 (if (eq (process-exit-status p) 0)
+                                     (progn
+                                       (message "Reference extraction completed for %s" citation-key)
+                                       (call-process "notify-send" nil nil nil
+                                                     "Reference Extraction"
+                                                     (format "Completed for %s" citation-key)))
+                                   (message "Reference extraction failed for %s" citation-key)
+                                   (call-process "notify-send" nil nil nil
+                                                 "Reference Extraction"
+                                                 (format "Failed for %s" citation-key)))))
+    (message "Starting reference extraction for %s in background..." citation-key)))
+
 (defun insert-bibtex-from-doi (doi)
-  """Insert BibTeX entry from DOI at point using Python backend."""
+  """Insert BibTeX entry from DOI at point using Python backend.
+
+Always extracts cited DOIs from the paper in the background."""
   (interactive "sDOI: ")
   (let* ((result (python-fetch-and-clean-doi doi default-bib)))
     
@@ -132,7 +152,99 @@ Returns a list of (success message citation-key bibtex-entry)."""
             (add-file-entry)
             (message "BibTeX entry inserted: %s" citation-key)
             ;; Start PDF download in background
-            (python-download-pdf doi citation-key default-bib-download-path))
+            (python-download-pdf doi citation-key default-bib-download-path)
+            ;; Always extract references in background
+            (python-extract-references-background doi citation-key))
+        (message "Failed to insert BibTeX entry: %s" message)))))
+
+
+(defun add-file-entry ()
+  "Add a file entry to the BibTeX entry at point using the citation key."
+  (interactive)
+  (let ((key (get-citation-key)))
+    (when key
+      (save-excursion
+        (newline)
+        (insert (format "  file = {:papers/%s.pdf:PDF},\n" key))
+        (insert (format "  keywords = {},\n")))))
+  (re-search-forward "keywords = {"))
+
+
+;; Python backend integration
+
+(defun python-check-doi-exists (doi bib-file)
+  "Check if DOI exists in BibTeX file using Python."
+  (let ((command (format "python3 -m python_utils.research.bibliography check \"%s\" --bib \"%s\" 2>/dev/null"
+                         doi bib-file)))
+    (string-equal "True" (string-trim (shell-command-to-string command)))))
+
+
+(defun python-fetch-and-clean-doi (doi bib-file)
+  """Fetch BibTeX from DOI, clean it, and generate citation key.
+Does NOT add to BibTeX file or download PDF.
+
+Returns a list of (success message citation-key bibtex-entry)."""
+  (let* ((command (format "python3 -m python_utils.research.bibliography fetch-clean \"%s\" --bib \"%s\" 2>/dev/null"
+                          doi bib-file))
+         (result (shell-command-to-string command)))
+    ;; Parse the JSON result
+    (let ((json-result (json-parse-string result)))
+      (list (gethash "success" json-result)
+            (gethash "message" json-result)
+            (gethash "citation_key" json-result)
+            (gethash "bibtex_entry" json-result)))))
+
+
+(defun python-download-pdf (doi citation-key pdf-dir)
+  """Download PDF for DOI in the background."""
+  (let ((proc (start-process "bib-pdf-dl" nil "python3" "-m" "python_utils.research.bibliography" "download-pdf" doi citation-key "--pdf-dir" pdf-dir)))
+    (set-process-sentinel proc (lambda (p _)
+                                 (if (eq (process-exit-status p) 0)
+                                     (message "PDF downloaded successfully for %s" citation-key)
+                                   (message "PDF download failed for %s" citation-key))))
+    (message "Downloading PDF for %s in the background..." citation-key)))
+
+
+(defun python-extract-references-background (doi citation-key)
+  """Extract cited DOIs from a DOI in the background using Python backend."""
+  (let ((proc (start-process "bib-ref-extract" nil
+                             "python3" "-m" "python_utils.research.bibliography"
+                             "extract-references" doi "--key" citation-key)))
+    (set-process-sentinel proc (lambda (p _)
+                                 (if (eq (process-exit-status p) 0)
+                                     (progn
+                                       (message "Reference extraction completed for %s" citation-key)
+                                       (call-process "notify-send" nil nil nil
+                                                     "Reference Extraction"
+                                                     (format "Completed for %s" citation-key)))
+                                   (message "Reference extraction failed for %s" citation-key)
+                                   (call-process "notify-send" nil nil nil
+                                                 "Reference Extraction"
+                                                 (format "Failed for %s" citation-key)))))
+    (message "Starting reference extraction for %s in background..." citation-key)))
+
+(defun insert-bibtex-from-doi (doi)
+  """Insert BibTeX entry from DOI at point using Python backend.
+
+Always extracts cited DOIs from the paper in the background."""
+  (interactive "sDOI: ")
+  (let* ((result (python-fetch-and-clean-doi doi default-bib)))
+    
+    (let ((success (nth 0 result))
+          (message (nth 1 result))
+          (citation-key (nth 2 result))
+          (bibtex-entry (nth 3 result)))
+      
+      (if success
+          (progn
+            (insert bibtex-entry)
+            (clean-bibtex-entry)
+            (add-file-entry)
+            (message "BibTeX entry inserted: %s" citation-key)
+            ;; Start PDF download in background
+            (python-download-pdf doi citation-key default-bib-download-path)
+            ;; Always extract references in background
+            (python-extract-references-background doi citation-key))
         (message "Failed to insert BibTeX entry: %s" message)))))
 
 
@@ -147,8 +259,9 @@ Workflow:
 4. Generate a unique citation key (handling duplicates with a, b, c suffixes)
 5. Add entry to BibTeX file with file and keywords fields
 6. Start PDF download in background
+7. Always extract cited references in background
 
-The PDF download runs asynchronously so Emacs doesn't freeze."""
+The PDF download and reference extraction run asynchronously so Emacs doesn't freeze."""
   (interactive)
   (let ((doi (read-string "DOI: ")))
     ;; First check if DOI already exists - synchronous, abort if true
@@ -165,9 +278,39 @@ The PDF download runs asynchronously so Emacs doesn't freeze."""
         (message "DOI added to the BibTeX file! PDF download started in background.")))))
 
 
-;; Keybindings
-(map! :leader
-      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib)
+(defun python-generate-visualization (&optional open-in-browser)
+  """Generate citation network visualization HTML file.
+
+If OPEN-IN-BROWSER is non-nil, open the visualization in a web browser."""
+  (interactive "P")
+  (let* ((command (if open-in-browser
+                      "python3 -m python_utils.research.bibliography generate-viz --open 2>/dev/null"
+                    "python3 -m python_utils.research.bibliography generate-viz 2>/dev/null"))
+         (result (shell-command-to-string command)))
+    (message "%s" result)
+    (when (string-match "Visualization generated:" result)
+      (message "Opening visualization in browser..."))))
+
+
+(defun view-citation-network ()
+  """View the current citation network visualization."""
+  (interactive)
+  (python-generate-visualization t))
+
+
+(defun batch-process-bib-entries (&optional limit)
+  """Batch process all entries in the BibTeX file to extract references.
+
+If LIMIT is provided, only process that many entries."""
+  (interactive "nLimit (0 for all): ")
+  (let* ((limit-arg (if (and limit (> limit 0)) limit nil))
+         (command (format "python3 /home/anthe/projects/perso/python/python-utils/python_utils/research/batch_process_bib.py %s 2>/dev/null"
+                          (if limit-arg (format "--limit %d" limit-arg) "")))
+         (result (shell-command-to-string command)))
+    (message "%s" result)
+    (when (string-match "Batch processing completed successfully" result)
+      (message "Batch processing completed! Visualization updated."))))
+
 
 ;; Hooks
 (add-hook 'bibtex-mode-hook (lambda () (apheleia-mode -1)))
