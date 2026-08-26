@@ -12,9 +12,12 @@ alias pivpnup="sudo wg-quick up inspiron"
 alias pivpndown="sudo wg-quick down inspiron"
 #alias emacs="bash /home/anthe/.dotfiles/emacsclient-startup.sh"
 
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
+# alias l='ls -CF'
+alias ls='eza'
+alias la='eza -A'
+alias ll='eza -alF --icons group'
+alias l='eza -laF --icons --group'
+alias ld='eza -lar --icons --group --sort=date'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
