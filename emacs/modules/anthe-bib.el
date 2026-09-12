@@ -315,5 +315,42 @@ If LIMIT is provided, only process that many entries."""
 ;; Hooks
 (add-hook 'bibtex-mode-hook (lambda () (apheleia-mode -1)))
 
+(defun python-scholar-update-background (&optional days num-articles)
+  "Run email summary script in background.
+With prefix argument, prompts for DAYS and NUM-ARTICLES.
+Otherwise uses defaults (3 days, 5 articles)."
+  (interactive
+   (if current-prefix-arg
+       (list
+        (read-number "Days to look back (default 3): " 3)
+        (read-number "Number of top articles (default 5): " 5))
+     (list 3 5)))
+  (let ((proc (start-process "scholar-update" nil
+                             "python3" "-m" "python_utils.email.summary"
+                             "--days" (number-to-string days)
+                             "--num-articles" (number-to-string num-articles))))
+    (set-process-sentinel proc
+                          (lambda (process event)
+                            (if (eq (process-status process) 'exit)
+                                (message "Scholar update completed with %d articles from last %d days"
+                                         num-articles days)
+                              (message "Scholar update process: %s" event)))))
+  (anthe-refresh-dashboard-buffer))
+
+(defun python-scholar-update-monday-check ()
+  "Run scholar update on Monday at Emacs startup if today's file doesn't exist."
+  (interactive)
+  (message "In Monday check - day of week: %d" (calendar-day-of-week (current-time)))
+  (let ((today-file (format "/home/anthe/org/roam/digest/scholar_updates_%s.org"
+                            (format-time-string "%Y-%m-%d"))))
+    (message "Today's file: %s, exists: %s" today-file (file-exists-p today-file))
+    (when (eq (calendar-day-of-week (current-time)) 1) ; Monday is day 1
+      (if (file-exists-p today-file)
+          (message "Scholar digest already created for today: %s" today-file)
+        (message "Running Monday scholar digest...")
+        (python-scholar-update-background 7 5)))))
+
+(add-hook 'after-init-hook 'python-scholar-update-monday-check)
+
 (provide 'anthe-bib)
 ;;; anthe-bib.el ends here

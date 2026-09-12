@@ -45,7 +45,7 @@
   (dashboard-insert-heading "   Cryolist:")  
   (let ((content (with-temp-buffer  
                    (get-today-cryolist)
-                   (insert-file-contents "~/projects/perso/python/python-utils/python_utils/research/cryolist.txt")
+                   (insert-file-contents "~/org/roam/digest/cryolist.txt")
                    (font-lock-ensure)  
                    (buffer-string))))  
     (dolist (line (split-string content "\n"))  
