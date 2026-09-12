@@ -5,11 +5,11 @@ export PATH="$HOME/.config/emacs/bin:$PATH"
 export DOOMDIR=~/.config/doom
 
 if [ -n "$INSIDE_EMACS" ]; then
-    export EDITOR="emacsclient -n"
-    export VISUAL="emacsclient -n"
+	export EDITOR="emacsclient -n"
+	export VISUAL="emacsclient -n"
 else
-    export EDITOR="emacs -nw"
-    export VISUAL="emacs -nw"
+	export EDITOR="emacs -nw"
+	export VISUAL="emacs -nw"
 fi
 
 EMACS=/usr/local/emacs29.3-x11
@@ -17,7 +17,6 @@ export PATH=$EMACS/bin:$PATH
 
 export PATH="$PATH:/home/anthe/.local/bin"
 export PATH="$PATH:/home/anthe/software/elsa/bin"
-
+export PATH="/home/anthe/software/nvim-linux-x86_64/bin:$PATH"
 
 export $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' ~/.secrets/.my_apis.json)
-         

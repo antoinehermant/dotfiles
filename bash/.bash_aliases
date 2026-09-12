@@ -15,7 +15,7 @@ alias pivpndown="sudo wg-quick down inspiron"
 # alias l='ls -CF'
 alias ls='eza'
 alias la='eza -A'
-alias ll='eza -alF --icons group'
+alias ll='eza -alF --icons --group'
 alias l='eza -laF --icons --group'
 alias ld='eza -lar --icons --group --sort=date'
 
