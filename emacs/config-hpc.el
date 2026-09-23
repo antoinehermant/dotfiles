@@ -126,13 +126,25 @@
   (setq buffer-offer-save nil)  ; Disable save prompts
   (setq buffer-read-only t)  ; Make buffer read-only
   (local-set-key (kbd "q") 'quit-window)
-  (run-at-time nil 1 'squeue-reload))
+  (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
+  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
 
 (defvar-local slurm-queue-timer nil
   "Timer for auto-reloading slurm queue.")
 
 (defvar slurm-queue-last-update 0
   "Timestamp of last update.")
+
+(defun slurm-queue-toggle-reload ()
+  "Toggle auto-reload of slurm queue."
+  (interactive)
+  (if slurm-queue-timer
+      (progn
+        (cancel-timer slurm-queue-timer)
+        (setq slurm-queue-timer nil)
+        (message "Slurm queue auto-reload disabled"))
+    (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
+    (message "Slurm queue auto-reload enabled (1s)")))
 
 (defun squeue-reload ()
   (interactive)
@@ -161,7 +173,6 @@
           (with-current-buffer new-buf
             (slurm-queue-mode)
             (setq-local my-squeue-command command)
-            (setq slurm-queue-timer (run-at-time nil 5 'squeue-reload))
             (squeue-reload))
           (display-buffer new-buf))))))
 
@@ -183,11 +194,17 @@
        :desc "Display state of me squeue" "q" (lambda () (interactive) (squeue (alist-get 'q my-squeue-commands)))
        :desc "Display state of group queue" "g" (lambda () (interactive) (squeue (alist-get 'g my-squeue-commands)))))
 
+(defun slurm-squeue-window-height (buffer)
+  "Return window height for slurm-squeue buffer, capped at 1/3 of frame."
+  (with-current-buffer buffer
+    (min (1+ (count-lines (point-min) (point-max)))
+         (floor (* (frame-height) 0.33)))))
+
 (add-to-list 'popper-reference-buffers "*slurm-squeue*")
 (add-to-list 'display-buffer-alist
              '("\\*slurm-squeue\\*"
                (display-buffer-below-selected)
-               (window-height . fit-window-to-buffer)))
+               (window-height . slurm-squeue-window-height)))
 
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
