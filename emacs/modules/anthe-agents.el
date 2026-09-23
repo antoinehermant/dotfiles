@@ -40,7 +40,7 @@
 
 ;; ;; With string
 (setq agent-shell-mistral-authentication
-      (agent-shell-mistral-make-authentication :api-key (getenv "MISTRAL_VIBE_API_KEY")))
+      (agent-shell-mistral-make-authentication :api-key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
 
 ;; ;; With function (reusing the API key configured in vibe)
 ;; (setq agent-shell-mistral-authentication
