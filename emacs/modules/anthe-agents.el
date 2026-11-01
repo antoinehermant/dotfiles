@@ -42,6 +42,7 @@
 (setq agent-shell-mistral-authentication
       (agent-shell-mistral-make-authentication :api-key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
 
+(setopt agent-shell-persistent-prompt-enabled t)
 ;; ;; With function (reusing the API key configured in vibe)
 ;; (setq agent-shell-mistral-authentication
 ;;       (agent-shell-mistral-make-authentication
@@ -111,7 +112,8 @@
        :desc "gptel mode" " m" #'gptel-mode
        :desc "Open gptel" "o" #'gptel
        :desc "gptel rewrite" "r" #'gptel-rewrite
-       :desc "Eval region in gptel (gptel-send)" "s" #'gptel-send))
+       ;; :desc "Eval region in gptel (gptel-send)" "s" #'gptel-send)
+       ))
 
 (provide 'anthe-agents)
 ;;; anthe-agents.el ends here
