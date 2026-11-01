@@ -98,5 +98,13 @@
 ;;   (remove-hook 'persp-add-buffer-on-after-change-major-mode-filter-functions
 ;;                #'doom-unreal-buffer-p))
 
+(defun anthe/set-keyboard ()
+  "Run xmodmap to rebinding caps lock when bluetooth keyboard gets disconnected."
+  (interactive)
+  (shell-command "setxkbmap -layout us -variant altgr-intl")
+  (shell-command "xmodmap ~/.dotfiles/.xmodmap")
+  (shell-command "bluetoothctl connect $BLUETOOTH_MOUSE_MAC") ; connects mini mouse
+  (shell-command "xset r rate 220 30"))
+
 (provide 'config-local)
 ;;; config-local.el ends here
