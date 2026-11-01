@@ -34,3 +34,6 @@ I am a PhD student in Physics, focusing on glaciology. I do numerical modelling.
 
 * Workflow as a PhD student
 I am planing to document a bit more here my workflow in Emacs as a scholar, let me know if you're interested.
+
+* Notes on the phone
+I manage all my notes with org-roam. On my phone I use the [[https://github.com/Artawower/orgnote-client][OrgNote]] app, which opens my org files directly from a folder on the phone. [[https://syncthing.net][Syncthing]] keeps the laptop and the phone in sync, with my Raspberry Pi as the always-on, self-hosted hub, reachable from outside through WireGuard. The setup script and ignore patterns are in =syncthing/=.

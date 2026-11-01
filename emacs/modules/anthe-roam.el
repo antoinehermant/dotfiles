@@ -26,7 +26,41 @@
   :custom
   (org-roam-directory (file-truename "~/org/roam/"))
   :config
+  ;; Syncthing conflict copies duplicate :ID:s, keep them out of the db
+  (add-to-list 'org-roam-file-exclude-regexp "\\.sync-conflict-")
   (org-roam-db-autosync-enable))
+
+;;; Syncthing (laptop <-> pi <-> phone/OrgNote)
+
+;; Notes can change on disk from the phone: revert open roam buffers
+(defun anthe-roam--maybe-auto-revert ()
+  "Enable `auto-revert-mode' for files under `org-roam-directory'."
+  (when (and buffer-file-name
+             (file-in-directory-p buffer-file-name org-roam-directory))
+    (auto-revert-mode 1)))
+(add-hook 'find-file-hook #'anthe-roam--maybe-auto-revert)
+
+;; autosync only tracks saves from Emacs, so pick up external edits when idle
+(defvar anthe-roam--db-sync-timer
+  (run-with-idle-timer 300 t (lambda ()
+                               (when (featurep 'org-roam)
+                                 (let ((inhibit-message t))
+                                   (org-roam-db-sync)))))
+  "Idle timer syncing the org-roam db with files changed by Syncthing.")
+
+(defun anthe-roam--sync-conflict-original (conflict)
+  "Return the original file of Syncthing CONFLICT file."
+  (replace-regexp-in-string "\\.sync-conflict-[^.]*" "" conflict))
+
+(defun anthe-roam-sync-conflicts ()
+  "Pick a Syncthing conflict file under ~/org and ediff it with its original."
+  (interactive)
+  (let ((conflicts (directory-files-recursively
+                    (expand-file-name "~/org/") "\\.sync-conflict-")))
+    (if (null conflicts)
+        (message "No Syncthing conflicts")
+      (let ((conflict (completing-read "Conflict: " conflicts nil t)))
+        (ediff-files (anthe-roam--sync-conflict-original conflict) conflict)))))
 
 (use-package citar-org-roam
   :after (citar org-roam)
@@ -68,6 +102,7 @@
 ;; Org roam keybinding
 (map! :leader
       :desc "Sync database" "n r S" #'org-roam-db-sync
+      :desc "Sync conflicts" "n r c" #'anthe-roam-sync-conflicts
       :desc "consult org roam" "n r s" #'consult-org-roam-search)
 
 ;; Load anthe-roam-journal after org-roam

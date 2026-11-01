@@ -1,0 +1,12 @@
+// Syncthing ignore patterns for ~/org (laptop, pi and phone)
+// .stignore itself is never synced: copy it to every device.
+
+// Emacs lock, backup and autosave files
+.#*
+*~
+#*#
+
+// Databases and caches
+*.db
+*.db-journal
+ltximg
