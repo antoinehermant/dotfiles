@@ -134,21 +134,32 @@
   (local-set-key (kbd "q") 'quit-window)
   (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
   (evil-local-set-key 'normal (kbd "r") 'slurm-queue-toggle-reload)
-  ;; Cancel existing timer if any before creating new one
+  (add-hook 'kill-buffer-hook #'slurm-queue-stop-timer nil t)
+  (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick)))
+
+(defun slurm-queue-stop-timer ()
+  "Stop the auto-reload timer of the current buffer."
   (when slurm-queue-timer
-    (cancel-timer slurm-queue-timer))
-  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
+    (cancel-timer slurm-queue-timer)
+    (setq slurm-queue-timer nil)))
+
+(defun slurm-queue-tick ()
+  "Reload the queue, or stop the timer if no window displays it anymore."
+  (when-let ((buf (get-buffer "*slurm-squeue*")))
+    (if (get-buffer-window buf t)
+        (squeue-reload)
+      (with-current-buffer buf
+        (slurm-queue-stop-timer)))))
 
 (defun slurm-queue-toggle-reload ()
   "Toggle auto-reload of slurm queue."
   (interactive)
   (if slurm-queue-timer
       (progn
-        (cancel-timer slurm-queue-timer)
-        (setq slurm-queue-timer nil)
+        (slurm-queue-stop-timer)
         (message "Slurm queue auto-reload disabled"))
     (progn
-      (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
+      (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick))
       (message "Slurm queue auto-reload enabled (1s)"))))
 
 (defun squeue-reload ()
@@ -171,18 +182,19 @@
         ;; Window exists: close it and stop timer
         (progn
           (with-current-buffer buf-name
-            (when slurm-queue-timer
-              (cancel-timer slurm-queue-timer)
-              (setq slurm-queue-timer nil)))
+            (slurm-queue-stop-timer))
           (quit-window nil window))
       ;; Window doesn't exist: open it
       (let ((existing-buf (get-buffer buf-name)))
         (if existing-buf
-            ;; Buffer exists but window closed: display and restart timer
+            ;; Buffer exists but window closed: update it, display and restart timer
             (progn
               (with-current-buffer existing-buf
+                (setq-local my-squeue-command command)
+                (setq slurm-queue-last-update 0)
+                (squeue-reload)
                 (unless slurm-queue-timer
-                  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))))
+                  (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick))))
               (display-buffer existing-buf))
           ;; Buffer doesn't exist: create fresh
           (let ((new-buf (get-buffer-create buf-name)))
