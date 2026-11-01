@@ -26,7 +26,7 @@
 (defun anthe/qutebrowser-send-command (command)
   "Send COMMAND to qutebrowser via commandline."
   (interactive "MCommand: ")
-  (start-process "qutebrowser-cmd" nil "qutebrowser" ":" command))
+  (start-process "qutebrowser-cmd" nil "qutebrowser" (concat ":" command)))
 
 (require 'qutebrowser)
 (require 'qutebrowser-consult)
