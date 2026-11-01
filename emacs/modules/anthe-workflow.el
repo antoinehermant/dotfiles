@@ -147,12 +147,13 @@
           ("w" "PhD Agenda"
            (
             ;; (tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
-            (anthe-org-roam-refresh-agenda-list '("phd" "calendar"))
+            (anthe-org-roam-refresh-agenda-list '("phd" "calendar" "inbox"))
             (agenda "" ((org-agenda-start-day "0d")
                         (org-agenda-span 7)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
+            (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
             (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
             (tags-todo "phd+ice_core/TODO" ((org-agenda-overriding-header "  Ice Core")
                                             (org-agenda-compact-blocks t)))
@@ -284,7 +285,10 @@
       :desc "Goto today's notes" "k n d" (lambda () (interactive) (org-roam-dailies-goto-today "d"))
       :desc "Goto today's journal" "k n j" #'anthe-roam-journal-goto-today
       :desc "Org capture" "k x" #'org-capture
-      :desc "Org Agenda" "k a" #'org-agenda)
+      :desc "Org Agenda" "k a" #'org-agenda
+      :desc "Workspace swap left" "TAB h" #'+workspace/swap-left
+      :desc "Workspace swap right" "TAB l" #'+workspace/swap-right
+      )
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here
