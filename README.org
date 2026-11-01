@@ -34,3 +34,14 @@ I am a PhD student in Physics, focusing on glaciology. I do numerical modelling.
 
 * Workflow as a PhD student
 I am planing to document a bit more here my workflow in Emacs as a scholar, let me know if you're interested.
+
+* System monitor in a buffer
+Since Emacs is my window manager, I wanted a system monitor one keystroke away rather than an app to open. =s-o m= shows [[https://github.com/aristocratos/btop][btop]] in a regular buffer, so it can sit in any window next to my terminal and my scripts.
+
+It is a small module, [[file:emacs/modules/anthe-sysmon.el][anthe-sysmon.el]], that runs btop in [[https://github.com/akermu/emacs-libvterm][vterm]]:
+- Read-only: no key reaches btop, so no process gets killed by accident. =q= hides the buffer and =Q= stops btop.
+- Follows the Emacs theme: btop's =TTY= theme uses the 16 terminal colors, which vterm takes from the Emacs faces.
+- Paused when hidden: btop is stopped while no window displays the buffer, and resumed when one does.
+- Plays well with popups: its own major mode, derived from =vterm-mode=, keeps it out of popper.
+
+It is written for Doom Emacs (it uses =doom-cache-dir=) and the keybinding is set in my EXWM config. btop needs a window of at least 80x24 to show all its boxes.
