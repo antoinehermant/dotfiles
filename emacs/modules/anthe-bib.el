@@ -340,11 +340,11 @@ Otherwise uses defaults (3 days, 5 articles)."
 (defun python-scholar-update-monday-check ()
   "Run scholar update on Monday at Emacs startup if today's file doesn't exist."
   (interactive)
-  (message "In Monday check - day of week: %d" (calendar-day-of-week (current-time)))
+  (message "In Monday check - day of week: %d" (string-to-number (format-time-string "%u")))
   (let ((today-file (format "/home/anthe/org/roam/digest/scholar_updates_%s.org"
                             (format-time-string "%Y-%m-%d"))))
     (message "Today's file: %s, exists: %s" today-file (file-exists-p today-file))
-    (when (eq (calendar-day-of-week (current-time)) 1) ; Monday is day 1
+    (when (eq (string-to-number (format-time-string "%u")) 1) ; Monday is day 1
       (if (file-exists-p today-file)
           (message "Scholar digest already created for today: %s" today-file)
         (message "Running Monday scholar digest...")
