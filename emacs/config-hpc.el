@@ -120,20 +120,24 @@
 (map! :leader
       :desc "Submit batch job" "k s" #'sbatch-buffer)
 
-(define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
-  "Major mode for displaying slurm queue."
-  (setq buffer-undo-list t)  ; Disable undo history
-  (setq buffer-offer-save nil)  ; Disable save prompts
-  (setq buffer-read-only t)  ; Make buffer read-only
-  (local-set-key (kbd "q") 'quit-window)
-  (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
-  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
-
 (defvar-local slurm-queue-timer nil
   "Timer for auto-reloading slurm queue.")
 
 (defvar slurm-queue-last-update 0
   "Timestamp of last update.")
+
+(define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
+  "Major mode for displaying slurm queue."
+  (setq buffer-undo-list t)
+  (setq buffer-offer-save nil)
+  (setq buffer-read-only t)
+  (local-set-key (kbd "q") 'quit-window)
+  (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
+  (evil-local-set-key 'normal (kbd "r") 'slurm-queue-toggle-reload)
+  ;; Cancel existing timer if any before creating new one
+  (when slurm-queue-timer
+    (cancel-timer slurm-queue-timer))
+  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
 
 (defun slurm-queue-toggle-reload ()
   "Toggle auto-reload of slurm queue."
@@ -143,8 +147,9 @@
         (cancel-timer slurm-queue-timer)
         (setq slurm-queue-timer nil)
         (message "Slurm queue auto-reload disabled"))
-    (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
-    (message "Slurm queue auto-reload enabled (1s)")))
+    (progn
+      (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
+      (message "Slurm queue auto-reload enabled (1s)"))))
 
 (defun squeue-reload ()
   (interactive)
@@ -162,19 +167,30 @@
 (defun squeue (command)
   (interactive)
   (let ((buf-name "*slurm-squeue*"))
-    (let ((window (get-buffer-window buf-name)))
-      (if window
-          (progn
+    (if-let ((window (get-buffer-window buf-name)))
+        ;; Window exists: close it and stop timer
+        (progn
+          (with-current-buffer buf-name
             (when slurm-queue-timer
-              (cancel-timer slurm-queue-timer))
-            (quit-window nil window)
-            (kill-buffer buf-name))
-        (let ((new-buf (get-buffer-create buf-name)))
-          (with-current-buffer new-buf
-            (slurm-queue-mode)
-            (setq-local my-squeue-command command)
-            (squeue-reload))
-          (display-buffer new-buf))))))
+              (cancel-timer slurm-queue-timer)
+              (setq slurm-queue-timer nil)))
+          (quit-window nil window))
+      ;; Window doesn't exist: open it
+      (let ((existing-buf (get-buffer buf-name)))
+        (if existing-buf
+            ;; Buffer exists but window closed: display and restart timer
+            (progn
+              (with-current-buffer existing-buf
+                (unless slurm-queue-timer
+                  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))))
+              (display-buffer existing-buf))
+          ;; Buffer doesn't exist: create fresh
+          (let ((new-buf (get-buffer-create buf-name)))
+            (with-current-buffer new-buf
+              (slurm-queue-mode)
+              (setq-local my-squeue-command command)
+              (squeue-reload))
+            (display-buffer new-buf)))))))
 
 (defvar my-squeue-commands nil
   "A list of squeue commands")
@@ -200,7 +216,6 @@
     (min (1+ (count-lines (point-min) (point-max)))
          (floor (* (frame-height) 0.33)))))
 
-(add-to-list 'popper-reference-buffers "*slurm-squeue*")
 (add-to-list 'display-buffer-alist
              '("\\*slurm-squeue\\*"
                (display-buffer-below-selected)
