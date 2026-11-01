@@ -2,10 +2,9 @@
 
 from typing import Never
 
-
 config.load_autoconfig()
 
-config.source('qutebrowser-themes/themes/onedark.py')
+config.source("qutebrowser-themes/themes/onedark.py")
 
 config.set("colors.webpage.darkmode.enabled", True)
 
@@ -13,21 +12,23 @@ config.set("colors.webpage.darkmode.policy.images", "never")
 config.set("fonts.default_size", "11.5pt")
 
 # Rebind arrow keys in popup menus (hints, downloads, etc.)
-config.bind('<Ctrl-j>', 'completion-item-focus next', mode='command')
-config.bind('<Ctrl-k>', 'completion-item-focus prev', mode='command')
+config.bind("<Ctrl-j>", "completion-item-focus next", mode="command")
+config.bind("<Ctrl-k>", "completion-item-focus prev", mode="command")
 
-config.bind(',ps', 'set content.proxy socks5://localhost:1080;; reload')
-config.bind(',pd', 'set content.proxy system;; reload')
-config.bind(',d', 'config-cycle colors.webpage.darkmode.enabled')
+config.bind(",ps", "set content.proxy socks5://localhost:1080;; reload")
+config.bind(",pd", "set content.proxy system;; reload")
+config.bind(",d", "config-cycle colors.webpage.darkmode.enabled")
 
 c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 
-#qutebrowser.el config
+# qutebrowser.el config
 c.tabs.tabs_are_windows = True
-c.tabs.show = 'multiple'
-c.statusbar.show = 'always'
-c.new_instance_open_target = 'tab-silent'
+c.tabs.show = "multiple"
+c.statusbar.show = "always"
+c.new_instance_open_target = "tab-silent"
 config.source("emacs_theme.py")
+# config.source("emacs_rpc.py")
+# config.source("emacs_hooks.py")
 # config.bind("o", "emacs '(qutebrowser-launcher)'")
 # config.bind("O", "emacs '(qutebrowser-launcher-tab)'")
 # config.bind("wo", "emacs '(qutebrowser-launcher-window)'")
@@ -40,18 +41,18 @@ config.source("emacs_theme.py")
 # Enable uBlock Origin filters
 # config.set('content.blocking.method', 'both')
 # config.set('content.blocking.adblock.lists', [
-    # 'https://easylist.to/easylist/easylist.txt',
-    # 'https://easylist.to/easylist/easyprivacy.txt',
-    # 'https://easylist.to/easylist/fanboy-social.txt',
-    # 'https://secure.fanboy.co.nz/fanboy-annoyance.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters-2020.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/legacy.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/annoyances.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/resource-abuse.txt',
-    # 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/unbreak.txt',
+# 'https://easylist.to/easylist/easylist.txt',
+# 'https://easylist.to/easylist/easyprivacy.txt',
+# 'https://easylist.to/easylist/fanboy-social.txt',
+# 'https://secure.fanboy.co.nz/fanboy-annoyance.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters-2020.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/legacy.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/annoyances.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/resource-abuse.txt',
+# 'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/unbreak.txt',
 # ])
 
 # config.set('content.blocking.adblock.lists', [

@@ -20,10 +20,41 @@
 ;;; Code:
 
 (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other/qutebrowser.el/")
+
+;; Define a simple function to send commands to qutebrowser via commandline
+;; This doesn't depend on any qutebrowser.el internals
+(defun anthe/qutebrowser-send-command (command)
+  "Send COMMAND to qutebrowser via commandline."
+  (interactive "MCommand: ")
+  (start-process "qutebrowser-cmd" nil "qutebrowser" ":" command))
+
 (require 'qutebrowser)
 (require 'qutebrowser-consult)
 (require 'qutebrowser-evil)
 (require 'qutebrowser-doom-modeline)
+
+;; Add key bindings to qutebrowser-exwm-mode-map
+;; Use our simple command sender to avoid dependency issues
+;; We use C-c z prefix to avoid conflicts with global bindings like text-scale-increase
+;; (define-key qutebrowser-exwm-mode-map (kbd "C-c z i") 
+;;             (lambda () (interactive) (anthe/qutebrowser-send-command "zoom-in") (message "Zoom in")))
+;; (define-key qutebrowser-exwm-mode-map (kbd "C-c z o") 
+;;             (lambda () (interactive) (anthe/qutebrowser-send-command "zoom-out") (message "Zoom out")))
+
+;; To override the global C-= binding, we need to set it in the local keymap
+;; We do this by advising the qutebrowser-exwm-mode function
+;; (defun anthe/qutebrowser-exwm-mode-advice (orig-fun &rest args)
+;;   "Advice to add local key bindings for zoom when qutebrowser-exwm-mode is enabled."
+;;   (apply orig-fun args)
+;;   (when qutebrowser-exwm-mode
+;;     (local-set-key (kbd "C-=") 
+;;                    (lambda () (interactive) (anthe/qutebrowser-send-command "zoom-in") (message "Zoom in")))
+;;     (local-set-key (kbd "C-+") 
+;;                    (lambda () (interactive) (anthe/qutebrowser-send-command "zoom-in") (message "Zoom in")))
+;;     (local-set-key (kbd "C--") 
+;;                    (lambda () (interactive) (anthe/qutebrowser-send-command "zoom-out") (message "Zoom out")))))
+
+;; (advice-add 'qutebrowser-exwm-mode :after-while #'anthe/qutebrowser-exwm-mode-advice)
 
 ;; (defun qutebrowser-commandline-send (commands &optional start)
 ;;   "Send COMMANDS to Qutebrowser via commandline."
