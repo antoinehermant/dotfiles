@@ -49,6 +49,7 @@
 (require 'anthe-popper)
 (require 'anthe-python)
 (require 'anthe-roam)
+(require 'anthe-sysmon)
 (require 'anthe-transparency)
 (require 'anthe-vterm)
 (require 'anthe-workflow)

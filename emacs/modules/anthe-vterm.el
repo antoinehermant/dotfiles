@@ -116,11 +116,12 @@
 (defun my-shell-buffer-p (buffer)
   "Return t if BUFFER is a shell-like buffer."
   (with-current-buffer buffer
-    (or (derived-mode-p 'shell-mode)
-        (derived-mode-p 'term-mode)
-        (derived-mode-p 'vterm-mode)
-        (derived-mode-p 'eshell-mode)
-        (derived-mode-p 'comint-mode))))
+    (and (not (derived-mode-p 'anthe-sysmon-mode))
+         (or (derived-mode-p 'shell-mode)
+             (derived-mode-p 'term-mode)
+             (derived-mode-p 'vterm-mode)
+             (derived-mode-p 'eshell-mode)
+             (derived-mode-p 'comint-mode)))))
 
 (defun my-update-shell-buffer-list ()
   "Update the list of shell-like buffers."
