@@ -33,7 +33,7 @@
   '(pdf-isearch-match :background "#ffcb6b" :foreground "#303030"))
 
 (after! pdf-tools
-  (setq pdf-view-midnight-colors '("#e0e0e0" . "#0B2942"))
+  (setq pdf-view-midnight-colors '("#e0e0e0" . "#081C2E")) ; #0B2942
   (setq pdf-view-midnight-gamma 1.0)
   )
 

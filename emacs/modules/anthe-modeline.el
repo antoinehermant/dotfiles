@@ -27,9 +27,9 @@
 (setq doom-modeline-major-mode-icon t)
 (setq doom-modeline-buffer-modification-icon t)
 (setq doom-modeline-lsp-icon t)
-(setq doom-modeline-time-icon t)
+(setq doom-modeline-time-icon nil)
 (setq doom-modeline-time t)
-(setq doom-modeline-time-live-icon t)
+(setq doom-modeline-time-live-icon nil)
 (setq doom-modeline-time-analogue-clock t)
 (setq doom-modeline-vcs-max-length 15)
 (setq doom-modeline-project-name nil)
@@ -37,6 +37,8 @@
 (setq doom-modeline-persp-name t)
 (setq doom-modeline-persp-icon t)
 
+(setq display-time-format "%a, %d %b %Y %H:%M")
+(display-time-mode 1)
 
 (provide 'anthe-modeline)
 ;;; anthe-modeline.el ends here
