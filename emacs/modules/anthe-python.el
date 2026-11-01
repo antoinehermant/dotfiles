@@ -19,15 +19,17 @@
 ;;
 ;;; Code:
 
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
 (straight-use-package 'elpy)
-(straight-use-package 'jupyter)
+;; (straight-use-package 'jupyter)
 ;; (use-package! python-mode)
 ;; (straight-use-package 'virtualenv)
 ;; (straight-use-package 'pipenv)
@@ -40,6 +42,7 @@
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/jedi-core-20250602.2109/")
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/company-jedi-20200324.25/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pyenv-mode/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
 (use-package! company-jedi)
 (add-to-list 'company-backends 'company-jedi)
 
@@ -117,8 +120,8 @@
 
 ;; Keybindings
 (map! :leader
-      :desc "Forward to next cell" "]" #'code-cells-forward-cell
-      :desc "Backward to previous cell" "[" #'code-cells-backward-cell
+      :desc "Forward to next cell" "[" #'code-cells-forward-cell
+      :desc "Backward to previous cell" "]" #'code-cells-backward-cell
       :desc "Activate conda env" "r a" #'pyvenv-activate
       :desc "Run python" "r p" #'run-python
       :desc "Jupyter run REPL" "r J" #'jupyter-run-repl)
