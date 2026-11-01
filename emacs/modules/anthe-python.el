@@ -100,19 +100,27 @@
   ;; (evil-scroll-line-to-center nil)
   )
 
+(defun anthe/jupyter-run-repl ()
+  "Run `jupyter-run-repl', activating the jupyter package on first use."
+  (interactive)
+  (unless (fboundp 'jupyter-run-repl)
+    (straight-use-package 'jupyter)
+    (require 'jupyter-repl))
+  (call-interactively #'jupyter-run-repl))
+
 (defun my-python-mode-setup ()
   "Setup keybindings for Python mode."
   (map! :map python-mode-map
         :leader
         :desc "Run region or line in Python shell" "r j" #'python-shell-send-region-or-current-line
         :desc "Run buffer in Python shell" "r b" #'python-shell-send-buffer
-        :desc "Run current cell in Python shell" "r [" #'my-run-cell-and-forward-cell
+        :desc "Run current cell in Python shell" "r ]" #'my-run-cell-and-forward-cell
         :desc "Activate pyvenv" "r a" #'pyvenv-activate
         :desc "Run python" "r p" #'run-python
         :desc "Run python" "r r" #'python-shell-restart
         :desc "Forward to next cell" "]" #'code-cells-forward-cell
         :desc "Backward to previous cell" "[" #'code-cells-backward-cell
-        :desc "Jupyter run REPL" "r J" #'jupyter-run-repl))
+        :desc "Jupyter run REPL" "r J" #'anthe/jupyter-run-repl))
 
 (add-hook 'python-mode-hook #'my-python-mode-setup)
 
@@ -120,11 +128,11 @@
 
 ;; Keybindings
 (map! :leader
-      :desc "Forward to next cell" "[" #'code-cells-forward-cell
-      :desc "Backward to previous cell" "]" #'code-cells-backward-cell
+      :desc "Forward to next cell" "]" #'code-cells-forward-cell
+      :desc "Backward to previous cell" "[" #'code-cells-backward-cell
       :desc "Activate conda env" "r a" #'pyvenv-activate
       :desc "Run python" "r p" #'run-python
-      :desc "Jupyter run REPL" "r J" #'jupyter-run-repl)
+      :desc "Jupyter run REPL" "r J" #'anthe/jupyter-run-repl)
 
 (provide 'anthe-python)
 ;;; anthe-python.el ends here
