@@ -30,8 +30,9 @@ update_ms = 2000
 (defvar anthe-sysmon-read-only-map
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
-    (define-key map "q" #'anthe-sysmon-hide)
-    (define-key map "Q" #'anthe-sysmon-quit)
+    (define-key map "q" #'anthe-sysmon-quit)
+    ;; The buffer is in Emacs state, where Doom only binds the alternate leader
+    (define-key map (kbd "SPC") #'doom/leader)
     map)
   "Keymap of the sysmon buffer.
 It does not inherit from `vterm-mode-map', so no key ever reaches btop.")
@@ -56,6 +57,9 @@ It does not inherit from `vterm-mode-map', so no key ever reaches btop.")
   (set-process-query-on-exit-flag vterm--process nil)
   ;; A stopped process would not act on the hangup sent by `kill-buffer'.
   (add-hook 'kill-buffer-hook #'anthe-sysmon--resume nil t)
+  ;; When the buffer is in several workspaces, persp-mode would refuse to kill it
+  ;; and only remove it from the current one, leaving btop running.
+  (setq-local kill-buffer-query-functions nil)
   (setq-local left-fringe-width 0
               right-fringe-width 0))
 
