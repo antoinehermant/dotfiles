@@ -19,6 +19,9 @@ config.bind(",ps", "set content.proxy socks5://localhost:1080;; reload")
 config.bind(",pd", "set content.proxy system;; reload")
 config.bind(",d", "config-cycle colors.webpage.darkmode.enabled")
 
+# Close windows with kill-buffer in Emacs: "d" closes them when typing outside insert mode
+config.unbind("d")
+
 c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 
 # qutebrowser.el config
