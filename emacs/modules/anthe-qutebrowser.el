@@ -95,6 +95,13 @@
        :desc "Qutebrowser launcher" "O" #'qutebrowser-launcher-window        
        :desc "Qutebrowser switch (tabs and bookmarks)" "b" #'anthe-switch-to-qutebrowser-buffers))
 
+(map! :map qutebrowser-exwm-mode-map
+      :localleader "z" #'qutebrowser-cmd-zoom-in
+      ;; exwm-evil sends C-+, C-- and C-= here, which qutebrowser does not bind
+      :n "+" #'qutebrowser-cmd-zoom-in
+      :n "-" #'qutebrowser-cmd-zoom-out
+      :n "=" #'qutebrowser-cmd-zoom)
+
 (custom-set-faces!
   '(vertico-group-title :foreground "#51afef")
   '(completions-annotations :foreground "#d2a6ff" :slant italic)
