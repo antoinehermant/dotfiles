@@ -263,8 +263,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-  (define-key exwm-mode-map [?\M-i] 'exwm-input-release-keyboard)
-  (define-key exwm-mode-map [?\M-k] 'exwm-reset)
   ;; (global-set-key (kbd "s-/") 'counsel-linux-app)
   ;; (global-set-key (kbd "s-,") 'switch-to-buffer)
   ;; (setq exwm-manage-configurations
@@ -274,13 +272,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;; Keep in mind that changing this list after EXWM initializes has no effect.
   (setq exwm-input-global-keys
         `(
-          ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
-          ([?\s-r] . exwm-reset)
-          ([?\s-k] . exwm-input-release-keyboard)
-          ([?\s-l] . exwm-reset)
-          ([?\M-i] . exwm-input-release-keyboard)
-          ([?\M-k] . exwm-reset)
-
           ;; Move between windows
           ;; ([?\s-h] . windmove-left)
           ;; ([?\s-l] . windmove-right)
@@ -419,11 +410,7 @@ Only toggle floating for main windows, not their child dialogs."
   (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
   (exwm-input-set-key  (kbd "s-h") 'anthe/windmove-left-or-hide-floating)
   (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
-  (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "M-k") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "M-i") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "s-l") 'exwm-reset)
+  ;; exwm-evil handles insert and normal states, this is a way back should a window get stuck in char mode
   (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
 
   (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
