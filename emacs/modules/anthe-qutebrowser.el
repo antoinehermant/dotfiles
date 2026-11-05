@@ -97,11 +97,10 @@
 ;;        :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
 ;;        :desc "Qutebrowser switch (tabs and bookmarks)" "s" #'anthe-switch-to-qutebrowser-buffers))
 
+;; The launcher also lists open windows, bookmarks and history
 (map! :leader
-      (:prefix ("k q" . "qutebrowser")
-       :desc "Qutebrowser launcher" "o" #'qutebrowser-launcher
-       :desc "Qutebrowser launcher" "O" #'qutebrowser-launcher-window        
-       :desc "Qutebrowser switch (tabs and bookmarks)" "b" #'anthe-switch-to-qutebrowser-buffers))
+      :desc "Browser" "j" #'qutebrowser-launcher
+      :desc "Browser in new window" "J" #'qutebrowser-launcher-window)
 
 (defun anthe/qutebrowser-insert ()
   "Enter insert mode in both Evil and qutebrowser."
