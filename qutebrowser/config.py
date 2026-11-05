@@ -24,6 +24,10 @@ config.unbind("d")
 
 c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 
+# Paste the clipboard like Emacs' yank
+config.bind("<Ctrl-y>", "insert-text {clipboard}", mode="insert")
+config.bind("<Ctrl-y>", "cmd-set-text -a {clipboard}", mode="command")
+
 # qutebrowser.el config
 c.tabs.tabs_are_windows = True
 c.tabs.show = "multiple"
