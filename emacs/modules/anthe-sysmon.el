@@ -120,5 +120,8 @@ It does not inherit from `vterm-mode-map', so no key ever reaches btop.")
       (anthe-sysmon-hide)
     (anthe-sysmon-show)))
 
+(map! :leader
+      :desc "System monitor" "k o m" #'anthe-sysmon-toggle)
+
 (provide 'anthe-sysmon)
 ;;; anthe-sysmon.el ends here

@@ -395,7 +395,6 @@ Only toggle floating for main windows, not their child dialogs."
   (exwm-input-set-key (kbd "s-o c") 'citar-open)
   (exwm-input-set-key (kbd "s-o v") 'multi-vterm)
   (exwm-input-set-key (kbd "s-o g") 'gptel)
-  (exwm-input-set-key (kbd "s-o m") 'anthe-sysmon-toggle)
   ;; (exwm-input-set-key (kbd "s-.") 'find-file)
   (exwm-input-set-key (kbd "s-b k") 'kill-current-buffer)
   (exwm-input-set-key (kbd "s-b R") 'rename-buffer)
