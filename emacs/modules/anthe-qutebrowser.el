@@ -81,6 +81,14 @@
       (consult--buffer-action (car selected)))))
 
 (global-qutebrowser-exwm-mode)
+
+;; Its buffer source previews the selected window, and ESC restores the previous one
+(setq qutebrowser-launcher-backend #'qutebrowser-consult-launcher)
+(consult-customize qutebrowser-consult--exwm-buffer-source
+                   :preview-key '(:debounce 0.3 any))
+;; The command source asks qutebrowser for its commands, which fails while it is not running
+(consult-customize qutebrowser-consult--command-source
+                   :enabled #'qutebrowser-rpc-connected-p)
 (global-qutebrowser-doom-modeline-mode)
 (qutebrowser-theme-export-mode)
 
