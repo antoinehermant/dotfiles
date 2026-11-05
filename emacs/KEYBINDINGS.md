@@ -27,6 +27,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | `SPC ]` / `SPC [` | Next / previous code cell (Python or code-cells buffers) | `anthe-python.el` |
 | `SPC r j`, `r b`, `r ]`, `r r` | Send line or region, buffer, cell; restart the shell (Python buffers) | `anthe-python.el` |
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
+| `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
 | `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k d` dashboard, `k o d` open externally, `k o m` system monitor | various |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
@@ -50,6 +51,11 @@ the matching qutebrowser bindings at the bottom of the screen.
   `exwm-input-release-keyboard`. Only `s-<escape>` is kept as a way back.
   Changes to `exwm-input-global-keys` need an EXWM restart.
 - System monitor moved from `s-o m` to `SPC k o m`.
+- Window resizing moved to the `SPC w .` resize mode. It replaces `C-<arrows>`
+  (`config-core.el`, `anthe-popper.el`), which EXWM windows took for
+  themselves, and `s--`, `s-=`, `s-_`, `s-+`. The keys move the border in their
+  direction instead of growing the window, and the resizing is pixelwise so
+  EXWM windows don't snap to character cells.
 
 ## Open questions
 

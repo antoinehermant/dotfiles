@@ -144,10 +144,6 @@
       :desc "Wrap lines" "t w" #'toggle-truncate-lines
       :desc "async shell" "&" #'async-shell-command)
 
-(global-set-key (kbd "C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "C-<up>") 'enlarge-window)
-(global-set-key (kbd "C-<down>") 'shrink-window)
 
 (provide 'config-core)
 ;;; config-core.el ends here
