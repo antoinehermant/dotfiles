@@ -85,7 +85,29 @@
 ;; Its buffer source previews the selected window, and ESC restores the previous one
 (setq qutebrowser-launcher-backend #'qutebrowser-consult-launcher)
 (consult-customize qutebrowser-consult--exwm-buffer-source
-                   :preview-key '(:debounce 0.3 any))
+                   :preview-key '(:debounce 0.3 any)
+                   :state #'anthe/qutebrowser--exwm-buffer-state)
+
+(defun anthe/qutebrowser--exwm-buffer-state ()
+  "Preview qutebrowser windows, then give back the ones taken from other monitors.
+Previewing a window shown on another workspace moves it here, and EXWM
+shows another buffer there.  Once it is no longer previewed or chosen,
+it is put back in its window."
+  (let ((state (consult--buffer-state))
+        (others (cl-loop for window in (window-list-1 nil 'nomini 'visible)
+                         unless (eq (window-frame window) (selected-frame))
+                         collect (cons window (window-buffer window)))))
+    (lambda (action cand)
+      (let ((buffer (qutebrowser--candidate-buffer cand)))
+        (funcall state action buffer)
+        (when (memq action '(preview return))
+          (pcase-dolist (`(,window . ,original) others)
+            (when (and (window-live-p window)
+                       (buffer-live-p original)
+                       (not (eq original buffer))
+                       (not (eq (window-buffer window) original))
+                       (not (get-buffer-window original 'visible)))
+              (set-window-buffer window original))))))))
 ;; The command source asks qutebrowser for its commands, which fails while it is not running
 (consult-customize qutebrowser-consult--command-source
                    :enabled #'qutebrowser-rpc-connected-p)
