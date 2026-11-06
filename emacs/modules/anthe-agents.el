@@ -36,7 +36,19 @@
   (add-hook 'diff-mode-hook
 	    (lambda ()
 	      (when (string-match-p "\\*agent-shell-diff\\*" (buffer-name))
-		(evil-emacs-state)))))
+		(evil-emacs-state))))
+
+  (evil-define-key 'normal agent-shell-mode-map (kbd "gC") #'anthe/agent-shell-compose-beside))
+
+(defun anthe/agent-shell-compose-beside ()
+  "Like `agent-shell-prompt-compose', but beside the shell to keep it in view.
+Sending or cancelling closes the compose window again."
+  (interactive)
+  (let ((agent-shell-display-action
+         '((display-buffer-reuse-window display-buffer-in-direction)
+           (direction . right)
+           (window-width . 0.4))))
+    (agent-shell-prompt-compose)))
 
 ;; ;; With string
 (setq agent-shell-mistral-authentication
