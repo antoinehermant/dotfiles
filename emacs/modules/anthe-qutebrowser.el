@@ -111,6 +111,128 @@ it is put back in its window."
 ;; The command source asks qutebrowser for its commands, which fails while it is not running
 (consult-customize qutebrowser-consult--command-source
                    :enabled #'qutebrowser-rpc-connected-p)
+
+;;;; Quickmarks and bookmarks
+;; Quickmarks are the named places visited often, named by a prefix like
+;; "gh pism" or "mail unibe": typing "gh" lists the GitHub ones. Bookmarks
+;; (M in qutebrowser) are pages kept to read later, under their title.
+;; Both stay in qutebrowser's files, where its own :open completion finds them.
+
+(defun anthe/qutebrowser--marks-file (name)
+  "Return the path of qutebrowser's marks file NAME."
+  (expand-file-name name "~/.config/qutebrowser/"))
+
+(defun anthe/qutebrowser--read-marks (name url-last)
+  "Return the marks of qutebrowser's file NAME, as (LABEL . URL) pairs.
+Quickmarks lines are \"name url\" (URL-LAST), bookmarks lines \"url title\"."
+  (let ((file (anthe/qutebrowser--marks-file name)))
+    (when (file-exists-p file)
+      (with-temp-buffer
+        (insert-file-contents file)
+        (cl-loop for line in (split-string (buffer-string) "\n" t)
+                 unless (string-prefix-p "#" line)
+                 collect (if url-last
+                             (let ((space (string-match " [^ ]+\\'" line)))
+                               (cons (substring line 0 space) (substring line (1+ space))))
+                           (let ((space (string-search " " line)))
+                             (cons (if space (substring line (1+ space)) line)
+                                   (substring line 0 space)))))))))
+
+(defun anthe/qutebrowser--mark-candidates (marks)
+  "Return the completion candidates for MARKS, (LABEL . URL) pairs.
+The URL is matched too, but shown as the annotation."
+  (mapcar (pcase-lambda (`(,label . ,url))
+            (propertize (concat label (propertize (concat " " url) 'invisible t))
+                        :qutebrowser-url url))
+          marks))
+
+(defun anthe/qutebrowser--mark-annotate (cand)
+  "Annotate CAND with its URL."
+  (concat (propertize " " 'display '(space :align-to 40))
+          (propertize (get-text-property 0 :qutebrowser-url cand)
+                      'face 'completions-annotations)))
+
+(defun anthe/qutebrowser--mark-open (cand)
+  "Open the URL of the mark CAND."
+  (qutebrowser-open-url (get-text-property 0 :qutebrowser-url cand)))
+
+(defvar anthe/qutebrowser--quickmark-source
+  (list :name "Quickmarks"
+        :narrow ?m
+        :category 'url
+        :history nil
+        :action #'anthe/qutebrowser--mark-open
+        :annotate #'anthe/qutebrowser--mark-annotate
+        :items (lambda () (anthe/qutebrowser--mark-candidates
+                           (anthe/qutebrowser--read-marks "quickmarks" t))))
+  "Launcher source for qutebrowser quickmarks.")
+
+(defvar anthe/qutebrowser--bookmark-source
+  (list :name "Bookmarks (read later)"
+        :narrow ?b
+        :category 'url
+        :history nil
+        :action #'anthe/qutebrowser--mark-open
+        :annotate #'anthe/qutebrowser--mark-annotate
+        :items (lambda () (anthe/qutebrowser--mark-candidates
+                           (anthe/qutebrowser--read-marks "bookmarks/urls" nil))))
+  "Launcher source for qutebrowser bookmarks.")
+
+(setq qutebrowser-consult-launcher-sources
+      '(qutebrowser-consult--exwm-buffer-source
+        anthe/qutebrowser--quickmark-source
+        anthe/qutebrowser--bookmark-source
+        qutebrowser-consult--history-source
+        qutebrowser-consult--command-source))
+
+(defun anthe/qutebrowser--marks-eval (code)
+  "Run CODE on qutebrowser's quickmark and bookmark managers, bound to `q' and `b'."
+  (qutebrowser-rpc-request
+   :eval (list :code (format "(lambda o: (lambda q, b: %s)(o.get('quickmark-manager'), o.get('bookmark-manager')))(__import__('qutebrowser.utils.objreg', fromlist=['objreg']))"
+                             code))))
+
+(defun anthe/qutebrowser--window-url ()
+  "Return the URL of this qutebrowser window, asked from qutebrowser.
+`qutebrowser-exwm-buffer-url' is only set once the page reports a change,
+so it is nil for windows opened before qutebrowser restarted."
+  (unless (qutebrowser-exwm-p)
+    (user-error "Not a qutebrowser window"))
+  (let ((url (qutebrowser-rpc-request
+              :eval (list :code (format "find_window(%d).tabbed_browser.current_url().toString()"
+                                        exwm--id)))))
+    (if (string-empty-p url) (user-error "This window has no URL") url)))
+
+(defun anthe/qutebrowser-quickmark-save (name)
+  "Save the page of this qutebrowser window as the quickmark NAME.
+The existing names are offered, to reuse their prefix."
+  (interactive
+   (list (completing-read "Quickmark name: "
+                          (mapcar #'car (anthe/qutebrowser--read-marks "quickmarks" t)))))
+  (let ((url (anthe/qutebrowser--window-url)))
+    (when (string-empty-p (string-trim name))
+      (user-error "Empty quickmark name"))
+    ;; qutebrowser keeps the marks in memory and writes the file itself, so it adds the mark
+    (anthe/qutebrowser--marks-eval
+     (format "q.quickmark_add(%S, %S)" url (string-trim name)))
+    (message "Quickmark %s: %s" (string-trim name) url)))
+
+(defun anthe/qutebrowser--marks-reload ()
+  "Make qutebrowser read the marks files again, after editing them."
+  (when (qutebrowser-rpc-connected-p)
+    (anthe/qutebrowser--marks-eval "(q.reload(), b.reload())")
+    (message "qutebrowser reloaded its quickmarks and bookmarks")))
+
+(defun anthe/qutebrowser-marks-edit (&optional bookmarks)
+  "Edit the qutebrowser quickmarks, or the BOOKMARKS with a prefix argument.
+qutebrowser first writes the marks it has in memory, then reads the file
+again on each save. Sort, rename and delete there."
+  (interactive "P")
+  (when (qutebrowser-rpc-connected-p)
+    (anthe/qutebrowser--marks-eval "(q.save(), b.save())"))
+  (find-file (anthe/qutebrowser--marks-file (if bookmarks "bookmarks/urls" "quickmarks")))
+  (add-hook 'after-save-hook #'anthe/qutebrowser--marks-reload nil t))
+
+(map! :leader :desc "Browser marks (C-u: bookmarks)" "k b" #'anthe/qutebrowser-marks-edit)
 (global-qutebrowser-doom-modeline-mode)
 (qutebrowser-theme-export-mode)
 
@@ -298,6 +420,8 @@ window are skipped, as EXWM can show an X window in only one place."
       :n "K" #'anthe/qutebrowser-previous-window
       ;; Text selected with the mouse
       :n "Y" (cmd! (qutebrowser-send-commands ":yank selection"))
+      ;; Prompts in Emacs, offering the existing names for their prefix
+      :n "m" #'anthe/qutebrowser-quickmark-save
       :n "o" #'anthe/qutebrowser-open
       :n "O" #'anthe/qutebrowser-open-tab
       :n "i" #'anthe/qutebrowser-insert
@@ -305,7 +429,7 @@ window are skipped, as EXWM can show an X window in only one place."
 
 ;; Qutebrowser's own bindings starting with these keys, like gi, ;y or pp
 (dolist (key '("g" ";" "y" "p" "P" "w" "x" "t" "s" "S" "[" "]" "{" "}"
-               "a" "c" "m" "M" "b" "B" "u" "U" "v" "V" "R" "." "?"))
+               "a" "c" "M" "b" "B" "u" "U" "v" "V" "R" "." "?"))
   (evil-define-key* 'normal qutebrowser-exwm-mode-map (kbd key) #'anthe/qutebrowser-key-chain))
 
 (custom-set-faces!

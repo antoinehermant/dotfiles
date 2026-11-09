@@ -23,19 +23,20 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | Keys | Action | Where |
 |---|---|---|
 | `SPC \` | App launcher | `config-local.el` |
-| `SPC j` / `SPC J` | qutebrowser launcher: URLs, bookmarks, history, open windows with preview / same in a new window | `anthe-qutebrowser.el` |
+| `SPC j` / `SPC J` | qutebrowser launcher: open windows with preview, quickmarks (`m` narrows), bookmarks to read later (`b`), history / same in a new window | `anthe-qutebrowser.el` |
 | `SPC ]` / `SPC [` | Next / previous code cell (Python or code-cells buffers) | `anthe-python.el` |
 | `SPC r j`, `r b`, `r ]`, `r r` | Send line or region, buffer, cell; restart the shell (Python buffers) | `anthe-python.el` |
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
 | `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
 | `SPC z z`, `z a`, `z o`, `z h` | Notifications (dunst): dismiss the last, dismiss all, open (its default action, like the mail), bring back the last dismissed | `anthe-control.el` |
-| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k d` dashboard, `k o d` open externally, `k o m` system monitor | various |
+| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor | various |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
 
 In qutebrowser windows (Evil normal state), see `anthe-qutebrowser.el`:
 qutebrowser's own keys are sent to it, and prefixes like `g`, `;`, `,` list
-the matching qutebrowser bindings at the bottom of the screen.
+the matching qutebrowser bindings at the bottom of the screen. `m` saves the
+page as a quickmark, prompting in Emacs with the existing names.
 
 In mu4e (main view, message list and message, Evil normal state), see
 `anthe-mu4e.el`: `gm` Gmail, `gw` Work, `gi` Infomaniak, `ga` AntADatabase,
@@ -75,6 +76,11 @@ the account first.
   usual; in a qutebrowser window in insert mode, `Escape` first. With the
   mouse: left click opens, middle click dismisses, right click dismisses all
   (`rcfiles/dunstrc`).
+- qutebrowser marks: `m` in a qutebrowser window saves a quickmark from an
+  Emacs prompt that offers the existing names, to reuse their prefix
+  (`gh pism`, `mail unibe`); `M` stays qutebrowser's bookmark (read later).
+  `SPC k b` edits the quickmarks file, `C-u SPC k b` the bookmarks.
+  Web pages are no longer saved as Emacs bookmarks.
 
 ## Open questions
 

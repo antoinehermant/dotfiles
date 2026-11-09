@@ -26,6 +26,9 @@ config.bind(",ff", "spawn firefox {url}")
 
 c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 
+# "gh pism/pism" opens that repo, "gh antoinehermant" a profile
+c.url.searchengines["gh"] = "https://github.com/{unquoted}"
+
 # Paste the clipboard like Emacs' yank
 config.bind("<Ctrl-y>", "insert-text {clipboard}", mode="insert")
 config.bind("<Ctrl-y>", "cmd-set-text -a {clipboard}", mode="command")
