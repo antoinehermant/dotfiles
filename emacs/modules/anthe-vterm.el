@@ -175,6 +175,8 @@ DIRECTION should be 1 for next, -1 for previous."
 (define-key vterm-mode-map (kbd "M-1") '+workspace/switch-to-0)
 (define-key vterm-mode-map (kbd "M-2") '+workspace/switch-to-1)
 (define-key vterm-mode-map (kbd "M-3") '+workspace/switch-to-2)
+(define-key vterm-mode-map (kbd "M-4") '+workspace/switch-to-3)
+(define-key vterm-mode-map (kbd "M-5") '+workspace/switch-to-4)
 (define-key vterm-mode-map (kbd "M-`") 'popper-cycle)
 
 
