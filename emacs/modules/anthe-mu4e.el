@@ -459,17 +459,30 @@ kept after both versions; messages with other MML tags are left alone."
 (defvar anthe/mail-idle--process nil)
 (defvar anthe/mail-idle--index-timer nil)
 
+(defvar anthe/mu4e--skipped (make-hash-table :test #'equal)
+  "Message-ids not to notify, such as Gmail promotions (see GMAIL_SKIP).")
+
 (defun anthe/mail-idle--filter (process output)
-  "Reindex after each inbox sync reported in OUTPUT of PROCESS."
+  "Reindex after each inbox sync reported in OUTPUT of PROCESS.
+Also take note of the messages to skip in notifications."
   (with-current-buffer (process-buffer process)
     (goto-char (point-max))
     (insert output))
-  (when (string-match-p "^synced " output)
+  ;; A long line may come in several pieces: keep the last one for later
+  (let ((lines (split-string (concat (process-get process 'partial) output) "\n"))
+        synced)
+    (process-put process 'partial (car (last lines)))
+    (dolist (line (butlast lines))
+      (pcase (split-string line " " t)
+        (`("skip" ,_account . ,msgids)
+         (dolist (msgid msgids) (puthash msgid t anthe/mu4e--skipped)))
+        (`("synced" . ,_) (setq synced t))))
+    (when synced
     ;; Several inboxes may sync in a row: index once after them
     (when (timerp anthe/mail-idle--index-timer)
       (cancel-timer anthe/mail-idle--index-timer))
     (setq anthe/mail-idle--index-timer
-          (run-at-time 2 nil (lambda () (when (mu4e-running-p) (mu4e-update-index)))))))
+          (run-at-time 2 nil (lambda () (when (mu4e-running-p) (mu4e-update-index))))))))
 
 (defun anthe/mail-idle--sentinel (process _event)
   "Start mail-idle again a minute after PROCESS stopped, unless on purpose."
@@ -512,9 +525,10 @@ kept after both versions; messages with other MML tags are left alone."
          (let ((account (and (string-match "\\`/\\([^/]+\\)/inbox\\'" maildir)
                              (match-string 1 maildir)))
                (sender (mail-header-parse-address from t)))
-           ;; Not what I sent to myself
+           ;; Not what I sent to myself, nor promotions
            (when (and account
-                      (not (mu4e-personal-or-alternative-address-p (car sender))))
+                      (not (mu4e-personal-or-alternative-address-p (car sender)))
+                      (not (gethash msgid anthe/mu4e--skipped)))
              (push (list msgid account (or (cdr sender) from) subject) found))))))
     (nreverse found)))
 

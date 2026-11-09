@@ -9,7 +9,7 @@ full `mbsync -a` still runs every now and then for the other folders.
 Syncs take LOCK_FILE, which the full sync takes too, so that two mbsync
 never work on the same mailbox. Emacs starts this (see anthe-mu4e.el).
 """
-import imaplib, os, subprocess, sys, threading, time
+import email, imaplib, os, subprocess, sys, threading, time
 
 MBSYNCRC = os.path.expanduser("~/.mbsyncrc")
 LOCK_FILE = os.path.expanduser("~/.cache/mail-sync.lock")
@@ -17,6 +17,10 @@ LOCK_FILE = os.path.expanduser("~/.cache/mail-sync.lock")
 # suspend is only noticed when the IDLE ends
 IDLE_SECONDS = 10 * 60
 CHANGES = {"EXISTS", "EXPUNGE", "FETCH"}
+# Gmail messages that don't deserve a notification, in Gmail search
+# syntax. Their Message-IDs are printed as "skip ACCOUNT ID..." before
+# the sync, as Gmail categories don't come through IMAP folders
+GMAIL_SKIP = "category:promotions"
 
 print_lock = threading.Lock()
 
@@ -65,7 +69,38 @@ def connect(account, secret):
     return imap
 
 
-def sync(name):
+def skipped(imap):
+    """Return the Message-IDs of the recent GMAIL_SKIP messages of the inbox."""
+    if "X-GM-EXT-1" not in imap.capabilities:
+        return []
+    _, data = imap.uid("SEARCH", "X-GM-RAW", f'"{GMAIL_SKIP} newer_than:3d"')
+    uids = data[0].decode().split()
+    if not uids:
+        return []
+    _, data = imap.uid("FETCH", ",".join(uids),
+                       "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])")
+    found = []
+    for part in data:
+        if isinstance(part, tuple):
+            header = email.message_from_bytes(part[1])["Message-ID"]
+            if header:
+                # mu stores them without the brackets
+                found.append(header.strip().strip("<>"))
+    return found
+
+
+def sync(name, imap, sent):
+    """Sync the inbox of NAME, after printing what of it to skip.
+
+    SENT holds the Message-IDs already printed."""
+    try:
+        new = [i for i in skipped(imap) if i not in sent]
+    except imaplib.IMAP4.error as e:  # notify everything rather than nothing
+        say(f"error {name} skip: {str(e)[:200]}")
+        new = []
+    if new:
+        sent.update(new)
+        say(f"skip {name} " + " ".join(new))
     # The channels are named after their accounts in ~/.mbsyncrc
     out = subprocess.run(["flock", LOCK_FILE, "mbsync", "-q", f"{name}:INBOX"],
                          capture_output=True, text=True)
@@ -78,6 +113,7 @@ def watch(account):
     name, delay = account["name"], 10
     oauth = "XOAUTH2" in account.get("AuthMechs", "")
     secret = None
+    sent = set()
     while True:
         try:
             # Tokens expire within the hour: ask for one at each connection.
@@ -87,7 +123,7 @@ def watch(account):
             imap = connect(account, secret)
             delay = 10
             # Catch up on what came while not connected
-            sync(name)
+            sync(name, imap, sent)
             while True:
                 changed = False
                 with imap.idle(duration=IDLE_SECONDS) as idler:
@@ -97,7 +133,7 @@ def watch(account):
                             break
                 if changed:
                     time.sleep(1)  # let a burst of messages arrive
-                    sync(name)
+                    sync(name, imap, sent)
                 elif oauth:
                     break  # reconnect with a fresh token
                 else:
