@@ -40,6 +40,9 @@
 
   (evil-define-key 'normal agent-shell-mode-map (kbd "gC") #'anthe/agent-shell-compose-beside))
 
+(defvar-local anthe/agent-shell--compose-window nil
+  "The window `anthe/agent-shell-compose-beside' opened for this buffer.")
+
 (defun anthe/agent-shell-compose-beside ()
   "Like `agent-shell-prompt-compose', but beside the shell to keep it in view.
 Sending or cancelling closes the compose window again."
@@ -48,13 +51,35 @@ Sending or cancelling closes the compose window again."
          '((display-buffer-reuse-window display-buffer-in-direction)
            (direction . right)
            (window-width . 0.4))))
-    (agent-shell-prompt-compose)))
+    (agent-shell-prompt-compose))
+  (when (derived-mode-p 'agent-shell-viewport-edit-mode)
+    (setq-local anthe/agent-shell--compose-window (selected-window))))
+
+(defun anthe/agent-shell--close-compose-window (fn &rest args)
+  "Call FN with ARGS, then close the window of the compose buffer beside the shell.
+Sending kills the compose buffer, but its window would show the shell."
+  (let ((window anthe/agent-shell--compose-window)
+        (shell-buffer (ignore-errors (agent-shell-viewport--shell-buffer))))
+    (apply fn args)
+    ;; Unless the compose goes on (a discard not confirmed)
+    (when (and (window-live-p window)
+               (not (one-window-p))
+               (not (with-current-buffer (window-buffer window)
+                      (derived-mode-p 'agent-shell-viewport-edit-mode))))
+      (delete-window window)
+      (when-let* ((shell-window (and (buffer-live-p shell-buffer)
+                                     (get-buffer-window shell-buffer))))
+        (select-window shell-window)))))
+
+(dolist (command '(agent-shell-viewport-compose-send agent-shell-viewport-compose-cancel))
+  (advice-add command :around #'anthe/agent-shell--close-compose-window))
 
 ;; ;; With string
 (setq agent-shell-mistral-authentication
       (agent-shell-mistral-make-authentication :api-key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
 
 (setopt agent-shell-persistent-prompt-enabled t)
+(setq agent-shell-session-restore-verbosity 'last)
 ;; ;; With function (reusing the API key configured in vibe)
 ;; (setq agent-shell-mistral-authentication
 ;;       (agent-shell-mistral-make-authentication
