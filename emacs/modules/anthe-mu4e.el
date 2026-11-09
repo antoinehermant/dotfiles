@@ -32,9 +32,12 @@
   (setq mu4e-confirm-quit nil)
   ;; (setq mu4e-marks-folders-sequentially t)
 
-  ;; Refresh mail using isync every 5 minutes
-  (setq mu4e-update-interval (* 5 60))
-  (setq mu4e-get-mail-command "mbsync -a")
+  ;; The inboxes come as soon as mail arrives (`anthe/mail-idle-start'),
+  ;; the other folders with a full sync every 15 minutes.  Both take the
+  ;; same lock so that two mbsync never work on the same mailbox
+  (setq mu4e-update-interval (* 15 60))
+  (setq mu4e-get-mail-command "flock ~/.cache/mail-sync.lock mbsync -a")
+  (anthe/mail-idle-start)
   (setq mu4e-root-maildir "~/documents/mail/") ;; does not exist anymore?
   (setq mu4e-headers-date-format "%Y/%m/%d")
   (setq mu4e-index-update-error-warning 'nil)
@@ -378,6 +381,48 @@ ANNOTATIONS is an alist of each candidate and the text shown after it."
                             (car (alist-get (cdr folder) counts '(0) nil #'equal)))))
                    folders))))
     (mu4e-search-maildir (alist-get folder folders nil nil #'equal))))
+
+;; mail-idle keeps an IMAP IDLE connection open on each inbox and syncs it
+;; when mail arrives, then mu4e reindexes
+(defvar anthe/mail-idle--process nil)
+(defvar anthe/mail-idle--index-timer nil)
+
+(defun anthe/mail-idle--filter (process output)
+  "Reindex after each inbox sync reported in OUTPUT of PROCESS."
+  (with-current-buffer (process-buffer process)
+    (goto-char (point-max))
+    (insert output))
+  (when (string-match-p "^synced " output)
+    ;; Several inboxes may sync in a row: index once after them
+    (when (timerp anthe/mail-idle--index-timer)
+      (cancel-timer anthe/mail-idle--index-timer))
+    (setq anthe/mail-idle--index-timer
+          (run-at-time 2 nil (lambda () (when (mu4e-running-p) (mu4e-update-index)))))))
+
+(defun anthe/mail-idle--sentinel (process _event)
+  "Start mail-idle again a minute after PROCESS stopped, unless on purpose."
+  (unless (or (process-live-p process) (process-get process 'stopped))
+    (run-at-time 60 nil #'anthe/mail-idle-start)))
+
+(defun anthe/mail-idle-start ()
+  "Start syncing the inboxes as soon as mail arrives."
+  (interactive)
+  (unless (process-live-p anthe/mail-idle--process)
+    (setq anthe/mail-idle--process
+          (make-process :name "mail-idle"
+                        :buffer (get-buffer-create " *mail-idle*")
+                        :command (list (expand-file-name "~/.local/bin/mail-idle"))
+                        :connection-type 'pipe
+                        :noquery t
+                        :filter #'anthe/mail-idle--filter
+                        :sentinel #'anthe/mail-idle--sentinel))))
+
+(defun anthe/mail-idle-stop ()
+  "Stop syncing the inboxes when mail arrives."
+  (interactive)
+  (when (process-live-p anthe/mail-idle--process)
+    (process-put anthe/mail-idle--process 'stopped t)
+    (delete-process anthe/mail-idle--process)))
 
 ;; g and a key go to the inbox of an account, from every mu4e view
 (defvar anthe/mu4e-account-keys

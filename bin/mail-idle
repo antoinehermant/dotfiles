@@ -1,0 +1,129 @@
+#!/usr/bin/python3 -I
+"""Sync each inbox as soon as mail arrives, like Thunderbird does.
+
+Keeps one IMAP IDLE connection per account of ~/.mbsyncrc open on its
+INBOX. When the server reports a change, syncs that inbox only (mbsync
+CHANNEL:INBOX) and prints "synced ACCOUNT", for Emacs to reindex. The
+full `mbsync -a` still runs every now and then for the other folders.
+
+Syncs take LOCK_FILE, which the full sync takes too, so that two mbsync
+never work on the same mailbox. Emacs starts this (see anthe-mu4e.el).
+"""
+import imaplib, os, subprocess, sys, threading, time
+
+MBSYNCRC = os.path.expanduser("~/.mbsyncrc")
+LOCK_FILE = os.path.expanduser("~/.cache/mail-sync.lock")
+# Servers drop IDLE after 30 minutes, and a connection lost during a
+# suspend is only noticed when the IDLE ends
+IDLE_SECONDS = 10 * 60
+CHANGES = {"EXISTS", "EXPUNGE", "FETCH"}
+
+print_lock = threading.Lock()
+
+
+def say(*args):
+    with print_lock:
+        print(*args, flush=True)
+
+
+def accounts():
+    """Return the IMAP accounts of MBSYNCRC, each a dict of its settings."""
+    found, current = [], None
+    for line in open(MBSYNCRC):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, _, value = line.partition(" ")
+        if key == "IMAPAccount":
+            current = {"name": value}
+            found.append(current)
+        elif key in ("IMAPStore", "MaildirStore", "Channel", "Group"):
+            current = None
+        elif current is not None:
+            current[key] = value.strip()
+    return found
+
+
+def password(account):
+    """Run the PassCmd of ACCOUNT (gpg, or ms365-token for a token)."""
+    cmd = account["PassCmd"].strip('"')
+    out = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if out.returncode:
+        raise RuntimeError(f"PassCmd failed: {out.stderr.strip()[:200]}")
+    return out.stdout.strip()
+
+
+def connect(account, secret):
+    imap = imaplib.IMAP4_SSL(account["Host"], int(account.get("Port", 993)),
+                             timeout=60)
+    if "XOAUTH2" in account.get("AuthMechs", ""):
+        auth = f"user={account['User']}\x01auth=Bearer {secret}\x01\x01"
+        imap.authenticate("XOAUTH2", lambda _: auth.encode())
+    else:
+        imap.login(account["User"], secret)
+    imap.select("INBOX", readonly=True)
+    return imap
+
+
+def sync(name):
+    # The channels are named after their accounts in ~/.mbsyncrc
+    out = subprocess.run(["flock", LOCK_FILE, "mbsync", "-q", f"{name}:INBOX"],
+                         capture_output=True, text=True)
+    if out.returncode:
+        say(f"error {name} mbsync: {out.stderr.strip()[:300]}")
+    say(f"synced {name}")
+
+
+def watch(account):
+    name, delay = account["name"], 10
+    oauth = "XOAUTH2" in account.get("AuthMechs", "")
+    secret = None
+    while True:
+        try:
+            # Tokens expire within the hour: ask for one at each connection.
+            # A password is asked once, gpg-agent may have forgotten it later
+            if oauth or secret is None:
+                secret = password(account)
+            imap = connect(account, secret)
+            delay = 10
+            # Catch up on what came while not connected
+            sync(name)
+            while True:
+                changed = False
+                with imap.idle(duration=IDLE_SECONDS) as idler:
+                    for typ, _ in idler:
+                        if typ in CHANGES:
+                            changed = True
+                            break
+                if changed:
+                    time.sleep(1)  # let a burst of messages arrive
+                    sync(name)
+                elif oauth:
+                    break  # reconnect with a fresh token
+                else:
+                    imap.noop()
+            imap.logout()
+        except Exception as e:  # network down, server restart, suspend...
+            if isinstance(e, imaplib.IMAP4.error) and not oauth:
+                secret = None  # maybe the password changed
+            say(f"error {name} {type(e).__name__}: {str(e)[:200]}")
+            time.sleep(delay)
+            delay = min(delay * 2, 300)
+
+
+def main():
+    os.makedirs(os.path.dirname(LOCK_FILE), exist_ok=True)
+    found = [a for a in accounts() if {"Host", "User", "PassCmd"} <= a.keys()]
+    if not found:
+        sys.exit(f"mail-idle: no IMAP accounts in {MBSYNCRC}")
+    for account in found:
+        threading.Thread(target=watch, args=(account,), daemon=True).start()
+    say("watching " + " ".join(a["name"] for a in found))
+    threading.Event().wait()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

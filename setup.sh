@@ -16,6 +16,9 @@ ln -sf ~/.dotfiles/rcfiles/gpg-agent.conf ~/.gnupg/gpg-agent.conf
 mkdir -p ~/.local/bin
 ln -sf ~/.dotfiles/bin/ms365-token ~/.local/bin/ms365-token
 
+# Sync the inboxes as soon as mail arrives (started by Emacs with mu4e)
+ln -sf ~/.dotfiles/bin/mail-idle ~/.local/bin/mail-idle
+
 # ncview config
 ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc
 
