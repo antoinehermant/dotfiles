@@ -46,6 +46,10 @@
   (setq mu4e-hide-index-messages t
         mu4e-index-lazy-check t)
 
+  ;; HTML mail in the theme's colours: theirs are made for a white page,
+  ;; and come as white blocks in a dark theme.  gb shows them as sent
+  (setq shr-use-colors nil)
+
   ;; Icons in the flags column of the message list.  New messages are also
   ;; unread, so only the unread envelope is shown for them
   (require 'nerd-icons)
@@ -584,6 +588,17 @@ The first index only takes note of those already there."
     (let ((go (lambda () (interactive) (anthe/mu4e-go-to-inbox account))))
       (dolist (map (list mu4e-main-mode-map mu4e-headers-mode-map mu4e-view-mode-map))
         (evil-define-key* 'normal map (kbd (concat "g" key)) go)))))
+
+;; gb opens the message in qutebrowser, for what shr renders badly
+(defun anthe/mu4e-view-in-browser ()
+  "Open the HTML of the message at point in qutebrowser."
+  (interactive)
+  (let ((browse-url-browser-function (lambda (url &rest _) (qutebrowser-open-url url))))
+    (mu4e-action-view-in-browser (mu4e-message-at-point))))
+
+(with-eval-after-load 'mu4e
+  (dolist (map (list mu4e-headers-mode-map mu4e-view-mode-map))
+    (evil-define-key* 'normal map (kbd "gb") #'anthe/mu4e-view-in-browser)))
 
 ;; Compose in the account being visited: a search within a single account
 ;; switches to its context, which new messages then use

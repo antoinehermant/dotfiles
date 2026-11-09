@@ -41,7 +41,8 @@ page as a quickmark, prompting in Emacs with the existing names.
 In mu4e (main view, message list and message, Evil normal state), see
 `anthe-mu4e.el`: `gm` Gmail, `gw` Work, `gi` Infomaniak, `ga` AntADatabase,
 `gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
-the account first.
+the account first. `gb` opens the message at point in qutebrowser, for HTML
+that renders badly in Emacs.
 
 ## Log
 
@@ -99,3 +100,4 @@ the account first.
   and the two next/previous shell pairs `SPC t n/p` and `SPC v n/p`.
 - **HPC.** `SPC k s` (sbatch) replaces the `SPC k s f` prefix from
   `config-core.el` there.
+- mu4e: `gb` opens the message in qutebrowser (message list and message).
