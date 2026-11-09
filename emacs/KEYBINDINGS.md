@@ -42,7 +42,8 @@ In mu4e (main view, message list and message, Evil normal state), see
 `anthe-mu4e.el`: `gm` Gmail, `gw` Work, `gi` Infomaniak, `ga` AntADatabase,
 `gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
 the account first. `gb` opens the message at point in qutebrowser, for HTML
-that renders badly in Emacs.
+that renders badly in Emacs. Saved searches (`b` then the key): `i` all the
+inboxes, `T` To do (flagged).
 
 ## Log
 
@@ -101,3 +102,4 @@ that renders badly in Emacs.
 - **HPC.** `SPC k s` (sbatch) replaces the `SPC k s f` prefix from
   `config-core.el` there.
 - mu4e: `gb` opens the message in qutebrowser (message list and message).
+- mu4e: saved searches `b i` (all the inboxes) and `b T` (To do, flagged messages).

@@ -117,8 +117,6 @@
                   (message-signature . nil)
                   (mu4e-drafts-folder  . "/Gmail/[Gmail]/Drafts")
                   (mu4e-sent-folder  . "/Gmail/[Gmail]/Sent Mail")
-                  (mu4e-refile-folder  . "/Gmail/[Gmail]/All Mail")
-                  (mu4e-trash-folder  . "/Gmail/[Gmail]/Bin")
                   (smtpmail-smtp-server . "smtp.gmail.com")
                   (smtpmail-smtp-service . 587)
                   (smtpmail-stream-type . starttls)
@@ -138,8 +136,6 @@
                   (message-signature . nil)
                   (mu4e-drafts-folder  . "/Work/[Gmail]/Drafts")
                   (mu4e-sent-folder  . "/Work/[Gmail]/Sent Mail")
-                  (mu4e-refile-folder  . "/Work/[Gmail]/All Mail")
-                  (mu4e-trash-folder  . "/Work/[Gmail]/Bin")
                   (smtpmail-smtp-server . "smtp.gmail.com")
                   (smtpmail-smtp-service . 587)
                   (smtpmail-stream-type . starttls)
@@ -159,8 +155,6 @@
                   (message-signature . nil)
                   (mu4e-drafts-folder  . "/Infomaniak/Drafts")
                   (mu4e-sent-folder  . "/Infomaniak/Sent")
-                  (mu4e-refile-folder  . "/Infomaniak/INBOX")
-                  (mu4e-trash-folder  . "/Infomaniak/Trash")
                   (smtpmail-smtp-server . "mail.infomaniak.com")
                   (smtpmail-smtp-service . 465)
                   (smtpmail-stream-type . ssl)
@@ -180,8 +174,6 @@
                   (message-signature . "Antoine Hermant\nAntADatabase, https://antadatabase.com")
                   (mu4e-drafts-folder  . "/AntADatabase/Drafts")
                   (mu4e-sent-folder  . "/AntADatabase/Sent")
-                  (mu4e-refile-folder  . "/AntADatabase/INBOX")
-                  (mu4e-trash-folder  . "/AntADatabase/Trash")
                   (smtpmail-smtp-server . "mail.infomaniak.com")
                   (smtpmail-smtp-service . 465)
                   (smtpmail-stream-type . ssl)
@@ -204,14 +196,27 @@ Sidlerstrasse 5, CH-3012 Bern
 📧 antoine.hermant@unibe.ch | 👾 https://github.com/antoinehermant")
                   (mu4e-drafts-folder  . "/UniBe/Drafts")
                   (mu4e-sent-folder  . "/UniBe/Sent Items")
-                  (mu4e-refile-folder  . "/UniBe/Archive")
-                  (mu4e-trash-folder  . "/UniBe/Deleted Items")
                   (smtpmail-smtp-server . "smtp.office365.com")
                   (smtpmail-smtp-service . 587)
                   (smtpmail-stream-type . starttls)
                   (smtpmail-smtp-user . "antoine.hermant@unibe.ch")
                   ;; Exchange files what it sends in Sent Items itself
                   (mu4e-sent-messages-behavior . delete)))))
+
+  ;; Archives and trash follow the account of each message, not the
+  ;; context, as lists mix the accounts (see `anthe/mu4e-account-folders')
+  (setq mu4e-refile-folder (lambda (msg) (anthe/mu4e--account-folder msg 'archive))
+        mu4e-trash-folder (lambda (msg) (anthe/mu4e--account-folder msg 'trash)))
+  ;; Archiving from a Gmail inbox only takes it out of the inbox, as Gmail
+  ;; already keeps it in All Mail: a move there would make a copy
+  (setf (alist-get 'refile mu4e-marks)
+        (list :char '("r" . "▶")
+              :prompt "refile"
+              :dyn-target (lambda (_target msg) (mu4e-get-refile-folder msg))
+              :action (lambda (docid msg target)
+                        (if (anthe/mu4e--gmail-inbox-p msg)
+                            (mu4e--server-remove docid)
+                          (mu4e--server-move docid (mu4e--mark-check-target target) "-N")))))
 
   ;; Send through the SMTP server of the current context, the passwords
   ;; are read from ~/.authinfo, but for Microsoft 365 (UniBe) which only
@@ -237,8 +242,12 @@ Sidlerstrasse 5, CH-3012 Bern
   (set-company-backend! 'mu4e-compose-mode 'company-capf)
   (add-hook 'mu4e-compose-mode-hook #'anthe/mu4e--compose-completion)
 
+  ;; The inboxes hold what is still to sort: archive (r), delete (d) or
+  ;; flag (+) and archive what waits for an action, found in To do
   (setq mu4e-bookmarks
-        `((:name "Unread messages" :query "flag:unread AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash AND NOT maildir:/AntADatabase/Trash AND NOT maildir:\"/UniBe/Deleted Items\"" :key 117)
+        `((:name "Inboxes" :query "maildir:/Gmail/INBOX OR maildir:/Work/INBOX OR maildir:/Infomaniak/INBOX OR maildir:/AntADatabase/INBOX OR maildir:/UniBe/INBOX" :key ?i)
+          (:name "To do" :query "flag:flagged AND NOT flag:trashed" :key ?T)
+          (:name "Unread messages" :query "flag:unread AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash AND NOT maildir:/AntADatabase/Trash AND NOT maildir:\"/UniBe/Deleted Items\"" :key 117)
           (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash AND NOT maildir:/AntADatabase/Trash AND NOT maildir:\"/UniBe/Deleted Items\"" :key 116)
           (:name "Drafts" :query "flag:draft AND NOT flag:trashed" :key ?d)
           (:name "Last 7 days" :query "date:7d..now" :hide-unread t :key 119)
@@ -458,6 +467,29 @@ kept after both versions; messages with other MML tags are left alone."
                     (apply #'concat (nreverse attachments))
                     (if attachments "<#/multipart>\n" ""))))))))
 
+(defvar anthe/mu4e-account-folders
+  '(("Gmail" :archive "/Gmail/[Gmail]/All Mail" :trash "/Gmail/[Gmail]/Bin")
+    ("Work" :archive "/Work/[Gmail]/All Mail" :trash "/Work/[Gmail]/Bin")
+    ("Infomaniak" :archive "/Infomaniak/Archives" :trash "/Infomaniak/Trash")
+    ("AntADatabase" :archive "/AntADatabase/Archives" :trash "/AntADatabase/Trash")
+    ("UniBe" :archive "/UniBe/Archive" :trash "/UniBe/Deleted Items"))
+  "The archive and trash folders of each account, the first part of its maildirs.")
+
+(defun anthe/mu4e--account (msg)
+  "Return the account of MSG, the first part of its maildir."
+  (cadr (split-string (mu4e-message-field msg :maildir) "/")))
+
+(defun anthe/mu4e--account-folder (msg kind)
+  "Return the folder of KIND (archive or trash) of the account of MSG."
+  (or (plist-get (cdr (assoc (anthe/mu4e--account msg) anthe/mu4e-account-folders))
+                 (intern (format ":%s" kind)))
+      (user-error "No %s folder for %s" kind (mu4e-message-field msg :maildir))))
+
+(defun anthe/mu4e--gmail-inbox-p (msg)
+  "Return non-nil if MSG is in the inbox of a Gmail account."
+  (and (string-suffix-p "/INBOX" (mu4e-message-field msg :maildir))
+       (string-search "/[Gmail]/" (anthe/mu4e--account-folder msg 'archive))))
+
 ;; mail-idle keeps an IMAP IDLE connection open on each inbox and syncs it
 ;; when mail arrives, then mu4e reindexes
 (defvar anthe/mail-idle--process nil)
@@ -536,6 +568,28 @@ Also take note of the messages to skip in notifications."
              (push (list msgid account (or (cdr sender) from) subject) found))))))
     (nreverse found)))
 
+(defvar anthe/mu4e-work-accounts '("UniBe")
+  "The accounts not notified outside working hours.")
+
+(defvar anthe/mu4e-work-quiet-hours t
+  "Non-nil to not notify the work accounts outside working hours.
+See `anthe/mu4e-work-quiet-p' and `anthe/mu4e-toggle-work-quiet-hours'.")
+
+(defun anthe/mu4e-work-quiet-p ()
+  "Return non-nil outside working hours: weekends, and 20:00 to 8:00."
+  (let* ((time (decode-time))
+         (hour (decoded-time-hour time)))
+    (and anthe/mu4e-work-quiet-hours
+         (or (memq (decoded-time-weekday time) '(0 6))
+             (>= hour 20) (< hour 8)))))
+
+(defun anthe/mu4e-toggle-work-quiet-hours ()
+  "Toggle notifying the work accounts outside working hours."
+  (interactive)
+  (setq anthe/mu4e-work-quiet-hours (not anthe/mu4e-work-quiet-hours))
+  (message "Work mail %s outside working hours"
+           (if anthe/mu4e-work-quiet-hours "silent" "notified")))
+
 (defun anthe/mu4e--notify-new-mail ()
   "Notify the inbox messages that came since the last index.
 The first index only takes note of those already there."
@@ -546,7 +600,10 @@ The first index only takes note of those already there."
     (dolist (message (anthe/mu4e--new-inbox-messages))
       (unless (gethash (car message) anthe/mu4e--notified)
         (puthash (car message) t anthe/mu4e--notified)
-        (push message new)))
+        ;; Taken note of in quiet hours too, so as not to come in the morning
+        (unless (and (member (nth 1 message) anthe/mu4e-work-accounts)
+                     (anthe/mu4e-work-quiet-p))
+          (push message new))))
     (unless first
       (if (> (length new) 4)
           ;; A burst (after a suspend): a single notification
