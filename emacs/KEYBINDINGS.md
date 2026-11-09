@@ -36,6 +36,11 @@ In qutebrowser windows (Evil normal state), see `anthe-qutebrowser.el`:
 qutebrowser's own keys are sent to it, and prefixes like `g`, `;`, `,` list
 the matching qutebrowser bindings at the bottom of the screen.
 
+In mu4e (main view, message list and message, Evil normal state), see
+`anthe-mu4e.el`: `gm` Gmail, `gw` Work, `gi` Infomaniak, `ga` AntADatabase,
+`gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
+the account first.
+
 ## Log
 
 ### 2026-11-05
@@ -56,6 +61,14 @@ the matching qutebrowser bindings at the bottom of the screen.
   themselves, and `s--`, `s-=`, `s-_`, `s-+`. The keys move the border in their
   direction instead of growing the window, and the resizing is pixelwise so
   EXWM windows don't snap to character cells.
+
+### 2026-11-09
+
+- mu4e: `g` + a letter goes to the inbox of an account, shown in the
+  Accounts section of the main view. They override Evil's `gi`, `ga`, `gu`,
+  which do nothing in these read-only buffers. `J` (`mu4e-search-maildir`)
+  asks for the account, then the folder.
+- agent-shell: `gC` opens the compose buffer beside the shell.
 
 ## Open questions
 
