@@ -190,9 +190,14 @@
           (lambda (msg)
             (when msg
               (string-prefix-p "/UniBe" (mu4e-message-field msg :maildir))))
+          ;; The signature of Outlook, in plain text
           :vars '((user-mail-address . "antoine.hermant@unibe.ch")
                   (user-full-name    . "Antoine Hermant")
-                  (message-signature . nil)
+                  (message-signature . "Antoine Hermant
+PhD Student | Climate and Environmental Physics (KUP)
+Physics Department, University of Bern
+Sidlerstrasse 5, CH-3012 Bern
+📧 antoine.hermant@unibe.ch | 👾 https://github.com/antoinehermant")
                   (mu4e-drafts-folder  . "/UniBe/Drafts")
                   (mu4e-sent-folder  . "/UniBe/Sent Items")
                   (mu4e-refile-folder  . "/UniBe/Archive")
@@ -212,6 +217,16 @@
         message-kill-buffer-on-exit t)
   (add-hook 'auth-source-backend-parser-functions #'anthe/mu4e--ms365-backend)
   (advice-add 'smtpmail-try-auth-methods :around #'anthe/mu4e--ms365-auth)
+
+  ;; The signature goes on new messages, not on replies, and messages
+  ;; with an HTML signature are sent with an HTML version too
+  (advice-add 'mu4e-compose-reply-to :around #'anthe/mu4e--reply-unsigned)
+  (add-hook 'message-send-hook #'anthe/mu4e--add-html-signature)
+
+  ;; Attach the marked files of dired with C-c RET C-a, to a message
+  ;; being composed or a new one; C-x m composes with mu4e too
+  (setq mail-user-agent 'mu4e-user-agent)
+  (add-hook 'dired-mode-hook #'turn-on-gnus-dired-mode)
 
   ;; Let company ask mu4e for contacts before falling back to words of
   ;; the buffer, and keep dictionary words out of the body
@@ -381,6 +396,63 @@ ANNOTATIONS is an alist of each candidate and the text shown after it."
                             (car (alist-get (cdr folder) counts '(0) nil #'equal)))))
                    folders))))
     (mu4e-search-maildir (alist-get folder folders nil nil #'equal))))
+
+;; Signatures
+(defvar anthe/mu4e-html-signatures
+  '(("antoine.hermant@unibe.ch" .
+     "<div style=\"font-family: 'Aptos Mono', monospace; font-size: 11pt; color: #000;\">
+<div style=\"color: #666;\"># -----------------------------------------------------</div>
+<div>Antoine Hermant</div>
+<div>PhD Student | Climate and Environmental Physics (KUP)</div>
+<div>Physics Department, University of Bern</div>
+<div>Sidlerstrasse 5, CH-3012 Bern</div>
+<div>📧 <a href=\"mailto:antoine.hermant@unibe.ch\">antoine.hermant@unibe.ch</a> | 👾 <a href=\"https://github.com/antoinehermant\">GitHub</a></div>
+</div>"))
+  "The HTML signature of each address, as made in Outlook, with its links.
+It replaces the plain one in the HTML version of the messages.")
+
+(defun anthe/mu4e--reply-unsigned (fn &rest args)
+  "Call FN with ARGS, `mu4e-compose-reply-to', without the signature."
+  ;; The context switch of the reply sets this binding, not the global value
+  (let ((message-signature nil))
+    (apply fn args)))
+
+(defun anthe/mu4e--html-escape (text)
+  "Return TEXT with the special characters of HTML escaped."
+  (replace-regexp-in-string
+   "[&<>\"]" (lambda (c) (pcase c ("&" "&amp;") ("<" "&lt;") (">" "&gt;") (_ "&quot;")))
+   text t t))
+
+(defun anthe/mu4e--add-html-signature ()
+  "Add an HTML version to a message signed by an address with an HTML signature.
+The text keeps its lines, and the signature its links.  Attachments are
+kept after both versions; messages with other MML tags are left alone."
+  (when-let* ((from (cadr (mail-extract-address-components
+                           (or (message-field-value "From") ""))))
+              (signature (alist-get from anthe/mu4e-html-signatures nil nil #'string=)))
+    (save-excursion
+      (message-goto-body)
+      (let* ((start (point))
+             (attachments nil)
+             (body (replace-regexp-in-string
+                    "<#\\(part\\|mml\\)[^>]*>\\(?:.\\|\n\\)*?<#/\\1>\n?"
+                    (lambda (part) (push part attachments) "")
+                    (buffer-substring-no-properties start (point-max)) t t)))
+        (when (and (not (string-search "<#" body))
+                   (string-match message-signature-separator body))
+          (let ((text (string-trim-right (substring body 0 (match-beginning 0)))))
+            (delete-region start (point-max))
+            (insert (if attachments "<#multipart type=mixed>\n" "")
+                    "<#multipart type=alternative>\n"
+                    body
+                    "<#part type=text/html>\n<html><body>\n"
+                    "<div style=\"font-family: Aptos, Calibri, Helvetica, sans-serif;"
+                    " font-size: 12pt; color: #000;\">\n"
+                    (replace-regexp-in-string "\n" "<br>\n" (anthe/mu4e--html-escape text))
+                    "\n</div>\n<br>\n" signature "\n</body></html>\n"
+                    "<#/multipart>\n"
+                    (apply #'concat (nreverse attachments))
+                    (if attachments "<#/multipart>\n" ""))))))))
 
 ;; mail-idle keeps an IMAP IDLE connection open on each inbox and syncs it
 ;; when mail arrives, then mu4e reindexes
