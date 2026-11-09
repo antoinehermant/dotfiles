@@ -3,8 +3,8 @@
 IMAPAccount gmail
 Host imap.gmail.com
 User ah74230@gmail.com
-PassCmd "cat ~/.secrets/.oh-no-insecure-password"
-SSLType IMAPS
+PassCmd "gpg -q --no-tty -d ~/.secrets/mbsync-gmail.gpg"
+TLSType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore gmail-remote
@@ -21,7 +21,7 @@ Inbox ~/documents/mail/Gmail/INBOX
 Channel gmail
 Far :gmail-remote:
 Near :gmail-local:
-Patterns  ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
+Patterns  ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
 Expunge Both
 Create Both
 SyncState *
@@ -73,8 +73,8 @@ SyncState *
 IMAPAccount work
 Host imap.gmail.com
 User antoine.hermant74@gmail.com
-PassCmd "cat ~/.secrets/.oh-no-insecure-password-gmail2"
-SSLType IMAPS
+PassCmd "gpg -q --no-tty -d ~/.secrets/mbsync-work.gpg"
+TLSType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore work-remote
@@ -91,7 +91,7 @@ Inbox ~/documents/mail/Work/INBOX
 Channel work
 Far :work-remote:
 Near :work-local:
-Patterns ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
+Patterns ![Gmail]* "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Bin"
 Expunge Both
 Sync All
 Create Both
@@ -145,9 +145,9 @@ IMAPAccount infomaniak
 Host mail.infomaniak.com
 Port 993
 User antoine.hermant@etik.com
-PassCmd "cat ~/.secrets/.oh-no-insecure-password-infomaniak"
-SSLType IMAPS
-SSLVersions TLSv1.2
+PassCmd "gpg -q --no-tty -d ~/.secrets/mbsync-infomaniak.gpg"
+TLSType IMAPS
+TLSVersions +1.2
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore infomaniak-remote
@@ -155,7 +155,7 @@ Account infomaniak
 
 MaildirStore infomaniak-local
 Path ~/documents/mail/Infomaniak/
-Inbox ~/documents/mail/Infomaniak/Inbox/
+Inbox ~/documents/mail/Infomaniak/INBOX/
 SubFolders Verbatim
 
 # With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
@@ -171,36 +171,63 @@ Create Both
 SyncState *
 
 
+# ------------------- AntADatabase --------------------------------------------------------------------------------------------------
+IMAPAccount antadatabase
+Host mail.infomaniak.com
+Port 993
+User contact@antadatabase.com
+PassCmd "gpg -q --no-tty -d ~/.secrets/mbsync-antadatabase.gpg"
+TLSType IMAPS
+TLSVersions +1.2
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore antadatabase-remote
+Account antadatabase
+
+MaildirStore antadatabase-local
+Path ~/documents/mail/AntADatabase/
+Inbox ~/documents/mail/AntADatabase/INBOX/
+SubFolders Verbatim
+
+Channel antadatabase
+Far :antadatabase-remote:
+Near :antadatabase-local:
+Patterns *
+Expunge Both
+CopyArrivalDate yes
+Sync All
+Create Both
+SyncState *
+
 # UNIBE -------------------------------------------------
-# IMAPAccount unibe
-# # Host mail.campus.unibe.ch
-# Host outlook.office365.com
-# Port 993
-# User antoine.hermant@unibe.ch
-# # PassCmd "cat ~/.oh-no-insecure-password-unibe"
-# AuthMechs OAuth2
-# SSLType IMAPS
-# SSLVersions TLSv1.2
-# CertificateFile /etc/ssl/certs/ca-certificates.crt
-# # SSLVerify None
+# Microsoft 365 only takes OAuth2: ms365-token signs in the way
+# Thunderbird does and prints a fresh token (needs the XOAUTH2 SASL
+# plugin, libsasl2-modules-kdexoauth2)
+IMAPAccount unibe
+Host outlook.office365.com
+Port 993
+User antoine.hermant@unibe.ch
+PassCmd "ms365-token"
+AuthMechs XOAUTH2
+TLSType IMAPS
+TLSVersions +1.2
+CertificateFile /etc/ssl/certs/ca-certificates.crt
 
-# IMAPStore unibe-remote
-# Account unibe
+IMAPStore unibe-remote
+Account unibe
 
-# MaildirStore unibe-local
-# Path ~/documents/mail/unibe/
-# Inbox ~/documents/mail/unibe/Inbox/
-# Trash ~/documents/mail/unibe/Trash/
-# SubFolders Verbatim
+MaildirStore unibe-local
+Path ~/documents/mail/UniBe/
+Inbox ~/documents/mail/UniBe/INBOX/
+SubFolders Verbatim
 
-# # With mbsync 1.4.0 and later: Use 'Far' instead of 'Master', and
-# # 'Near' instead of 'Slave'.
-# Channel unibe
-# Far :unibe-remote:
-# Near :unibe-local:
-# Patterns *
-# Expunge None
-# CopyArrivalDate yes
-# Sync All
-# Create Both
-# SyncState *
+# Leave out the calendar, contacts and other Outlook-only folders
+Channel unibe
+Far :unibe-remote:
+Near :unibe-local:
+Patterns * !Calendar* !Contacts* "!Conversation History" !Journal !Notes !Outbox !Tasks !Trash
+Expunge Both
+CopyArrivalDate yes
+Sync All
+Create Both
+SyncState *

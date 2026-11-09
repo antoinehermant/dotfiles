@@ -8,6 +8,14 @@ ln -sf ~/.dotfiles/bash/.bash_tweaks ~/.bash_tweaks
 # mbsync config
 ln -sf ~/.dotfiles/rcfiles/.mbsyncrc ~/.mbsyncrc
 
+# gpg-agent config (passphrase window and cache)
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+ln -sf ~/.dotfiles/rcfiles/gpg-agent.conf ~/.gnupg/gpg-agent.conf
+
+# OAuth2 tokens for the UniBe mail (mbsync, Emacs)
+mkdir -p ~/.local/bin
+ln -sf ~/.dotfiles/bin/ms365-token ~/.local/bin/ms365-token
+
 # ncview config
 ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc
 
