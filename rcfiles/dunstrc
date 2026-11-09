@@ -1,0 +1,63 @@
+# Dunst, the notification daemon notify-send, Emacs and qutebrowser talk to.
+# Colours are those of the Night Owl Emacs theme. Reload with: dunstctl reload
+
+[global]
+    # Show on the monitor of the focused window (EXWM sets _NET_ACTIVE_WINDOW
+    # to the current workspace), so on the one you work on
+    follow = keyboard
+
+    origin = top-right
+    offset = (16, 16)
+    width = (300, 420)
+    height = (0, 220)
+    gap_size = 8
+    notification_limit = 5
+    indicate_hidden = yes
+
+    font = Inter 11
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    ellipsize = end
+    word_wrap = yes
+    show_age_threshold = 60
+
+    padding = 12
+    horizontal_padding = 14
+    text_icon_padding = 12
+    corner_radius = 10
+    frame_width = 1
+    separator_height = 0
+    background = "#011627f2"
+    foreground = "#d6deeb"
+    frame_color = "#1d3b53"
+    highlight = "#82aaff"
+    progress_bar_corner_radius = 4
+
+    icon_theme = "Yaru-dark, Adwaita, hicolor"
+    enable_recursive_icon_lookup = true
+    icon_position = left
+    min_icon_size = 32
+    max_icon_size = 48
+
+    # Left click opens what the notification is about (the mail, the page),
+    # middle click dismisses it, right click dismisses them all
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_current
+    mouse_right_click = close_all
+
+    # Don't let notifications time out while away from the computer
+    idle_threshold = 120
+    sticky_history = yes
+    history_length = 30
+
+[urgency_low]
+    foreground = "#7f8ea3"
+    timeout = 6
+
+[urgency_normal]
+    timeout = 10
+
+[urgency_critical]
+    frame_color = "#ef5350"
+    timeout = 0

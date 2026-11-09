@@ -19,6 +19,10 @@ ln -sf ~/.dotfiles/bin/ms365-token ~/.local/bin/ms365-token
 # Sync the inboxes as soon as mail arrives (started by Emacs with mu4e)
 ln -sf ~/.dotfiles/bin/mail-idle ~/.local/bin/mail-idle
 
+# Notifications (dunst, started by EXWM)
+mkdir -p ~/.config/dunst
+ln -sf ~/.dotfiles/rcfiles/dunstrc ~/.config/dunst/dunstrc
+
 # ncview config
 ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc
 

@@ -28,6 +28,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | `SPC r j`, `r b`, `r ]`, `r r` | Send line or region, buffer, cell; restart the shell (Python buffers) | `anthe-python.el` |
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
 | `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
+| `SPC z z`, `z a`, `z o`, `z h` | Notifications (dunst): dismiss the last, dismiss all, open (its default action, like the mail), bring back the last dismissed | `anthe-control.el` |
 | `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k d` dashboard, `k o d` open externally, `k o m` system monitor | various |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
@@ -69,6 +70,11 @@ the account first.
   which do nothing in these read-only buffers. `J` (`mu4e-search-maildir`)
   asks for the account, then the folder.
 - agent-shell: `gC` opens the compose buffer beside the shell.
+- Notifications under `SPC z` (free in Doom): `z z` dismiss, `z a` dismiss
+  all, `z o` open, `z h` bring back the last. Leader rather than super, as
+  usual; in a qutebrowser window in insert mode, `Escape` first. With the
+  mouse: left click opens, middle click dismisses, right click dismisses all
+  (`rcfiles/dunstrc`).
 
 ## Open questions
 

@@ -496,6 +496,61 @@ kept after both versions; messages with other MML tags are left alone."
     (process-put anthe/mail-idle--process 'stopped t)
     (delete-process anthe/mail-idle--process)))
 
+;; A notification for each new message of an inbox, after each index.
+;; Clicking it opens the message
+(defvar anthe/mu4e--notified nil
+  "Message-ids already notified, or nil before the first index.")
+
+(defun anthe/mu4e--new-inbox-messages ()
+  "Return the (MSGID ACCOUNT FROM SUBJECT) of the unread inbox messages."
+  (let (found)
+    (dolist (line (process-lines-ignore-status
+                   mu4e-mu-binary "find" "flag:unread AND date:3d..now"
+                   "--fields" "i\tm\tf\ts"))
+      (pcase (split-string line "\t")
+        (`(,msgid ,maildir ,from ,subject)
+         (let ((account (and (string-match "\\`/\\([^/]+\\)/inbox\\'" maildir)
+                             (match-string 1 maildir)))
+               (sender (mail-header-parse-address from t)))
+           ;; Not what I sent to myself
+           (when (and account
+                      (not (mu4e-personal-or-alternative-address-p (car sender))))
+             (push (list msgid account (or (cdr sender) from) subject) found))))))
+    (nreverse found)))
+
+(defun anthe/mu4e--notify-new-mail ()
+  "Notify the inbox messages that came since the last index.
+The first index only takes note of those already there."
+  (let ((first (null anthe/mu4e--notified))
+        new)
+    (unless anthe/mu4e--notified
+      (setq anthe/mu4e--notified (make-hash-table :test #'equal)))
+    (dolist (message (anthe/mu4e--new-inbox-messages))
+      (unless (gethash (car message) anthe/mu4e--notified)
+        (puthash (car message) t anthe/mu4e--notified)
+        (push message new)))
+    (unless first
+      (if (> (length new) 4)
+          ;; A burst (after a suspend): a single notification
+          (notifications-notify
+           :title (format "%d new messages" (length new))
+           :body (mapconcat (pcase-lambda (`(,_ ,account ,from ,_))
+                              (anthe/mu4e--html-escape (format "%s: %s" account from)))
+                            (seq-take (reverse new) 6) "\n")
+           :app-name "mu4e" :app-icon "mail-unread"
+           :actions '("default" "Open") :on-action (lambda (_id _key) (mu4e)))
+        (pcase-dolist (`(,msgid ,account ,from ,subject) (reverse new))
+          (notifications-notify
+           :title (anthe/mu4e--html-escape (format "%s · %s" from account))
+           :body (anthe/mu4e--html-escape subject)
+           :app-name "mu4e" :app-icon "mail-unread"
+           :actions '("default" "Open")
+           :on-action (lambda (_id _key) (mu4e-view-message-with-message-id msgid))))))))
+
+(with-eval-after-load 'mu4e
+  (require 'notifications)
+  (add-hook 'mu4e-index-updated-hook #'anthe/mu4e--notify-new-mail))
+
 ;; g and a key go to the inbox of an account, from every mu4e view
 (defvar anthe/mu4e-account-keys
   '(("m" . "Gmail") ("w" . "Work") ("i" . "Infomaniak") ("a" . "AntADatabase") ("u" . "UniBe"))

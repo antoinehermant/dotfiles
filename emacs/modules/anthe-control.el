@@ -57,6 +57,18 @@
       :desc "Switch pi VPN" "k t v" #'anthe/pivpn-toggle
       :desc "Switch laptop charger" "k t c" #'my-switch-laptop-charger)
 
+;; Notifications (dunst, see rcfiles/dunstrc)
+(defun anthe/dunstctl (&rest args)
+  "Run dunstctl with ARGS."
+  (apply #'call-process "dunstctl" nil 0 nil args))
+
+(map! :leader
+      (:prefix ("z" . "notifications")
+       :desc "Dismiss" "z" (cmd! (anthe/dunstctl "close"))
+       :desc "Dismiss all" "a" (cmd! (anthe/dunstctl "close-all"))
+       :desc "Open" "o" (cmd! (anthe/dunstctl "action"))
+       :desc "Bring back the last" "h" (cmd! (anthe/dunstctl "history-pop"))))
+
 
 (provide 'anthe-control)
 ;;; anthe-control.el ends here
