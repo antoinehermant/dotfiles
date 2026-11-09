@@ -44,4 +44,6 @@ ln -sf ~/.dotfiles/nvim/lua/plugins/* ~/.config/nvim/lua/plugins/
 
 # qutebrowser config
 ln -sf ~/.dotfiles/qutebrowser/config.py ~/.config/qutebrowser/config.py
+mkdir -p ~/.config/qutebrowser/greasemonkey
+ln -sf ~/.dotfiles/qutebrowser/greasemonkey/notifications.js ~/.config/qutebrowser/greasemonkey/
 ln -sf ~/.dotfiles/qutebrowser/themes/* ~/.config/qutebrowser/qutebrowser-themes/themes/
