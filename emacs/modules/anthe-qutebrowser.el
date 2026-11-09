@@ -267,23 +267,26 @@ window are skipped, as EXWM can show an X window in only one place."
   (when-let* ((buffer (anthe/qutebrowser--sibling -1)))
     (switch-to-buffer buffer)))
 
+;; The commands are sent directly, not through the qutebrowser-cmd-* functions: those are only
+;; made once the RPC lists the commands, which can fail when connecting, and the keys then give
+;; "Wrong type argument: commandp"
 ;; :localleader would also apply to the keys after it, so it needs its own form
 (map! :map qutebrowser-exwm-mode-map
-      :localleader "z" #'qutebrowser-cmd-zoom-in)
+      :localleader "z" (cmd! (qutebrowser-send-commands ":zoom-in")))
 
 (map! :map qutebrowser-exwm-mode-map
       ;; exwm-evil sends C-+, C-- and C-= here, which qutebrowser does not bind
-      :n "+" #'qutebrowser-cmd-zoom-in
-      :n "-" #'qutebrowser-cmd-zoom-out
-      :n "=" #'qutebrowser-cmd-zoom
-      :n "r" #'qutebrowser-cmd-reload
-      :n "f" #'qutebrowser-cmd-hint
-      :n "H" #'qutebrowser-cmd-back
-      :n "L" #'qutebrowser-cmd-forward
+      :n "+" (cmd! (qutebrowser-send-commands ":zoom-in"))
+      :n "-" (cmd! (qutebrowser-send-commands ":zoom-out"))
+      :n "=" (cmd! (qutebrowser-send-commands ":zoom"))
+      :n "r" (cmd! (qutebrowser-send-commands ":reload"))
+      :n "f" (cmd! (qutebrowser-send-commands ":hint"))
+      :n "H" (cmd! (qutebrowser-send-commands ":back"))
+      :n "L" (cmd! (qutebrowser-send-commands ":forward"))
       :n ":" #'anthe/qutebrowser-command
       :n "/" #'anthe/qutebrowser-search
-      :n "n" #'qutebrowser-cmd-search-next
-      :n "N" #'qutebrowser-cmd-search-prev
+      :n "n" (cmd! (qutebrowser-send-commands ":search-next"))
+      :n "N" (cmd! (qutebrowser-send-commands ":search-prev"))
       ;; Scroll the page, not the Emacs buffer as in `anthe-evil'
       :n "C-d" (cmd! (qutebrowser-send-commands ":scroll-page 0 0.5"))
       :n "C-u" (cmd! (qutebrowser-send-commands ":scroll-page 0 -0.5"))
