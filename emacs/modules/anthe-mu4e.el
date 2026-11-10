@@ -210,6 +210,10 @@ Sidlerstrasse 5, CH-3012 Bern
   ;; context, as lists mix the accounts (see `anthe/mu4e-account-folders')
   (setq mu4e-refile-folder (lambda (msg) (anthe/mu4e--account-folder msg 'archive))
         mu4e-trash-folder (lambda (msg) (anthe/mu4e--account-folder msg 'trash)))
+  ;; d only moves to the trash: with the trashed flag, mbsync (Expunge Both)
+  ;; would delete the message for good at the next sync, trash included.  The
+  ;; servers empty their trash after 30 days, and mbsync follows.
+  (setq mu4e-trash-without-flag t)
   ;; Archiving from a Gmail inbox only takes it out of the inbox, as Gmail
   ;; already keeps it in All Mail: a move there would make a copy
   (setf (alist-get 'refile mu4e-marks)
@@ -362,7 +366,7 @@ ANNOTATIONS is an alist of each candidate and the text shown after it."
                      (lambda (string pred action)
                        (if (eq action 'metadata)
                            `(metadata (display-sort-function . identity)
-                                      (annotation-function . ,annotate))
+                             (annotation-function . ,annotate))
                          (complete-with-action action candidates string pred)))
                      nil t)))
 
@@ -517,11 +521,11 @@ Also take note of the messages to skip in notifications."
          (dolist (msgid msgids) (puthash msgid t anthe/mu4e--skipped)))
         (`("synced" . ,_) (setq synced t))))
     (when synced
-    ;; Several inboxes may sync in a row: index once after them
-    (when (timerp anthe/mail-idle--index-timer)
-      (cancel-timer anthe/mail-idle--index-timer))
-    (setq anthe/mail-idle--index-timer
-          (run-at-time 2 nil (lambda () (when (mu4e-running-p) (mu4e-update-index))))))))
+      ;; Several inboxes may sync in a row: index once after them
+      (when (timerp anthe/mail-idle--index-timer)
+        (cancel-timer anthe/mail-idle--index-timer))
+      (setq anthe/mail-idle--index-timer
+            (run-at-time 2 nil (lambda () (when (mu4e-running-p) (mu4e-update-index))))))))
 
 (defun anthe/mail-idle--sentinel (process _event)
   "Start mail-idle again a minute after PROCESS stopped, unless on purpose."
@@ -659,6 +663,524 @@ The first index only takes note of those already there."
 (with-eval-after-load 'mu4e
   (dolist (map (list mu4e-headers-mode-map mu4e-view-mode-map))
     (evil-define-key* 'normal map (kbd "gb") #'anthe/mu4e-view-in-browser)))
+
+;; W replies to all in a message too, as in the message list (R replies)
+(with-eval-after-load 'mu4e
+  (evil-define-key* 'normal mu4e-view-mode-map (kbd "W") #'mu4e-compose-wide-reply))
+
+;;; Threads
+
+;; A thread shows as its latest message received, as in Outlook: not my own
+;; replies, nor its messages from other folders, unless it has only those.  It
+;; has the number of messages in place of the thread lines, and TAB unfolds it.
+;; mu4e's own folding keeps the first message instead.
+(defvar-local anthe/mu4e--unfolded nil
+  "The ids of the threads unfolded in this message list.")
+
+(defface anthe/mu4e-unfolded-face
+  '((t :foreground "#FFEB95"))
+  "Face of the messages of an unfolded thread, the dark orange of the theme.")
+
+(defun anthe/mu4e--thread-id (msg)
+  "Return the id of the thread of MSG, nil when the list has no threads."
+  (when-let* ((path (plist-get (mu4e-message-field msg :meta) :path)))
+    (car (split-string path ":"))))
+
+(defun anthe/mu4e--threads ()
+  "Return the threads of the list, each a list of (POSITION . MSG) in order."
+  (let (threads current id)
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (when-let* ((msg (get-text-property (point) 'msg)))
+          (let ((this (anthe/mu4e--thread-id msg)))
+            (unless (and this (equal this id))
+              (when current (push (nreverse current) threads))
+              (setq current nil id this))
+            (push (cons (point) msg) current)))
+        (forward-line)))
+    (when current (push (nreverse current) threads))
+    (nreverse threads)))
+
+(defun anthe/mu4e--latest (thread)
+  "Return the element of THREAD with the latest message."
+  (seq-reduce (lambda (latest line)
+                (if (time-less-p (mu4e-message-field (cdr latest) :date)
+                                 (mu4e-message-field (cdr line) :date))
+                    line
+                  latest))
+              (cdr thread) (car thread)))
+
+(defun anthe/mu4e--received-p (msg)
+  "Whether MSG matches the search and is not from me."
+  (not (or (plist-get (mu4e-message-field msg :meta) :related)
+           (seq-some (lambda (contact)
+                       (mu4e-personal-or-alternative-address-p (mu4e-contact-email contact)))
+                     (mu4e-message-field msg :from)))))
+
+(defun anthe/mu4e--shown (thread)
+  "Return the element of THREAD showing it: its latest message received."
+  (anthe/mu4e--latest (or (seq-filter (lambda (line) (anthe/mu4e--received-p (cdr line)))
+                                      thread)
+                          thread)))
+
+(defun anthe/mu4e--sort-threads ()
+  "Sort the threads by the date of the message showing them.
+mu sorts them by their latest message, which may be one of my replies."
+  (when (and mu4e-search-threads (eq mu4e-search-sort-field :date))
+    (let* ((threads (anthe/mu4e--threads))
+           (date (lambda (thread) (mu4e-message-field (cdr (anthe/mu4e--shown thread)) :date)))
+           (sorted (sort (copy-sequence threads)
+                         (lambda (a b)
+                           (if (eq mu4e-search-sort-direction 'ascending)
+                               (time-less-p (funcall date a) (funcall date b))
+                             (time-less-p (funcall date b) (funcall date a))))))
+           (line-end (lambda (pos) (save-excursion (goto-char pos) (line-beginning-position 2)))))
+      (unless (equal sorted threads)
+        (let ((inhibit-read-only t)
+              (texts (mapcar (lambda (thread)
+                               (cons thread (buffer-substring (caar thread)
+                                                              (funcall line-end (car (car (last thread)))))))
+                             threads)))
+          (save-excursion
+            (goto-char (car (caar threads)))
+            (delete-region (car (caar threads)) (funcall line-end (car (car (last (car (last threads)))))))
+            (dolist (thread sorted)
+              (insert (cdr (assq thread texts))))))
+        (goto-char (point-min))))))
+
+(defun anthe/mu4e--after-search ()
+  "Sort and fold the threads of the message list just found."
+  (when-let* ((buffer (mu4e-get-headers-buffer)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (anthe/mu4e--sort-threads))
+      (anthe/mu4e-fold-refresh)
+      (with-current-buffer buffer
+        (when-let* ((docid (mu4e~headers-docid-at-point)))
+          (mu4e~headers-highlight docid))))))
+
+(defun anthe/mu4e--fold-overlay (beg end &rest properties)
+  "Make an overlay of the fold from BEG to END with PROPERTIES."
+  (let ((overlay (make-overlay beg end)))
+    (overlay-put overlay 'anthe-fold t)
+    (while properties
+      (overlay-put overlay (pop properties) (pop properties)))
+    overlay))
+
+(defun anthe/mu4e--thread-prefix (beg end)
+  "Return the bounds of the thread lines drawn between BEG and END, if any."
+  (let ((prefix-p (lambda (pos)
+                    (memq 'mu4e-thread-fold-face (ensure-list (get-text-property pos 'face)))))
+        (pos beg))
+    (while (and (< pos end) (not (funcall prefix-p pos)))
+      (setq pos (next-single-property-change pos 'face nil end)))
+    (when (< pos end)
+      (let ((start pos))
+        (while (and (< pos end) (funcall prefix-p pos))
+          (setq pos (next-single-property-change pos 'face nil end)))
+        (cons start pos)))))
+
+(defun anthe/mu4e--fold-thread (thread)
+  "Hide the lines of THREAD but the one showing it, and show their number."
+  (let* ((latest (car (anthe/mu4e--shown thread)))
+         (line-end (lambda (pos) (save-excursion (goto-char pos) (line-beginning-position 2))))
+         (latest-end (funcall line-end latest))
+         (count (propertize (format "[%d] " (length thread)) 'face 'mu4e-thread-fold-face)))
+    (when (< (caar thread) latest)
+      (anthe/mu4e--fold-overlay (caar thread) latest 'invisible t))
+    (when (< latest-end (funcall line-end (car (car (last thread)))))
+      (anthe/mu4e--fold-overlay latest-end (funcall line-end (car (car (last thread))))
+                                'invisible t))
+    (if-let* ((prefix (anthe/mu4e--thread-prefix latest (1- latest-end))))
+        (anthe/mu4e--fold-overlay (car prefix) (cdr prefix) 'display count)
+      (anthe/mu4e--fold-overlay (1- latest-end) (1- latest-end) 'before-string count))
+    ;; Bold while any message of the thread is unread
+    (when (seq-some (lambda (line) (memq 'unread (mu4e-message-field (cdr line) :flags)))
+                    thread)
+      (anthe/mu4e--fold-overlay latest (1- latest-end) 'face 'mu4e-unread-face))))
+
+(defun anthe/mu4e--line-hidden-p ()
+  "Whether the line at point is folded away."
+  (invisible-p (line-end-position)))
+
+(defun anthe/mu4e--goto-visible ()
+  "Move from a folded line to the line showing its thread."
+  (when (anthe/mu4e--line-hidden-p)
+    (let ((id (anthe/mu4e--thread-id (mu4e-message-at-point t))))
+      (while (and (not (bobp))
+                  (equal id (save-excursion
+                              (forward-line -1)
+                              (anthe/mu4e--thread-id (mu4e-message-at-point t)))))
+        (forward-line -1))
+      (while (and (anthe/mu4e--line-hidden-p) (not (eobp)))
+        (forward-line))
+      (move-to-column 2)
+      (dolist (window (get-buffer-window-list nil nil t))
+        (set-window-point window (point))))))
+
+(defun anthe/mu4e-fold-refresh ()
+  "Fold the threads of the message list but the ones unfolded."
+  (when-let* ((buffer (mu4e-get-headers-buffer)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (remove-overlays (point-min) (point-max) 'anthe-fold t)
+        (when mu4e-search-threads
+          (dolist (thread (anthe/mu4e--threads))
+            (when (cdr thread)
+              (if (member (anthe/mu4e--thread-id (cdar thread)) anthe/mu4e--unfolded)
+                  (anthe/mu4e--fold-overlay
+                   (caar thread)
+                   (save-excursion (goto-char (car (car (last thread))))
+                                   (line-end-position))
+                   'face 'anthe/mu4e-unfolded-face)
+                (anthe/mu4e--fold-thread thread)))))
+        (anthe/mu4e--goto-visible)))))
+
+(defun anthe/mu4e-thread-toggle ()
+  "Unfold the thread at point, or fold it back."
+  (interactive)
+  (when-let* ((id (anthe/mu4e--thread-id (mu4e-message-at-point))))
+    (setq anthe/mu4e--unfolded (if (member id anthe/mu4e--unfolded)
+                                   (delete id anthe/mu4e--unfolded)
+                                 (cons id anthe/mu4e--unfolded)))
+    (anthe/mu4e-fold-refresh)))
+
+(defun anthe/mu4e-thread-toggle-all ()
+  "Unfold all the threads, or fold them all back if some are unfolded."
+  (interactive)
+  (setq anthe/mu4e--unfolded
+        (unless anthe/mu4e--unfolded
+          (delq nil (mapcar (lambda (thread) (anthe/mu4e--thread-id (cdar thread)))
+                            (anthe/mu4e--threads)))))
+  (anthe/mu4e-fold-refresh))
+
+(with-eval-after-load 'mu4e
+  (add-hook 'mu4e-headers-found-hook #'anthe/mu4e--after-search)
+  ;; Updated lines are drawn again, and removed ones change the threads
+  (advice-add 'mu4e~headers-update-handler :after
+              (lambda (&rest _) (anthe/mu4e-fold-refresh)) '((name . anthe-fold)))
+  (advice-add 'mu4e~headers-remove-handler :after
+              (lambda (&rest _) (anthe/mu4e-fold-refresh)) '((name . anthe-fold))))
+
+;; Moving by thread: to the line showing the next or previous thread
+(defun anthe/mu4e--thread-position (backwards)
+  "Return the first visible line of the next thread, or previous if BACKWARDS."
+  (let ((id (anthe/mu4e--thread-id (mu4e-message-at-point)))
+        (step (if backwards -1 1))
+        found)
+    (save-excursion
+      (while (and (not found) (zerop (forward-line step)) (not (eobp)))
+        (when-let* ((msg (get-text-property (point) 'msg)))
+          (unless (or (anthe/mu4e--line-hidden-p)
+                      (and id (equal id (anthe/mu4e--thread-id msg))))
+            (setq found (point)))))
+      ;; Backwards, that is the last line of the thread: go to its first one
+      (when (and found backwards)
+        (let ((other (anthe/mu4e--thread-id (get-text-property found 'msg))))
+          (while (and other (zerop (forward-line -1))
+                      (equal other (anthe/mu4e--thread-id (mu4e-message-at-point t))))
+            (unless (anthe/mu4e--line-hidden-p)
+              (setq found (point)))))))
+    found))
+
+(defun anthe/mu4e--goto-message (position)
+  "Go to the line at POSITION of the message list, highlighting it."
+  (goto-char position)
+  (move-to-column 2)
+  (mu4e~headers-highlight (mu4e~headers-docid-at-point)))
+
+(defun anthe/mu4e-headers-next-thread (&optional backwards)
+  "Go to the next thread, or the previous one if BACKWARDS."
+  (interactive)
+  (if-let* ((position (anthe/mu4e--thread-position backwards)))
+      (progn
+        (anthe/mu4e--goto-message position)
+        (when (window-live-p mu4e~headers-view-win)
+          (mu4e-headers-view-message)))
+    (message "No %s thread" (if backwards "previous" "next"))))
+
+(defun anthe/mu4e-headers-prev-thread ()
+  "Go to the previous thread."
+  (interactive)
+  (anthe/mu4e-headers-next-thread t))
+
+(defun anthe/mu4e-view-next-thread (&optional backwards)
+  "Show the latest message of the next thread, or the previous one if BACKWARDS."
+  (interactive)
+  (let (position)
+    (mu4e--view-in-headers-context
+     (when (setq position (anthe/mu4e--thread-position backwards))
+       (anthe/mu4e--goto-message position)))
+    (if (not position)
+        (message "No %s thread" (if backwards "previous" "next"))
+      (mu4e-select-other-view)
+      (mu4e-headers-view-message))))
+
+(defun anthe/mu4e-view-prev-thread ()
+  "Show the previous thread."
+  (interactive)
+  (anthe/mu4e-view-next-thread t))
+
+;; Within a thread, by date whatever the folding: ]t newer, [t older
+(defun anthe/mu4e--thread-messages (docid)
+  "Return the messages of the thread of DOCID in the message list, oldest first."
+  (with-current-buffer (mu4e-get-headers-buffer)
+    (save-excursion
+      (unless (mu4e~headers-goto-docid docid)
+        (user-error "The message is not in the message list"))
+      (let ((id (or (anthe/mu4e--thread-id (mu4e-message-at-point))
+                    (user-error "The message list has no threads")))
+            messages)
+        (mu4e-headers-for-each
+         (lambda (msg)
+           (when (equal id (anthe/mu4e--thread-id msg))
+             (push msg messages))))
+        (sort messages (lambda (a b) (time-less-p (mu4e-message-field a :date)
+                                                  (mu4e-message-field b :date))))))))
+
+(defun anthe/mu4e-view-thread-newer (&optional older)
+  "Show the next message of the thread by date, or the previous one if OLDER."
+  (interactive)
+  (let* ((docid (mu4e-message-field (mu4e-message-at-point) :docid))
+         (messages (anthe/mu4e--thread-messages docid))
+         (index (seq-position messages docid
+                              (lambda (msg id) (eql (mu4e-message-field msg :docid) id))))
+         (target (and index (nth (+ index (if older -1 1)) messages))))
+    (if (or (not target) (and older (zerop index)))
+        (message "This is the %s message of the thread" (if older "oldest" "latest"))
+      (with-current-buffer (mu4e-get-headers-buffer)
+        (mu4e~headers-goto-docid (mu4e-message-field target :docid))
+        (mu4e-headers-view-message)))))
+
+(defun anthe/mu4e-view-thread-older ()
+  "Show the previous message of the thread by date."
+  (interactive)
+  (anthe/mu4e-view-thread-newer t))
+
+;; M marks the thread with a mark to choose, but not its messages from other
+;; folders (such as the replies in Sent), which only show for context
+(defun anthe/mu4e-mark-thread ()
+  "Mark the messages of the thread at point that match the search."
+  (interactive)
+  (let ((id (or (anthe/mu4e--thread-id (mu4e-message-at-point))
+                (user-error "The message list has no threads")))
+        (markpair (mu4e--mark-get-markpair "Mark the thread with: " t)))
+    (mu4e-headers-for-each
+     (lambda (msg)
+       (when (and (equal id (anthe/mu4e--thread-id msg))
+                  (not (plist-get (mu4e-message-field msg :meta) :related)))
+         (mu4e-mark-at-point (car markpair) (cdr markpair)))))))
+
+;;; Conversation: a thread in one buffer, latest message first
+
+(defvar-local anthe/mu4e--conversation-sections nil
+  "The overlays of the message bodies, latest first.")
+
+(defun anthe/mu4e--find-part (handle type)
+  "Return the first part of MIME type TYPE in HANDLE."
+  (cond ((stringp (car handle))
+         (seq-some (lambda (part) (anthe/mu4e--find-part part type)) (cdr handle)))
+        ((bufferp (car handle))
+         (and (equal (mm-handle-media-type handle) type) handle))))
+
+(defun anthe/mu4e--strip-quoted ()
+  "Delete the quoted messages from the text in the buffer, if it leaves some."
+  (let ((text (buffer-string)))
+    (goto-char (point-min))
+    ;; The first line introducing a quoted message, in the usual clients
+    (when (re-search-forward
+           (rx bol (* blank)
+               (or (seq (or "On " "Le " "Am ") (+ nonl) (? "\n" (* nonl))
+                        (or "wrote:" "écrit :" "écrit:" "schrieb:"))
+                   ;; Outlook: the header of the reply, on one line each or not
+                   (seq (? "*") (or "From:" "De :" "De:" "Von:") (? "*") (* nonl) "\n"
+                        (** 0 4 (* nonl) "\n")
+                        (? "*") (or "Sent:" "Date:" "Envoyé :" "Envoyé:" "Gesendet:"))
+                   (seq (>= 3 "-") (* blank) "Original Message")
+                   (seq (>= 10 (any "-_─━")) (* blank) eol)))
+           nil t)
+      (delete-region (match-beginning 0) (point-max)))
+    (flush-lines "^[ \t]*>" (point-min) (point-max))
+    (goto-char (point-max))
+    (skip-chars-backward " \t\n")
+    (delete-region (point) (point-max))
+    (when (= (buffer-size) 0)
+      (insert text))))
+
+(defun anthe/mu4e--message-text (msg)
+  "Return the text of MSG without the quoted messages."
+  (let ((path (mu4e-message-field msg :path)))
+    (if (not (and path (file-readable-p path)))
+        (propertize "(The message file is gone: it was moved since the search)"
+                    'face 'shadow)
+      (with-temp-buffer
+        (set-buffer-multibyte nil)
+        (insert-file-contents-literally path)
+        (let* ((handle (mm-dissect-buffer t t))
+               (part (or (anthe/mu4e--find-part handle "text/plain")
+                         (anthe/mu4e--find-part handle "text/html"))))
+          (unwind-protect
+              (with-temp-buffer
+                (when part
+                  (insert (decode-coding-string
+                           (mm-get-part part)
+                           (or (mm-charset-to-coding-system
+                                (mail-content-type-get (mm-handle-type part) 'charset) nil t)
+                               'utf-8)))
+                  (when (equal (mm-handle-media-type part) "text/html")
+                    (let ((shr-width 80) (shr-use-fonts nil))
+                      (shr-render-region (point-min) (point-max)))))
+                (goto-char (point-min))
+                (while (search-forward "\r" nil t)
+                  (replace-match ""))
+                (anthe/mu4e--strip-quoted)
+                (buffer-string))
+            (mm-destroy-parts handle)))))))
+
+(defun anthe/mu4e--contacts (contacts)
+  "Return the names, or else addresses, of CONTACTS."
+  (mapconcat (lambda (contact) (or (mu4e-contact-name contact) (mu4e-contact-email contact)))
+             contacts ", "))
+
+(defun anthe/mu4e--conversation-toggle (overlay &optional open)
+  "Collapse the message of OVERLAY, or expand it if collapsed or OPEN is non-nil."
+  (let ((collapse (and (not open) (not (overlay-get overlay 'invisible)))))
+    (overlay-put overlay 'invisible collapse)
+    (overlay-put (overlay-get overlay 'heading) 'after-string
+                 (when collapse (overlay-get overlay 'snippet)))))
+
+(defun anthe/mu4e--conversation-section ()
+  "Return the body overlay of the message at point."
+  (seq-find (lambda (overlay) (<= (overlay-start (overlay-get overlay 'heading)) (point)))
+            (reverse anthe/mu4e--conversation-sections)))
+
+(defun anthe/mu4e-conversation-toggle ()
+  "Collapse or expand the message at point."
+  (interactive)
+  (when-let* ((overlay (anthe/mu4e--conversation-section)))
+    (goto-char (overlay-start (overlay-get overlay 'heading)))
+    (anthe/mu4e--conversation-toggle overlay)))
+
+(defun anthe/mu4e-conversation-toggle-all ()
+  "Expand all the messages, or collapse them all if all are expanded."
+  (interactive)
+  (let ((open (seq-some (lambda (overlay) (overlay-get overlay 'invisible))
+                        anthe/mu4e--conversation-sections)))
+    (dolist (overlay anthe/mu4e--conversation-sections)
+      (anthe/mu4e--conversation-toggle overlay open))))
+
+(defun anthe/mu4e-conversation-next (&optional backwards)
+  "Go to the next message, or the previous one if BACKWARDS."
+  (interactive)
+  (let* ((headings (mapcar (lambda (overlay) (overlay-start (overlay-get overlay 'heading)))
+                           anthe/mu4e--conversation-sections))
+         (target (if backwards
+                     (seq-find (lambda (pos) (< pos (line-beginning-position))) (reverse headings))
+                   (seq-find (lambda (pos) (> pos (point))) headings))))
+    (if target
+        (goto-char target)
+      (message "No %s message" (if backwards "previous" "next")))))
+
+(defun anthe/mu4e-conversation-prev ()
+  "Go to the previous message."
+  (interactive)
+  (anthe/mu4e-conversation-next t))
+
+(defun anthe/mu4e-conversation-open ()
+  "Show the message at point in mu4e, in the message list."
+  (interactive)
+  (when-let* ((overlay (anthe/mu4e--conversation-section))
+              (docid (overlay-get overlay 'docid)))
+    (quit-window)
+    (pop-to-buffer (mu4e-get-headers-buffer))
+    (mu4e~headers-goto-docid docid)
+    (mu4e-headers-view-message)))
+
+(define-derived-mode anthe/mu4e-conversation-mode special-mode "Conversation"
+  "Major mode showing a mail thread, latest message first."
+  (setq-local line-spacing 0.1))
+
+(with-eval-after-load 'evil
+  (evil-set-initial-state 'anthe/mu4e-conversation-mode 'normal)
+  (evil-define-key* 'normal anthe/mu4e-conversation-mode-map
+    (kbd "TAB") #'anthe/mu4e-conversation-toggle
+    (kbd "<tab>") #'anthe/mu4e-conversation-toggle
+    (kbd "<backtab>") #'anthe/mu4e-conversation-toggle-all
+    (kbd "RET") #'anthe/mu4e-conversation-open
+    (kbd "C-j") #'anthe/mu4e-conversation-next
+    (kbd "C-k") #'anthe/mu4e-conversation-prev
+    "q" #'quit-window))
+
+(defun anthe/mu4e-conversation ()
+  "Show the thread of the message at point in one buffer, latest message first.
+The latest and the unread messages are expanded, without what they quote."
+  (interactive)
+  (let* ((docid (mu4e-message-field (mu4e-message-at-point) :docid))
+         (messages (reverse (anthe/mu4e--thread-messages docid)))
+         (buffer (get-buffer-create "*mu4e-conversation*")))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (delete-all-overlays)
+        (anthe/mu4e-conversation-mode)
+        (insert (propertize (or (mu4e-message-field (car (last messages)) :subject) "")
+                            'face 'mu4e-header-title-face)
+                (propertize (format "  %d messages\n\n" (length messages)) 'face 'shadow))
+        (dolist (msg messages)
+          (let* ((unread (memq 'unread (mu4e-message-field msg :flags)))
+                 (heading-start (point))
+                 heading body-start text)
+            (insert (propertize (anthe/mu4e--contacts (mu4e-message-field msg :from))
+                                'face (if unread 'mu4e-unread-face 'mu4e-contact-face))
+                    "  "
+                    (propertize (format-time-string "%a %d %b %Y %H:%M"
+                                                    (mu4e-message-field msg :date))
+                                'face 'shadow))
+            (setq heading (make-overlay heading-start (point)))
+            (insert "\n")
+            (setq body-start (point)
+                  text (anthe/mu4e--message-text msg))
+            (insert (propertize (concat "To: " (anthe/mu4e--contacts
+                                                (append (mu4e-message-field msg :to)
+                                                        (mu4e-message-field msg :cc))))
+                                'face 'shadow)
+                    "\n\n" text "\n")
+            (let ((overlay (make-overlay body-start (point))))
+              (overlay-put overlay 'heading heading)
+              (overlay-put overlay 'docid (mu4e-message-field msg :docid))
+              (overlay-put overlay 'snippet
+                           (propertize (concat "  " (truncate-string-to-width
+                                                     (string-clean-whitespace text) 70 nil nil "…"))
+                                       'face 'shadow))
+              (push overlay anthe/mu4e--conversation-sections)
+              (unless (or unread (eq msg (car messages)))
+                (anthe/mu4e--conversation-toggle overlay)))
+            (insert "\n")))
+        (setq anthe/mu4e--conversation-sections (nreverse anthe/mu4e--conversation-sections))
+        (goto-char (point-min))
+        (anthe/mu4e-conversation-next)))
+    (pop-to-buffer-same-window buffer)))
+
+(with-eval-after-load 'mu4e
+  ;; In the thread mode of the list, where mu4e's folding is bound in normal
+  ;; state too, and minor modes come before the major mode
+  (evil-define-key* 'normal mu4e-thread-mode-map
+    (kbd "TAB") #'anthe/mu4e-thread-toggle
+    (kbd "<tab>") #'anthe/mu4e-thread-toggle
+    (kbd "<C-tab>") #'anthe/mu4e-thread-toggle
+    (kbd "<backtab>") #'anthe/mu4e-thread-toggle-all)
+  (evil-define-key* 'normal mu4e-headers-mode-map
+    "}" #'anthe/mu4e-headers-next-thread
+    "{" #'anthe/mu4e-headers-prev-thread
+    "M" #'anthe/mu4e-mark-thread
+    "zc" #'anthe/mu4e-conversation)
+  (evil-define-key* 'normal mu4e-view-mode-map
+    (kbd "C-j") #'anthe/mu4e-view-next-thread
+    (kbd "C-k") #'anthe/mu4e-view-prev-thread
+    "]t" #'anthe/mu4e-view-thread-newer
+    "[t" #'anthe/mu4e-view-thread-older
+    "zc" #'anthe/mu4e-conversation))
 
 ;; Compose in the account being visited: a search within a single account
 ;; switches to its context, which new messages then use

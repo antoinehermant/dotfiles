@@ -78,6 +78,9 @@
         `(("t" "Tasks / Projects")
           ("ti" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ;; From mu4e, %a is a link that opens the message
+          ("tm" "Mail" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
           ("tw" "Work / PhD" entry (file+olp"~/org/roam/PhDRoadmap.org" "TODOLIST")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
           ("tp" "Perso" entry (file+olp"~/org/roam/Tasks.org" "Perso")

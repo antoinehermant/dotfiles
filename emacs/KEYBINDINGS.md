@@ -43,7 +43,16 @@ In mu4e (main view, message list and message, Evil normal state), see
 `gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
 the account first. `gb` opens the message at point in qutebrowser, for HTML
 that renders badly in Emacs. Saved searches (`b` then the key): `i` all the
-inboxes, `T` To do (flagged).
+inboxes, `T` To do (flagged). `R` replies, `W` replies to all (in the message
+too, where it was Evil's next WORD).
+
+Threads show as their latest message received (not my replies), sorted by
+its date, with the number of messages: `TAB` unfolds one (in dark orange),
+`S-TAB` all, `{`/`}` go by thread and `M` marks a thread (only
+its messages matching the search). In a message, `C-j`/`C-k` go to the
+next/previous thread and `]t`/`[t` to the newer/older message in the thread.
+`zc` shows the whole thread in one buffer, latest first (`TAB` collapses a
+message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 
 ## Log
 
@@ -107,3 +116,6 @@ inboxes, `T` To do (flagged).
 ### 2026-11-10
 
 - qutebrowser launcher: `TAB` puts the selected candidate in the input (consult made it go to the next group).
+- mu4e: `W` replies to all in a message too, as in the message list. It was Evil's next WORD there.
+- Capture: `SPC X t m` makes an inbox task linked to the mail at point in mu4e (list or message).
+- mu4e threads: folded to their latest message (`TAB`, `S-TAB`), `M` marks a thread, `{`/`}` by thread. In a message, `C-j`/`C-k` go by thread (was by line), `]t`/`[t` within it. `zc` conversation view.
