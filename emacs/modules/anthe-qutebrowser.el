@@ -91,8 +91,9 @@
 (defun anthe/qutebrowser--exwm-buffer-state ()
   "Preview qutebrowser windows, then give back the ones taken from other monitors.
 Previewing a window shown on another workspace moves it here, and EXWM
-shows another buffer there.  Once it is no longer previewed or chosen,
-it is put back in its window."
+shows another buffer there.  It is put back in its window once another
+qutebrowser window is previewed, or when the launcher ends with
+something else chosen, or nothing."
   (let ((state (consult--buffer-state))
         (others (cl-loop for window in (window-list-1 nil 'nomini 'visible)
                          unless (eq (window-frame window) (selected-frame))
@@ -100,7 +101,9 @@ it is put back in its window."
     (lambda (action cand)
       (let ((buffer (qutebrowser--candidate-buffer cand)))
         (funcall state action buffer)
-        (when (memq action '(preview return))
+        ;; Not on a preview of nothing: consult resets the preview so before
+        ;; RET, and the chosen window would go back before being switched to
+        (when (or (eq action 'return) (and (eq action 'preview) buffer))
           (pcase-dolist (`(,window . ,original) others)
             (when (and (window-live-p window)
                        (buffer-live-p original)
