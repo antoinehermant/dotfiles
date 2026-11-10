@@ -664,6 +664,58 @@ The first index only takes note of those already there."
   (dolist (map (list mu4e-headers-mode-map mu4e-view-mode-map))
     (evil-define-key* 'normal map (kbd "gb") #'anthe/mu4e-view-in-browser)))
 
+;; All the mu4e buffers are real to Doom (its mu4e module only makes the main
+;; view real): closing a buffer shown over them, such as the browser for a
+;; link, brings them back, where Doom's frame filter skipped them
+(defun anthe/mu4e-buffer-p (buffer)
+  "Whether BUFFER is a buffer of mu4e."
+  (or (string-prefix-p "mu4e-" (symbol-name (buffer-local-value 'major-mode buffer)))
+      (eq (buffer-local-value 'major-mode buffer) 'anthe/mu4e-conversation-mode)))
+
+(add-hook 'doom-real-buffer-functions #'anthe/mu4e-buffer-p)
+
+;; Being real, they join each workspace showing them, and persp-mode does not
+;; kill a buffer still in another workspace, only takes it out of this one.
+;; mu4e kills them to close them (q in a message), and a message buffer left
+;; alive breaks its navigation: always let them be killed.  Not the compose
+;; buffers, which ask before losing a draft.
+(defun anthe/mu4e--always-killable-h ()
+  "Let the current buffer be killed even when in other workspaces."
+  (setq-local kill-buffer-query-functions nil))
+
+(dolist (hook '(mu4e-main-mode-hook mu4e-headers-mode-hook mu4e-view-mode-hook
+                anthe/mu4e-conversation-mode-hook))
+  (add-hook hook #'anthe/mu4e--always-killable-h))
+
+;; Doom adds a buffer to the workspace when switching to it, but mu4e shows
+;; the message with `display-buffer': out of the workspace, it was skipped
+;; when closing the browser, which showed the message list in its place
+(defun anthe/mu4e--add-to-workspace-h ()
+  "Add the current buffer to the current workspace."
+  (when (bound-and-true-p persp-mode)
+    (persp-add-buffer (current-buffer) (get-current-persp) nil nil)))
+
+(dolist (hook '(mu4e-main-mode-hook mu4e-headers-mode-hook mu4e-view-mode-hook
+                anthe/mu4e-conversation-mode-hook))
+  (add-hook hook #'anthe/mu4e--add-to-workspace-h))
+
+;; q only closes the main view: mu4e goes on syncing and notifying, with its
+;; icon in the modeline.  Q quits mu4e, and mail-idle with it, where Q was
+;; `mu4e-search-query' (the saved searches of b and the folders of J at once)
+(defun anthe/mu4e-quit ()
+  "Quit mu4e completely, and stop syncing the inboxes when mail arrives."
+  (interactive)
+  (when (y-or-n-p "Quit mu4e (no more syncing nor notifications)? ")
+    (anthe/mail-idle-stop)
+    (mu4e-quit)))
+
+(with-eval-after-load 'mu4e
+  (evil-define-key* 'normal mu4e-main-mode-map
+    "q" #'quit-window
+    "Q" #'anthe/mu4e-quit)
+  ;; mu4e may start again after Q: so does mail-idle
+  (add-hook 'mu4e-main-mode-hook #'anthe/mail-idle-start))
+
 ;; W replies to all in a message too, as in the message list (R replies)
 (with-eval-after-load 'mu4e
   (evil-define-key* 'normal mu4e-view-mode-map (kbd "W") #'mu4e-compose-wide-reply))

@@ -43,7 +43,8 @@ In mu4e (main view, message list and message, Evil normal state), see
 `gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
 the account first. `gb` opens the message at point in qutebrowser, for HTML
 that renders badly in Emacs. Saved searches (`b` then the key): `i` all the
-inboxes, `T` To do (flagged). `R` replies, `W` replies to all (in the message
+inboxes, `T` To do (flagged). In the main view, `q` only closes it (mu4e goes
+on syncing and notifying) and `Q` quits mu4e. `R` replies, `W` replies to all (in the message
 too, where it was Evil's next WORD).
 
 Threads show as their latest message received (not my replies), sorted by
@@ -119,3 +120,4 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 - mu4e: `W` replies to all in a message too, as in the message list. It was Evil's next WORD there.
 - Capture: `SPC X t m` makes an inbox task linked to the mail at point in mu4e (list or message).
 - mu4e threads: folded to their latest message (`TAB`, `S-TAB`), `M` marks a thread, `{`/`}` by thread. In a message, `C-j`/`C-k` go by thread (was by line), `]t`/`[t` within it. `zc` conversation view.
+- mu4e main view: `q` closes it without quitting mu4e (it stopped syncing and notifications), `Q` quits mu4e and mail-idle (was `mu4e-search-query`, which `b` and `J` cover).
