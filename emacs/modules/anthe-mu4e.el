@@ -103,6 +103,9 @@
   ;; `anthe/mu4e--switch-to-searched-context'), replies from the account
   ;; they answer, and only otherwise is the account asked for
   (setq mu4e-compose-context-policy 'ask-if-none)
+  ;; Until a context is entered, else Emacs makes it up from the user and
+  ;; host names, and mu4e says it is not one of mine
+  (setq user-mail-address "antoine.hermant@etik.com")
   (setq mu4e-contexts
         (list
          (make-mu4e-context
