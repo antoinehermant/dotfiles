@@ -23,7 +23,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | Keys | Action | Where |
 |---|---|---|
 | `SPC \` | App launcher | `config-local.el` |
-| `SPC j` / `SPC J` | qutebrowser launcher: open windows with preview, quickmarks (`m` narrows), bookmarks to read later (`b`), history / same in a new window | `anthe-qutebrowser.el` |
+| `SPC j` / `SPC J` | qutebrowser launcher: open windows with preview, quickmarks (`m` narrows), bookmarks to read later (`b`), history / same in a new window. `TAB` completes the input with the selected candidate | `anthe-qutebrowser.el` |
 | `SPC ]` / `SPC [` | Next / previous code cell (Python or code-cells buffers) | `anthe-python.el` |
 | `SPC r j`, `r b`, `r ]`, `r r` | Send line or region, buffer, cell; restart the shell (Python buffers) | `anthe-python.el` |
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
@@ -103,3 +103,7 @@ inboxes, `T` To do (flagged).
   `config-core.el` there.
 - mu4e: `gb` opens the message in qutebrowser (message list and message).
 - mu4e: saved searches `b i` (all the inboxes) and `b T` (To do, flagged messages).
+
+### 2026-11-10
+
+- qutebrowser launcher: `TAB` puts the selected candidate in the input (consult made it go to the next group).

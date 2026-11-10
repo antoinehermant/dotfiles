@@ -108,6 +108,16 @@ it is put back in its window."
                        (not (eq (window-buffer window) original))
                        (not (get-buffer-window original 'visible)))
               (set-window-buffer window original))))))))
+;; A new connection is only made when not connected: close those left over,
+;; as when a connection failed halfway after qutebrowser restarted.  The
+;; RPC server answers one connection at a time, so the requests on the new
+;; one would wait behind the old one, and time out
+(define-advice qutebrowser-rpc--make-network-process (:before () anthe-close-stale)
+  "Close the RPC connections left over."
+  (dolist (process (process-list))
+    (when (string-match-p "\\`qutebrowser-rpc\\(<[0-9]+>\\)?\\'" (process-name process))
+      (delete-process process))))
+
 ;; The command source asks qutebrowser for its commands, which fails while it is not running
 (consult-customize qutebrowser-consult--command-source
                    :enabled #'qutebrowser-rpc-connected-p)
@@ -184,6 +194,41 @@ The URL is matched too, but shown as the annotation."
         anthe/qutebrowser--bookmark-source
         qutebrowser-consult--history-source
         qutebrowser-consult--command-source))
+
+;; TAB completes the input with the selected candidate, for RET to open it.
+;; Consult makes TAB go to the next group, as the history is searched anew
+;; for each input: a minor mode map comes before its remap
+(defun anthe/qutebrowser--visible-text (string)
+  "Return STRING without its invisible parts, such as the URL of a mark."
+  (let ((pos 0) parts)
+    (while (< pos (length string))
+      (let ((next (next-single-property-change pos 'invisible string (length string))))
+        (unless (get-text-property pos 'invisible string)
+          (push (substring-no-properties string pos next) parts))
+        (setq pos next)))
+    (consult--tofu-strip (apply #'concat (nreverse parts)))))
+
+(defun anthe/qutebrowser-launcher-complete ()
+  "Put the selected candidate in the input, and keep it selected."
+  (interactive)
+  (when-let* ((cand (and (>= vertico--index 0) (nth vertico--index vertico--candidates))))
+    (delete-minibuffer-contents)
+    (insert (anthe/qutebrowser--visible-text cand))
+    (vertico--exhibit)
+    ;; Other candidates may match the input too, and come first
+    (when-let* ((index (seq-position vertico--candidates cand)))
+      (vertico--goto index)
+      (vertico--exhibit))))
+
+(define-minor-mode anthe/qutebrowser-launcher-mode
+  "Keys of the qutebrowser launcher, in its minibuffer."
+  :keymap (define-keymap "TAB" #'anthe/qutebrowser-launcher-complete
+                         "<tab>" #'anthe/qutebrowser-launcher-complete))
+
+(define-advice qutebrowser-consult-launcher (:around (fn &rest args) anthe-complete)
+  "Complete with TAB in the launcher."
+  (minibuffer-with-setup-hook (lambda () (anthe/qutebrowser-launcher-mode))
+    (apply fn args)))
 
 (defun anthe/qutebrowser--marks-eval (code)
   "Run CODE on qutebrowser's quickmark and bookmark managers, bound to `q' and `b'."
