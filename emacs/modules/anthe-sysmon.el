@@ -23,7 +23,7 @@
 theme_background = False
 truecolor = False
 shown_boxes = \"cpu mem net proc\"
-update_ms = 2000
+update_ms = 1000
 "
   "Content of the config file for the btop instance run by sysmon.")
 
@@ -43,11 +43,16 @@ It does not inherit from `vterm-mode-map', so no key ever reaches btop.")
   (when (memq (process-status process) '(exit signal))
     (vterm--sentinel process event)))
 
+(defvar anthe-sysmon--last-cpu nil
+  "The CPU time of btop and the time it was last seen to change.")
+
 (defun anthe-sysmon--resume ()
   "Resume btop if it is paused."
   (when-let* ((process (get-buffer-process anthe-sysmon-buffer-name))
               ((process-get process 'anthe-sysmon-paused)))
     (process-put process 'anthe-sysmon-paused nil)
+    ;; The watchdog counts again: a paused btop uses no CPU
+    (setq anthe-sysmon--last-cpu nil)
     (continue-process process)))
 
 (define-derived-mode anthe-sysmon-mode vterm-mode "Sysmon"
@@ -89,9 +94,76 @@ It does not inherit from `vterm-mode-map', so no key ever reaches btop.")
              (anthe-sysmon--resume))
             ((not (or visible paused))
              (process-put process 'anthe-sysmon-paused t)
-             (stop-process process))))))
+             ;; Not `stop-process': btop handles its SIGTSTP by restarting its
+             ;; collecting thread, which sometimes deadlocks on resume, leaving
+             ;; the clock running and the graphs frozen.  SIGSTOP freezes it as is.
+             (signal-process process 'SIGSTOP))))))
 
 (add-hook 'window-state-change-hook #'anthe-sysmon--sync-pause)
+
+;; A watchdog for a btop that stops updating while displayed: it resumes a
+;; btop stopped without being paused here, and restarts one that no longer
+;; collects anything (its collecting thread using no CPU for a while)
+(defvar anthe-sysmon--watchdog-timer nil)
+
+(defun anthe-sysmon--stat (file)
+  "Return the fields of FILE, a /proc stat file, after the name, or nil."
+  (with-temp-buffer
+    (when (ignore-errors (insert-file-contents file) t)
+      ;; The name, in parentheses, may hold spaces: the fields come after it
+      (and (re-search-forward ") " nil t)
+           (split-string (buffer-substring (point) (point-max)))))))
+
+(defun anthe-sysmon--process-state (process)
+  "Return the state letter of PROCESS in /proc, such as R, S or T (stopped)."
+  (car (anthe-sysmon--stat (format "/proc/%d/stat" (process-id process)))))
+
+(defun anthe-sysmon--collector-time (process)
+  "Return the CPU time of the threads of PROCESS but the main one, in ticks.
+The main thread of btop only draws the clock: the others collect the data."
+  (let* ((pid (process-id process))
+         (dir (format "/proc/%d/task/" pid)))
+    (apply #'+ (mapcar (lambda (tid)
+                         (let ((fields (anthe-sysmon--stat (concat dir tid "/stat"))))
+                           ;; utime and stime, fields 14 and 15 counting the id and name
+                           (+ (string-to-number (or (nth 11 fields) "0"))
+                              (string-to-number (or (nth 12 fields) "0")))))
+                       (remove (number-to-string pid)
+                               (ignore-errors (directory-files dir nil "\\`[0-9]+\\'")))))))
+
+(defun anthe-sysmon-restart ()
+  "Start btop again, in the windows displaying sysmon."
+  (interactive)
+  (let ((windows (get-buffer-window-list anthe-sysmon-buffer-name nil t)))
+    ;; A stuck btop may not exit on the hangup of `kill-buffer'
+    (when-let* ((process (get-buffer-process anthe-sysmon-buffer-name)))
+      (signal-process process 'SIGKILL))
+    (kill-buffer anthe-sysmon-buffer-name)
+    (setq anthe-sysmon--last-cpu nil)
+    (let ((buffer (anthe-sysmon--buffer)))
+      (dolist (window windows)
+        (set-window-buffer window buffer)))))
+
+(defun anthe-sysmon--watchdog ()
+  "Resume btop if it stopped while displayed, and restart it if it is stuck."
+  (when-let* ((buffer (get-buffer anthe-sysmon-buffer-name))
+              (process (get-buffer-process buffer))
+              ((get-buffer-window buffer t))
+              ((not (process-get process 'anthe-sysmon-paused))))
+    (if (equal (anthe-sysmon--process-state process) "T")
+        (progn
+          (message "Sysmon: btop was stopped while displayed, resuming it")
+          (setq anthe-sysmon--last-cpu nil)
+          (continue-process process))
+      (let ((cpu (anthe-sysmon--collector-time process)))
+        (cond ((not (eql cpu (car anthe-sysmon--last-cpu)))
+               (setq anthe-sysmon--last-cpu (cons cpu (float-time))))
+              ((> (- (float-time) (cdr anthe-sysmon--last-cpu)) 20)
+               (message "Sysmon: btop stopped collecting, restarting it")
+               (anthe-sysmon-restart)))))))
+
+(unless (timerp anthe-sysmon--watchdog-timer)
+  (setq anthe-sysmon--watchdog-timer (run-with-timer 10 10 #'anthe-sysmon--watchdog)))
 
 (defun anthe-sysmon-show ()
   "Display sysmon in the selected window, or select the window displaying it."
