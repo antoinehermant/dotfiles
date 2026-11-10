@@ -59,8 +59,30 @@
                     (expand-file-name "~/org/") "\\.sync-conflict-")))
     (if (null conflicts)
         (message "No Syncthing conflicts")
-      (let ((conflict (completing-read "Conflict: " conflicts nil t)))
-        (ediff-files (anthe-roam--sync-conflict-original conflict) conflict)))))
+      (let* ((conflict (completing-read "Conflict: " conflicts nil t))
+             (original (anthe-roam--sync-conflict-original conflict)))
+        (ediff-files original conflict
+                     (list (lambda ()
+                             (add-hook 'ediff-quit-hook
+                                       (lambda () (anthe-roam--sync-conflict-done original conflict))
+                                       nil t))))))))
+
+(defun anthe-roam--sync-conflict-done (original conflict)
+  "On quitting ediff, save ORIGINAL and offer to delete the CONFLICT file.
+Deleting it here deletes it on the other devices too: the conflict is resolved."
+  (when-let* ((buffer (find-buffer-visiting original)))
+    (when (buffer-modified-p buffer)
+      (with-current-buffer buffer (save-buffer))))
+  (when (y-or-n-p (format "Saved %s. Delete the conflict file %s? "
+                          (file-name-nondirectory original)
+                          (file-name-nondirectory conflict)))
+    ;; After ediff has finished quitting, which still uses its buffers
+    (run-at-time 0 nil (lambda ()
+                         (when-let* ((buffer (find-buffer-visiting conflict)))
+                           (with-current-buffer buffer (set-buffer-modified-p nil))
+                           (kill-buffer buffer))
+                         (delete-file conflict t)
+                         (message "Deleted %s" (file-name-nondirectory conflict))))))
 
 (use-package citar-org-roam
   :after (citar org-roam)
