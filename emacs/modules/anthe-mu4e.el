@@ -75,6 +75,23 @@
         mu4e-modeline-unread-items (cons "U:" (concat (nerd-icons-mdicon "nf-md-email") " "))
         mu4e-modeline-all-read     (cons "R:" (concat (nerd-icons-mdicon "nf-md-email_open_outline") " "))
         mu4e-modeline-all-clear    (cons "C:" (concat (nerd-icons-mdicon "nf-md-email_open_outline") " ")))
+  ;; A column with the folder of each message, an icon and colour for each
+  ;; kind: inbox, archive, sent, drafts, trash, spam, or another folder
+  (add-to-list 'mu4e-header-info-custom
+               '(:anthe-folder :name "Folder" :shortname "Folder"
+                 :help "Folder of the message, by kind"
+                 :function anthe/mu4e--folder-field))
+  ;; and the account it is in, for the searches across accounts
+  (add-to-list 'mu4e-header-info-custom
+               '(:anthe-account :name "Mailbox" :shortname "Mailbox"
+                 :help "Account of the message"
+                 :function anthe/mu4e--account-field))
+  (setq mu4e-headers-fields '((:human-date . 13) (:flags . 7) (:anthe-account . 8)
+                              (:anthe-folder . 11) (:from . 18) (:subject))
+        ;; The icons are wider than the one column counted for each, so the
+        ;; columns are aligned on their display position, not on characters
+        mu4e-headers-precise-alignment t)
+
   ;; (setq mu4e-headers-limit 500)
 
   ;; (setq +mu4e-gmail-accounts '(("ah74230@gmail.com" . "/Gmail")))
@@ -253,6 +270,13 @@ Sidlerstrasse 5, CH-3012 Bern
   ;; flag (+) and archive what waits for an action, found in To do
   (setq mu4e-bookmarks
         `((:name "Inboxes" :query "maildir:/Gmail/INBOX OR maildir:/Work/INBOX OR maildir:/Infomaniak/INBOX OR maildir:/AntADatabase/INBOX OR maildir:/UniBe/INBOX" :key ?i)
+          ;; Archiving moves to a folder, it sets no flag: these are the
+          ;; archive folders of all the accounts.  / narrows it to a search
+          (:name "Archives"
+           :query ,(mapconcat (lambda (account)
+                                (format "maildir:\"%s\"" (plist-get (cdr account) :archive)))
+                              anthe/mu4e-account-folders " OR ")
+           :key ?a)
           (:name "To do" :query "flag:flagged AND NOT flag:trashed" :key ?T)
           (:name "Unread messages" :query "flag:unread AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash AND NOT maildir:/AntADatabase/Trash AND NOT maildir:\"/UniBe/Deleted Items\"" :key 117)
           (:name "Today's messages" :query "date:today..now AND NOT flag:trashed AND NOT tag:\\Trash AND NOT maildir:/Gmail/[Gmail]/Bin AND NOT maildir:/Work/[Gmail]/Bin AND NOT maildir:/Infomaniak/Trash AND NOT maildir:/AntADatabase/Trash AND NOT maildir:\"/UniBe/Deleted Items\"" :key 116)
@@ -491,6 +515,42 @@ kept after both versions; messages with other MML tags are left alone."
   (or (plist-get (cdr (assoc (anthe/mu4e--account msg) anthe/mu4e-account-folders))
                  (intern (format ":%s" kind)))
       (user-error "No %s folder for %s" kind (mu4e-message-field msg :maildir))))
+
+(defvar anthe/mu4e-folder-kinds
+  '((inbox   "nf-md-inbox"         nerd-icons-blue   "Inbox")
+    (archive "nf-md-archive"       nerd-icons-green  "Archive")
+    (sent    "nf-md-send"          nerd-icons-cyan   "Sent")
+    (drafts  "nf-md-pencil"        nerd-icons-yellow "Drafts")
+    (trash   "nf-md-delete"        nerd-icons-red    "Trash")
+    (spam    "nf-md-alert_octagon" nerd-icons-orange "Spam")
+    (other   "nf-md-folder"        nerd-icons-purple nil))
+  "The icon, face and label of each kind of folder, nil for the folder's own name.")
+
+(defun anthe/mu4e--folder-kind (maildir)
+  "Return the kind of MAILDIR, a key of `anthe/mu4e-folder-kinds'."
+  (let ((folders (cdr (assoc (cadr (split-string maildir "/")) anthe/mu4e-account-folders)))
+        (name (file-name-nondirectory maildir)))
+    (cond ((equal name "INBOX") 'inbox)
+          ((equal maildir (plist-get folders :archive)) 'archive)
+          ((equal maildir (plist-get folders :trash)) 'trash)
+          ((member name '("Sent" "Sent Items" "Sent Mail")) 'sent)
+          ((equal name "Drafts") 'drafts)
+          ((member name '("Spam" "Junk" "Junk Email" "quarantine")) 'spam)
+          (t 'other))))
+
+(defun anthe/mu4e--folder-field (msg)
+  "Return the folder column of MSG in the message list."
+  (let* ((maildir (or (mu4e-message-field msg :maildir) ""))
+         (kind (assq (anthe/mu4e--folder-kind maildir) anthe/mu4e-folder-kinds))
+         (face (nth 2 kind)))
+    (propertize (concat (nerd-icons-mdicon (nth 1 kind) :face face) " "
+                        (propertize (or (nth 3 kind) (file-name-nondirectory maildir))
+                                    'face face))
+                'help-echo maildir)))
+
+(defun anthe/mu4e--account-field (msg)
+  "Return the mailbox column of MSG in the message list."
+  (propertize (or (anthe/mu4e--account msg) "") 'face 'shadow))
 
 (defun anthe/mu4e--gmail-inbox-p (msg)
   "Return non-nil if MSG is in the inbox of a Gmail account."
