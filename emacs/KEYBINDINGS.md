@@ -29,7 +29,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
 | `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
 | `SPC z z`, `z a`, `z o`, `z h` | Notifications (dunst): dismiss the last, dismiss all, open (its default action, like the mail), bring back the last dismissed | `anthe-control.el` |
-| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor | various |
+| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor, `k m` monitors (`m` mirror or extend, `s` swap the workspaces of the two monitors, `p` primary monitor, the one qutebrowser shares in Zoom, `d` detect) | various |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
 
@@ -121,3 +121,8 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 - Capture: `SPC X t m` makes an inbox task linked to the mail at point in mu4e (list or message).
 - mu4e threads: folded to their latest message (`TAB`, `S-TAB`), `M` marks a thread, `{`/`}` by thread. In a message, `C-j`/`C-k` go by thread (was by line), `]t`/`[t` within it. `zc` conversation view.
 - mu4e main view: `q` closes it without quitting mu4e (it stopped syncing and notifications), `Q` quits mu4e and mail-idle (was `mu4e-search-query`, which `b` and `J` cover).
+
+### 2026-11-11
+
+- mu4e: `b a` searches the archive folders of all the accounts.
+- Monitors (`anthe-monitors.el`): `SPC k m m` mirrors or extends the laptop screen, `SPC k m s` swaps the workspaces of the laptop and the external monitor, `SPC k m p` chooses the primary monitor, `SPC k m d` detects the monitors again. Plugging a monitor in or out is handled without a key.

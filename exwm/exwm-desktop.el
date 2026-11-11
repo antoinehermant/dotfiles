@@ -311,8 +311,9 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (when (display-graphic-p)
   ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
-  (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
-                                             1 "DP-1"))
+  ;; The workspaces follow the monitors plugged in, and unknown monitors
+  ;; extend the laptop screen (SPC k m m mirrors it), see anthe-monitors
+  (require 'anthe-monitors)
 
   ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
   ;;                                            1 "DP-1-2-2"
@@ -340,7 +341,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;;                                            6 "eDP-1" 6 "HDMI-1"
   ;;                                            0 "eDP-1" 10 "eDP-1"))
 
-  (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
 
   (efs/set-wallpaper)
   (set-frame-parameter nil 'alpha-background 85)
