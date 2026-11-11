@@ -17,8 +17,10 @@
 ;; `load-theme' function. This is the default:
 ;;
 
-(setq doom-theme 'night-owl)
-;; (setq doom-theme 'doom-night-owl)
+;; The theme is anthe-night-owl, from the dotfiles: Doom loads `doom-theme'
+;; once this file is read, from the folders of `custom-theme-load-path'
+(add-to-list 'custom-theme-load-path "~/.dotfiles/emacs/themes/anthe-night-owl/")
+(setq doom-theme 'anthe-night-owl)
 
 (custom-set-faces!
   '(org-level-2 :foreground "#C792EA" )

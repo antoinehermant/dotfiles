@@ -205,7 +205,7 @@ Also affects 'linum-mode' background."
 ;; Variables {{{
 
 (let* (;; Variable pitch
-       (anthe-night-owl-pitch (if night-owl-use-variable-pitch
+       (anthe-night-owl-pitch (if anthe-night-owl-use-variable-pitch
                                   'variable-pitch
                                 'default))
        ;; }}}
@@ -262,7 +262,7 @@ Also affects 'linum-mode' background."
        (anthe-night-owl-orange-lc     "#B44322")
 
        ;; Distinct fringe
-       (anthe-night-owl-fringe-bg (if night-owl-distinct-fringe-background
+       (anthe-night-owl-fringe-bg (if anthe-night-owl-distinct-fringe-background
                                       anthe-night-owl-gray
                                     anthe-night-owl-background)))
   ;; }}}
@@ -2369,7 +2369,7 @@ Also affects 'linum-mode' background."
 
    ;; ivy {{{
    `(ivy-current-match
-     ((t (:background ,anthe-night-owl-highlight-line :foreground ,night-owl-white))))
+     ((t (:background ,anthe-night-owl-highlight-line :foreground ,anthe-night-owl-white))))
 
    `(ivy-not-current
      ((t (:foreground ,anthe-night-owl-foreground-slightly-muted))))
@@ -2566,7 +2566,7 @@ Also affects 'linum-mode' background."
 
    ;; lusty-explorer {{{
    `(lusty-directory-face
-     ((t (:inherit dianthe-night-owl-magenta-directory))))
+     ((t (:inherit dired-directory))))
 
    `(lusty-file-face
      ((t nil)))
@@ -3811,10 +3811,10 @@ Also affects 'linum-mode' background."
 
    ;; sunrise commander marked {{{
    `(sr-marked-dir-face
-     ((t (:inherit dianthe-night-owl-magenta-marked))))
+     ((t (:inherit dired-marked))))
 
    `(sr-marked-file-face
-     ((t (:inherit dianthe-night-owl-magenta-marked))))
+     ((t (:inherit dired-marked))))
 
    `(sr-alt-marked-dir-face
      ((t (:background ,anthe-night-owl-red
@@ -3829,21 +3829,21 @@ Also affects 'linum-mode' background."
 
    ;; sunrise commander fstat {{{
    `(sr-directory-face
-     ((t (:inherit dianthe-night-owl-magenta-directory
+     ((t (:inherit dired-directory
           :weight normal))))
 
    `(sr-symlink-directory-face
-     ((t (:inherit dianthe-night-owl-magenta-directory
+     ((t (:inherit dired-directory
           :slant italic
           :weight normal))))
 
    `(sr-symlink-face
-     ((t (:inherit dianthe-night-owl-magenta-symlink
+     ((t (:inherit dired-symlink
           :slant italic
           :weight normal))))
 
    `(sr-broken-link-face
-     ((t (:inherit dianthe-night-owl-magenta-warning
+     ((t (:inherit dired-warning
           :slant italic
           :weight normal))))
    ;; }}}
@@ -4397,7 +4397,7 @@ Also affects 'linum-mode' background."
    `(wl-highlight-message-unimportant-header-contents
      ((t (:foreground ,anthe-night-owl-foreground))))
 
-   `(wl-highlight-summary-answeanthe-night-owl-magenta-face
+   `(wl-highlight-summary-answered-face
      ((t (:foreground ,anthe-night-owl-blue))))
 
    `(wl-highlight-summary-disposed-face
@@ -4495,8 +4495,8 @@ Also affects 'linum-mode' background."
   ;; custom-theme-set-variables {{{
   (custom-theme-set-variables
    'anthe-night-owl
-   `(ansi-color-names-vector [,anthe-night-owl-background ,night-owl-red ,night-owl-green ,night-owl-yellow
-                                                          ,anthe-night-owl-blue ,night-owl-magenta ,night-owl-cyan ,night-owl-foreground])
+   `(ansi-color-names-vector [,anthe-night-owl-background ,anthe-night-owl-red ,anthe-night-owl-green ,anthe-night-owl-yellow
+                                                          ,anthe-night-owl-blue ,anthe-night-owl-magenta ,anthe-night-owl-cyan ,anthe-night-owl-foreground])
 
    ;; compilation
    `(compilation-message-face 'default)
@@ -4508,7 +4508,7 @@ Also affects 'linum-mode' background."
    `(magit-diff-use-overlays nil)
 
    ;; highlight-changes
-   `(highlight-changes-colors '(,anthe-night-owl-red ,night-owl-violet))
+   `(highlight-changes-colors '(,anthe-night-owl-red ,anthe-night-owl-violet))
 
    ;; highlight-tail
    `(highlight-tail-colors
@@ -4550,14 +4550,14 @@ Also affects 'linum-mode' background."
 
    ;; weechat
    `(weechat-color-list
-     '(unspecified ,anthe-night-owl-background ,night-owl-highlight-line
-       ,anthe-night-owl-red-d ,night-owl-red
-       ,anthe-night-owl-orange-d ,night-owl-orange
-       ,anthe-night-owl-yellow-d ,night-owl-yellow
-       ,anthe-night-owl-blue-d ,night-owl-blue
-       ,anthe-night-owl-magenta-d ,night-owl-magenta
-       ,anthe-night-owl-cyan-d ,night-owl-cyan
-       ,anthe-night-owl-foreground ,night-owl-emphasis))))
+     '(unspecified ,anthe-night-owl-background ,anthe-night-owl-highlight-line
+       ,anthe-night-owl-red-d ,anthe-night-owl-red
+       ,anthe-night-owl-orange-d ,anthe-night-owl-orange
+       ,anthe-night-owl-yellow-d ,anthe-night-owl-yellow
+       ,anthe-night-owl-blue-d ,anthe-night-owl-blue
+       ,anthe-night-owl-magenta-d ,anthe-night-owl-magenta
+       ,anthe-night-owl-cyan-d ,anthe-night-owl-cyan
+       ,anthe-night-owl-foreground ,anthe-night-owl-emphasis))))
 ;; }}}
 
 ;;;###autoload
