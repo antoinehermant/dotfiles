@@ -118,6 +118,25 @@ A `:leader' binding ignores `:map' and is global, so the mode is checked instead
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
 
+(defun anthe/python-shell-exit-sentinel (process _event)
+  "Close the window and kill the buffer of a Python shell that exited.
+Only on `exit' (`exit()' or EOF): `python-shell-restart' kills the process
+with a signal and reuses the buffer."
+  (when (and (eq (process-status process) 'exit)
+             (buffer-live-p (process-buffer process)))
+    (let ((buffer (process-buffer process)))
+      (dolist (window (get-buffer-window-list buffer nil t))
+        (quit-window nil window))
+      (kill-buffer buffer))))
+
+(defun anthe/python-shell-kill-on-exit ()
+  "Kill the Python shell buffer when its process exits, like vterm."
+  (when-let ((process (get-buffer-process (current-buffer))))
+    (add-function :after (process-sentinel process)
+                  #'anthe/python-shell-exit-sentinel)))
+
+(add-hook 'inferior-python-mode-hook #'anthe/python-shell-kill-on-exit)
+
 ;; Keybindings
 (map! :leader
       ;; Start a REPL from anywhere
