@@ -19,6 +19,13 @@ ln -sf ~/.dotfiles/bin/ms365-token ~/.local/bin/ms365-token
 # Sync the inboxes as soon as mail arrives (started by Emacs with mu4e)
 ln -sf ~/.dotfiles/bin/mail-idle ~/.local/bin/mail-idle
 
+# Contacts and calendars: vdirsyncer syncs them with the Pi (Radicale) and
+# Infomaniak, khard reads the contacts (passwords in ~/.secrets/dav-*.gpg)
+mkdir -p ~/.config/vdirsyncer ~/.config/khard
+ln -sf ~/.dotfiles/rcfiles/vdirsyncer/config ~/.config/vdirsyncer/config
+ln -sf ~/.dotfiles/rcfiles/khard/khard.conf ~/.config/khard/khard.conf
+ln -sf ~/.dotfiles/bin/radicale-set-password ~/.local/bin/radicale-set-password
+
 # Notifications (dunst, started by EXWM)
 mkdir -p ~/.config/dunst
 ln -sf ~/.dotfiles/rcfiles/dunstrc ~/.config/dunst/dunstrc

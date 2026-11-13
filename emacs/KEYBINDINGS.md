@@ -29,7 +29,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | `SPC r p`, `r J`, `r a` | Python REPL, Jupyter REPL, activate env (from anywhere) | `anthe-python.el` |
 | `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
 | `SPC z z`, `z a`, `z o`, `z h` | Notifications (dunst): dismiss the last, dismiss all, open (its default action, like the mail), bring back the last dismissed | `anthe-control.el` |
-| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor, `k m` monitors (`m` mirror or extend, `s` swap the workspaces of the two monitors, `p` primary monitor, the one qutebrowser shares in Zoom, `d` detect) | various |
+| `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor, `k m` monitors (`m` mirror or extend, `s` swap the workspaces of the two monitors, `p` primary monitor, the one qutebrowser shares in Zoom, `d` detect), `k p` contacts (`p` find or edit, `n` new, `a` add an address from mail, to a new or an existing contact, `d` delete, `s` sync) | various |
 | `SPC v v` | New terminal (multi-vterm) in the popper popup; `M-`` cycles the popups, `C-M-`` makes one a normal window | `anthe-vterm.el` |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
@@ -131,3 +131,4 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 ### 2026-11-13
 
 - New terminal moved from `SPC V` (shift) to `SPC v v`, next to `v n`/`v p`/`v r`. It opens in the popper popup: `multi-vterm` used `switch-to-buffer`, which skips popper and took the current window.
+- Contacts under `SPC k p` (`anthe-contacts.el`): `p` find or edit a contact, `n` new, `a` add an address known from mail (the people of the message at point first) to a new contact or an existing one, as a home, work or other address, `d` delete, `s` sync with the Pi and Infomaniak. A contact opens as a form, `C-c C-c` saves and syncs. The address book also joins mu4e's address completion.

@@ -267,7 +267,7 @@
 ;; (require 'org-caldav)
 
 ;; ;; URL of the caldav server
-;; (setq org-caldav-url "https://sync.infomaniak.com/calendars/AH07332")
+;; (setq org-caldav-url "https://sync.infomaniak.com/calendars/USER")
 
 ;; ;; calendar ID on server
 ;; (setq org-caldav-calendar-id "8f599f55-213b-43b2-a84f-ba16a2aa36f6")

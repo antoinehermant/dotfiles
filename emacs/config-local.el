@@ -42,6 +42,7 @@
 (require 'anthe-lsp)
 (require 'anthe-modeline)
 (require 'anthe-mu4e)
+(require 'anthe-contacts)
 (setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps")
 (require 'anthe-openwith)
 (require 'anthe-org)

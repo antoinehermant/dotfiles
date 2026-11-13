@@ -72,6 +72,7 @@
                                         ; (package! org-contacts)
 (package! org-caldav)
 (package! khalel)
+(package! khardel :recipe (:host github :repo "DamienCassou/khardel"))
 (package! org-wild-notifier)
 (package! alert)
 

@@ -1,0 +1,25 @@
+# Radicale on the Pi: contacts (CardDAV), later calendars (CalDAV).
+# Installed to /etc/radicale/config. Debian's commented default is kept
+# on the Pi as /etc/radicale/config.dist.
+
+[server]
+# Only on the WireGuard address: reachable from the laptop and the phone
+# through the VPN, never from the LAN or the internet. WireGuard already
+# encrypts the traffic, so no TLS here.
+hosts = 10.158.145.1:5232
+
+[auth]
+type = htpasswd
+htpasswd_filename = /etc/radicale/users
+htpasswd_encryption = bcrypt
+# Slow down password guessing
+delay = 1
+
+[rights]
+# Debian's rights file: each user only sees their own collections
+type = from_file
+file = /etc/radicale/rights
+
+[storage]
+# One .vcf file per contact, one folder per address book
+filesystem_folder = /var/lib/radicale/collections
