@@ -30,6 +30,7 @@ decisions made while restructuring them. Doom's own bindings are not listed.
 | `SPC w .` | Resize mode, for Emacs and EXWM windows: `hjkl` move the border, `HJKL` 3× more, `=` balance, `m` maximize, `u` undo, any other key leaves | `anthe-windows.el` |
 | `SPC z z`, `z a`, `z o`, `z h` | Notifications (dunst): dismiss the last, dismiss all, open (its default action, like the mail), bring back the last dismissed | `anthe-control.el` |
 | `SPC k …` | Rare actions: `k t` toggles (lamp, sound, drive, VPN, charger), `k r b` NAS backup, `k s f` face height, `k b` edit the qutebrowser quickmarks (`C-u`: bookmarks), `k d` dashboard, `k o d` open externally, `k o m` system monitor, `k m` monitors (`m` mirror or extend, `s` swap the workspaces of the two monitors, `p` primary monitor, the one qutebrowser shares in Zoom, `d` detect) | various |
+| `SPC v v` | New terminal (multi-vterm) in the popper popup; `M-`` cycles the popups, `C-M-`` makes one a normal window | `anthe-vterm.el` |
 | `SPC k q q/g` | squeue (HPC config) | `config-hpc.el` |
 | `s-<escape>` | `exwm-reset`, the way back if a window gets stuck in char mode | `exwm/exwm-desktop.el` |
 
@@ -126,3 +127,7 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 
 - mu4e: `b a` searches the archive folders of all the accounts.
 - Monitors (`anthe-monitors.el`): `SPC k m m` mirrors or extends the laptop screen, `SPC k m s` swaps the workspaces of the laptop and the external monitor, `SPC k m p` chooses the primary monitor, `SPC k m d` detects the monitors again. Plugging a monitor in or out is handled without a key.
+
+### 2026-11-13
+
+- New terminal moved from `SPC V` (shift) to `SPC v v`, next to `v n`/`v p`/`v r`. It opens in the popper popup: `multi-vterm` used `switch-to-buffer`, which skips popper and took the current window.
