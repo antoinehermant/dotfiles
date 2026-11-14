@@ -43,6 +43,8 @@
 (require 'anthe-modeline)
 (require 'anthe-mu4e)
 (require 'anthe-contacts)
+;; J.A.R.V.I.S lives in a private repository, outside the dotfiles
+(load (expand-file-name "~/jarvis/emacs/jarvis.el") t)
 (setenv "NCVIEWBASE" "/home/anthe/software/configs/ncmaps/ncmaps")
 (require 'anthe-openwith)
 (require 'anthe-org)
