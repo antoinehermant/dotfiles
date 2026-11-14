@@ -131,4 +131,5 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 ### 2026-11-13
 
 - New terminal moved from `SPC V` (shift) to `SPC v v`, next to `v n`/`v p`/`v r`. It opens in the popper popup: `multi-vterm` used `switch-to-buffer`, which skips popper and took the current window.
-- Contacts under `SPC k p` (`anthe-contacts.el`): `p` find or edit a contact, `n` new, `a` add an address known from mail (the people of the message at point first) to a new contact or an existing one, as a home, work or other address, `d` delete, `s` sync with the Pi and Infomaniak. A contact opens as a form, `C-c C-c` saves and syncs. The address book also joins mu4e's address completion.
+- Contacts under `SPC k p` (`anthe-contacts.el`): `p` find or edit a contact, `n` new, `a` add an address known from mail (the people of the message at point first) to a new contact or an existing one, as a home, work or other address, in chosen groups, `d` delete, `s` sync with the Pi and Infomaniak. A contact opens as a form, `C-c C-c` saves and syncs; its `Categories` field completes the existing groups. The address book also joins mu4e's address completion.
+

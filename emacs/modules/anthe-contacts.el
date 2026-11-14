@@ -23,6 +23,10 @@
 (defvar anthe/contacts-sync-pairs '("radicale_contacts" "infomaniak_contacts")
   "The vdirsyncer pairs of the address book.")
 
+(defvar anthe/contacts-directory
+  "~/documents/contacts/66d789c6-a165-408a-a658-5ed3d7170583/"
+  "The local address book, one vCard file per contact.")
+
 (defvar anthe/contacts-sync-interval (* 30 60)
   "Seconds between two syncs of the address book.")
 
@@ -138,6 +142,74 @@ With QUIET, only report failures."
           (insert (cdr field)))))
     (anthe/contacts--add-email-here email type)))
 
+;;; Groups (vCard categories)
+
+(defun anthe/contacts--groups ()
+  "Return the groups used in the address book, sorted."
+  (let (groups)
+    (dolist (line (ignore-errors
+                    (process-lines "grep" "-rhi" "^CATEGORIES"
+                                   (expand-file-name anthe/contacts-directory))))
+      (dolist (group (split-string (replace-regexp-in-string "\\`[^:]*:" "" line)
+                                   "," t "[ \t\r]+"))
+        (cl-pushnew group groups :test #'string=)))
+    (sort groups #'string<)))
+
+(defun anthe/contacts--read-groups ()
+  "Ask for groups, among the existing ones or new ones. RET alone: none."
+  (completing-read-multiple "Groups (comma between them, RET for none): "
+                            (anthe/contacts--groups)))
+
+(defun anthe/contacts--add-groups-here (groups)
+  "Add GROUPS to the Categories field of the contact form in this buffer."
+  (when groups
+    (goto-char (point-min))
+    (when (re-search-forward "^Categories *:\\(.*\\)$" nil t)
+      (let* ((start (match-beginning 0))
+             (value (string-trim (match-string 1)))
+             (end (progn (forward-line 1)
+                         (while (looking-at " *- ") (forward-line 1))
+                         (point)))
+             (existing (if (string-empty-p value)
+                           (save-excursion
+                             (goto-char start)
+                             (forward-line 1)
+                             (let (items)
+                               (while (looking-at " *- *\\(.*?\\) *$")
+                                 (push (match-string 1) items)
+                                 (forward-line 1))
+                               (nreverse items)))
+                         (list value)))
+             (all (seq-uniq (append existing groups))))
+        (delete-region start end)
+        (goto-char start)
+        (insert (if (cdr all)
+                    (concat "Categories :\n"
+                            (mapconcat (lambda (group) (concat "    - " group "\n")) all))
+                  (format "Categories : %s\n" (car all))))))))
+
+(defun anthe/contacts--groups-capf ()
+  "Complete the groups in the Categories field of a contact form."
+  (let ((in-field
+         (save-excursion
+           (beginning-of-line)
+           (or (looking-at "Categories *: *")
+               (and (looking-at " *- *")
+                    (progn
+                      (while (and (zerop (forward-line -1)) (looking-at " *- ")))
+                      (looking-at "Categories *:")))))))
+    (when in-field
+      (let ((start (save-excursion
+                     (skip-chars-backward "^:-" (line-beginning-position))
+                     (skip-chars-forward " \t")
+                     (point))))
+        (when (>= (point) start)
+          (list start (point) (anthe/contacts--groups) :exclusive 'no))))))
+
+(defun anthe/contacts--setup-form ()
+  "Complete the groups in a khardel contact form."
+  (add-hook 'completion-at-point-functions #'anthe/contacts--groups-capf nil t))
+
 (defun anthe/contacts--mail-candidates ()
   "Addresses known from mail that are not in the address book yet.
 Those of the message at point come first."
@@ -252,11 +324,14 @@ name shares a word with the person's name listed first."
     (let ((target (anthe/contacts--read-grouped
                    (format "Add %s to: " email)
                    (append (list new) (nreverse likely) (nreverse others)))))
-      (let ((type (anthe/contacts--read-email-type email)))
+      (let ((type (anthe/contacts--read-email-type email))
+            (groups (anthe/contacts--read-groups)))
         (if (equal target "New contact")
             (anthe/contacts--new-prefilled name email type)
           (khardel-edit-contact (gethash target contacts))
-          (anthe/contacts--add-email-here email type))))))
+          (anthe/contacts--add-email-here email type))
+        (anthe/contacts--add-groups-here groups)
+        (goto-char (point-min))))))
 
 (defun anthe/contacts-delete (contact)
   "Delete CONTACT, on the Pi and Infomaniak too at the next sync.
@@ -272,6 +347,10 @@ delete it."
       (message "khard couldn't delete %s" (cdr contact)))))
 
 (with-eval-after-load 'khardel
+  (add-hook 'khardel-edit-mode-hook #'anthe/contacts--setup-form)
+  ;; Doom sets the company backends after the mode hooks: capf first, so
+  ;; the groups come before dabbrev and ispell
+  (set-company-backend! 'khardel-edit-mode 'company-capf)
   ;; Push a saved contact to the Pi and Infomaniak right away
   (add-hook 'khardel-edit-finished-hook #'anthe/contacts-sync))
 
