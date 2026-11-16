@@ -255,6 +255,8 @@ Sidlerstrasse 5, CH-3012 Bern
   ;; with an HTML signature are sent with an HTML version too
   (advice-add 'mu4e-compose-reply-to :around #'anthe/mu4e--reply-unsigned)
   (add-hook 'message-send-hook #'anthe/mu4e--add-html-signature)
+  ;; Saved drafts and sent messages go to the server at once
+  (add-hook 'mu4e-compose-mode-hook #'anthe/mail-sync--watch-draft)
 
   ;; Attach the marked files of dired with C-c RET C-a, to a message
   ;; being composed or a new one; C-x m composes with mu4e too
@@ -611,6 +613,53 @@ Also take note of the messages to skip in notifications."
   (when (process-live-p anthe/mail-idle--process)
     (process-put anthe/mail-idle--process 'stopped t)
     (delete-process anthe/mail-idle--process)))
+
+;; Drafts and sent messages reach the server at once, not at the next full
+;; sync, so they show on the phone too: saving a draft syncs its Drafts
+;; folder, sending syncs the Drafts and Sent folders of the account
+(defvar anthe/mail-sync--folders nil "Maildirs waiting to be synced.")
+(defvar anthe/mail-sync--timer nil)
+
+(defun anthe/mail-sync-folders (&rest maildirs)
+  "Sync MAILDIRS (such as \"/Infomaniak/Drafts\") in a moment, then reindex.
+Calls in a row make one sync."
+  (dolist (maildir (delq nil maildirs))
+    (cl-pushnew maildir anthe/mail-sync--folders :test #'equal))
+  (when (timerp anthe/mail-sync--timer)
+    (cancel-timer anthe/mail-sync--timer))
+  (setq anthe/mail-sync--timer (run-at-time 2 nil #'anthe/mail-sync--run)))
+
+(defun anthe/mail-sync--run ()
+  (when-let ((maildirs anthe/mail-sync--folders))
+    (setq anthe/mail-sync--folders nil)
+    (make-process :name "mail-sync-folder"
+                  :buffer (get-buffer-create " *mail-sync-folder*")
+                  :command (cons (expand-file-name "~/.local/bin/mail-sync-folder") maildirs)
+                  :noquery t
+                  :sentinel (lambda (process _event)
+                              (unless (or (process-live-p process) (not (mu4e-running-p)))
+                                (mu4e-update-index))))))
+
+(defun anthe/mail-sync--maildir (file)
+  "The maildir of the message FILE, such as \"/Infomaniak/Drafts\"."
+  (let ((root (expand-file-name mu4e-root-maildir)))
+    (when (and file (file-in-directory-p file root))
+      ;; FILE is in the cur or new folder of the maildir
+      (concat "/" (directory-file-name
+                   (file-relative-name (file-name-parent-directory (file-name-directory file))
+                                       root))))))
+
+(defun anthe/mail-sync--draft-saved ()
+  (anthe/mail-sync-folders (anthe/mail-sync--maildir buffer-file-name)))
+
+(defun anthe/mail-sync--sent ()
+  (anthe/mail-sync-folders (anthe/mail-sync--maildir buffer-file-name)
+                           (mu4e-get-sent-folder)))
+
+(defun anthe/mail-sync--watch-draft ()
+  "In a draft buffer, sync when it's saved or sent."
+  (add-hook 'after-save-hook #'anthe/mail-sync--draft-saved nil t)
+  (add-hook 'message-sent-hook #'anthe/mail-sync--sent nil t))
 
 ;; A notification for each new message of an inbox, after each index.
 ;; Clicking it opens the message

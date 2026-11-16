@@ -18,6 +18,8 @@ ln -sf ~/.dotfiles/bin/ms365-token ~/.local/bin/ms365-token
 
 # Sync the inboxes as soon as mail arrives (started by Emacs with mu4e)
 ln -sf ~/.dotfiles/bin/mail-idle ~/.local/bin/mail-idle
+# and sync saved drafts and sent messages at once (run by Emacs)
+ln -sf ~/.dotfiles/bin/mail-sync-folder ~/.local/bin/mail-sync-folder
 
 # Contacts and calendars: vdirsyncer syncs them with the Pi (Radicale) and
 # Infomaniak, khard reads the contacts (passwords in ~/.secrets/dav-*.gpg)
