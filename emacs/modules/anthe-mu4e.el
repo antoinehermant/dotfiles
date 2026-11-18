@@ -264,8 +264,10 @@ Sidlerstrasse 5, CH-3012 Bern
   (add-hook 'dired-mode-hook #'turn-on-gnus-dired-mode)
 
   ;; Let company ask mu4e for contacts before falling back to words of
-  ;; the buffer, and keep dictionary words out of the body
-  (set-company-backend! 'mu4e-compose-mode 'company-capf)
+  ;; the buffer, and keep dictionary words out of the body. org-msg turns
+  ;; the buffer into `org-msg-edit-mode', a text mode: without its own
+  ;; entry, the words of text-mode would come first
+  (set-company-backend! '(mu4e-compose-mode org-msg-edit-mode) 'company-capf)
   (add-hook 'mu4e-compose-mode-hook #'anthe/mu4e--compose-completion)
 
   ;; The inboxes hold what is still to sort: archive (r), delete (d) or
@@ -649,6 +651,32 @@ Calls in a row make one sync."
                    (file-relative-name (file-name-parent-directory (file-name-directory file))
                                        root))))))
 
+(defun anthe/mail-sync--replace-draft ()
+  "Make the saved draft a new message for mbsync, and remove its old copies.
+mbsync uploads a message once and renames its file with the server's number
+\(\",U=16\"): a later save to that name isn't uploaded, and a save to the
+name before the sync makes a second copy. So the draft loses the number,
+and the files of its earlier saves are removed, from the server too at the
+sync."
+  (when-let* ((file buffer-file-name)
+              ((anthe/mail-sync--maildir file)))
+    (let* ((cur (file-name-directory file))
+           (maildir (file-name-parent-directory cur))
+           (base (car (split-string (file-name-nondirectory file) "[,:]")))
+           (fresh (expand-file-name
+                   (replace-regexp-in-string ",U=[0-9]+" "" (file-name-nondirectory file)) cur)))
+      (unless (equal fresh file)
+        (rename-file file fresh t)
+        ;; Not `set-visited-file-name': it renames the buffer and may change its mode
+        (setq buffer-file-name fresh
+              buffer-file-truename (abbreviate-file-name (file-truename fresh)))
+        (set-visited-file-modtime))
+      (dolist (folder '("cur" "new"))
+        (dolist (copy (directory-files (expand-file-name folder maildir) t
+                                       (concat "\\`" (regexp-quote base) "[,:]")))
+          (unless (equal copy fresh)
+            (delete-file copy)))))))
+
 (defun anthe/mail-sync--draft-saved ()
   (anthe/mail-sync-folders (anthe/mail-sync--maildir buffer-file-name)))
 
@@ -658,6 +686,8 @@ Calls in a row make one sync."
 
 (defun anthe/mail-sync--watch-draft ()
   "In a draft buffer, sync when it's saved or sent."
+  ;; Before mu4e tells mu about the saved file
+  (add-hook 'after-save-hook #'anthe/mail-sync--replace-draft -50 t)
   (add-hook 'after-save-hook #'anthe/mail-sync--draft-saved nil t)
   (add-hook 'message-sent-hook #'anthe/mail-sync--sent nil t))
 
@@ -1415,6 +1445,27 @@ The latest and the unread messages are expanded, without what they quote."
 
 (map! :leader
       :desc "Open mu4e" "o m" #'mu4e)
+
+;; org-msg keeps its #+OPTIONS and :PROPERTIES: block at the top of the body,
+;; below "--text follows this line--", but exports only what follows the
+;; block. Show the separator after :END:, where the text starts, and hide the
+;; real one (display only: the buffer and the message don't change).
+(defun anthe/mu4e--org-msg-move-separator ()
+  "Show `mail-header-separator' after the org-msg properties drawer."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward
+           (concat "^" (regexp-quote mail-header-separator) "\n") nil t)
+      (let ((separator (make-overlay (match-beginning 0) (match-end 0))))
+        (overlay-put separator 'invisible t)
+        (overlay-put separator 'evaporate t))
+      (when (re-search-forward "^:END:$" nil t)
+        (let ((marker (make-overlay (match-end 0) (match-end 0))))
+          (overlay-put marker 'after-string
+                       (concat "\n" (propertize mail-header-separator
+                                                'face 'message-separator))))))))
+
+(add-hook 'org-msg-edit-mode-hook #'anthe/mu4e--org-msg-move-separator)
 
 (provide 'anthe-mu4e)
 ;;; anthe-mu4e.el ends here
