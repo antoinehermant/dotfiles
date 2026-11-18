@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# When the screen freezes because a web page keeps the graphics card busy (a WebGL viewer, for
+# instance): stop what feeds the graphics card, without restarting the session.
+# - qutebrowser draws in its own process: its page processes are stopped (the tabs show as
+#   crashed, to reload; the windows and the session stay);
+# - Firefox and Chrome have a GPU process: it is stopped, and the browser starts a new one (the 3D
+#   canvases go blank, the pages stay).
+#
+# From a frozen desktop: Ctrl+Alt+F3, log in, run `unfreeze`, then back with Ctrl+Alt+F2 (or F1,
+# F7, whichever shows the desktop).
+set -u
+
+patterns=(
+  "QtWebEngineProcess --type=renderer"     # qutebrowser pages
+  "firefox.*-contentproc.* gpu"            # Firefox
+  "(chrome|chromium).*--type=gpu-process"  # Chrome, Chromium
+)
+
+found=0
+for pattern in "${patterns[@]}"; do
+  for pid in $(pgrep -u "$USER" -f -- "$pattern"); do
+    [[ "$pid" == "$$" ]] && continue
+    echo "Stopping $pid: $(ps -o args= -p "$pid" | cut -c1-80)"
+    kill -9 "$pid" && found=1
+  done
+done
+(( found )) || echo "No browser process found to stop."
