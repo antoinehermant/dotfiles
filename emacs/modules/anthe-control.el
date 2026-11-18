@@ -87,6 +87,52 @@
        :desc "Coding (dark blue)" "c" (cmd! (anthe/light-scene "coding"))
        :desc "Small lights on/off" "s" (cmd! (anthe/light-scene "small"))))
 
+;; Power off, like a desktop's: the charger off first if the Tapo strip
+;; answers (at home), then Emacs and EXWM quit as on C-x C-c, saving files
+;; and workspaces but not asking about running shells, and the laptop powers
+;; off once they're done.
+(defun anthe/charger-off ()
+  "Switch the laptop charger off, if the Tapo strip answers."
+  (message "Switching the charger off...")
+  (message "%s"
+           (if (eq 0 (call-process "timeout" nil nil nil "10"
+                                   (concat anthe/light-scripts "switch_devices.py")
+                                   "laptop_charger" "off"))
+               "Charger off"
+             "Charger not reachable, left as it is")))
+
+(defun anthe/power-off ()
+  "Quit Emacs and EXWM, saving files and workspaces, and power off."
+  (interactive)
+  (unless (equal "yes" (dbus-call-method :system "org.freedesktop.login1" "/org/freedesktop/login1"
+                                         "org.freedesktop.login1.Manager" "CanPowerOff"))
+    (user-error "Power off isn't allowed here"))
+  (when (y-or-n-p "Power off the laptop? ")
+    (let ((asking (seq-filter #'process-query-on-exit-flag (process-list))))
+      (unwind-protect
+          (progn
+            (dolist (process asking) (set-process-query-on-exit-flag process nil))
+            (let ((confirm-kill-emacs #'anthe/power--quit))
+              (save-buffers-kill-emacs)))
+        ;; Still here: a question about saving was answered no
+        (dolist (process asking)
+          (when (process-live-p process) (set-process-query-on-exit-flag process t)))))))
+
+(defun anthe/power--quit (prompt)
+  "Asked instead of \"Really exit Emacs?\": switch the charger off, then quit."
+  (anthe/charger-off)
+  (add-hook 'kill-emacs-hook #'anthe/power--schedule 100)
+  (if (bound-and-true-p exwm-wm-mode)
+      (exwm--confirm-kill-emacs prompt 'force)
+    t))
+
+(defun anthe/power--schedule ()
+  "Power off in 3 s, Emacs quit by then.  Asked now, while logind still
+counts the session as active, which allows it."
+  (call-process "systemctl" nil nil nil "poweroff" "--when=+3s"))
+
+(map! :leader :desc "Power off" "q p" #'anthe/power-off)
+
 ;; Notifications (dunst, see rcfiles/dunstrc)
 (defun anthe/dunstctl (&rest args)
   "Run dunstctl with ARGS."

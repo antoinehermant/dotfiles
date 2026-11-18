@@ -501,6 +501,9 @@ Only toggle floating for main windows, not their child dialogs."
 
 (require 'anthe-qutebrowser)
 
+;; A top bar: workspaces, date and time, Bluetooth, network, battery (SPC t B)
+(require 'anthe-bar)
+
 ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 
 ;; ---------- ivy and counsel -------------------
