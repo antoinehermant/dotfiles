@@ -22,7 +22,8 @@
 (add-to-list 'custom-theme-load-path "~/.dotfiles/emacs/themes/anthe-night-owl/")
 (setq doom-theme 'anthe-night-owl)
 
-(custom-set-faces!
+;; These colours are the night owl's: Light Owl and the others keep their own
+(custom-theme-set-faces! 'anthe-night-owl
   '(org-level-2 :foreground "#C792EA" )
   '(org-list-dt :foreground "#F78C6C" :weight bold)
   )
@@ -112,7 +113,7 @@
 
 (setq display-line-numbers-type 'relative)
 
-(custom-set-faces!
+(custom-theme-set-faces! 'anthe-night-owl
   '(line-number :foreground "#ffffff")
   '(line-number-current-line :weight bold :foreground "#51afef" :slant normal) ; Explicitly set slant
   '(font-lock-keyword-face :foreground "#51afef")

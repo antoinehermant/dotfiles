@@ -53,6 +53,7 @@
 (require 'anthe-python)
 (require 'anthe-roam)
 (require 'anthe-sysmon)
+(require 'anthe-themes)
 (require 'anthe-transparency)
 (require 'anthe-vterm)
 (require 'anthe-windows)

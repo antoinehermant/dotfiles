@@ -28,9 +28,17 @@
 
 (use-package agent-shell
   :config
-  ;; Evil state-specific RET behavior: insert mode = newline, normal mode = send
+  ;; Only C-c C-c sends a prompt, in the shell and in the compose buffer: RET is a newline
+  ;; (insert state) or moves (normal state). C-c C-k interrupts the agent instead of C-c C-c.
+  ;; A permission prompt keeps its own C-c C-c (reject), on the prompt's text.
+  (keymap-set agent-shell-mode-map "RET" #'newline)
+  (keymap-set agent-shell-mode-map "C-c C-c" #'shell-maker-submit)
+  (keymap-set agent-shell-mode-map "C-c C-k" #'agent-shell-interrupt)
   (evil-define-key 'insert agent-shell-mode-map (kbd "RET") #'newline)
-  (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'comint-send-input)
+  (evil-define-key 'normal agent-shell-mode-map (kbd "RET") #'evil-ret)
+  (with-eval-after-load 'agent-shell-viewport
+    ;; evil-collection sends the compose buffer on RET in normal state
+    (evil-define-key 'normal agent-shell-viewport-edit-mode-map [remap evil-ret] nil))
 
   ;; Configure *agent-shell-diff* buffers to start in Emacs state
   (add-hook 'diff-mode-hook

@@ -437,6 +437,22 @@ window are skipped, as EXWM can show an X window in only one place."
   (when-let* ((buffer (anthe/qutebrowser--sibling -1)))
     (switch-to-buffer buffer)))
 
+(defun anthe/qutebrowser-close-window (&optional step)
+  "Close this qutebrowser window and show the next one, like closing a tab.
+With STEP -1, show the previous one. `u' opens the window again.
+`kill-buffer' closes it too, but goes back to the buffer shown before."
+  (interactive)
+  (let ((buffer (current-buffer))
+        (sibling (anthe/qutebrowser--sibling (or step 1))))
+    (when sibling
+      (switch-to-buffer sibling))
+    (kill-buffer buffer)))
+
+(defun anthe/qutebrowser-close-window-previous ()
+  "Close this qutebrowser window and show the previous one."
+  (interactive)
+  (anthe/qutebrowser-close-window -1))
+
 ;; The commands are sent directly, not through the qutebrowser-cmd-* functions: those are only
 ;; made once the RPC lists the commands, which can fail when connecting, and the keys then give
 ;; "Wrong type argument: commandp"
@@ -466,6 +482,9 @@ window are skipped, as EXWM can show an X window in only one place."
       ;; Tabs are EXWM windows here, see `qutebrowser-exwm-buffer-list'
       :n "J" #'anthe/qutebrowser-next-window
       :n "K" #'anthe/qutebrowser-previous-window
+      ;; Close and go on to the next or previous window, to go through them quickly
+      :n "d" #'anthe/qutebrowser-close-window
+      :n "D" #'anthe/qutebrowser-close-window-previous
       ;; Text selected with the mouse
       :n "Y" (cmd! (qutebrowser-send-commands ":yank selection"))
       ;; Prompts in Emacs, offering the existing names for their prefix

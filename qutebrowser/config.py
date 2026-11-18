@@ -19,7 +19,8 @@ config.bind(",ps", "set content.proxy socks5://localhost:1080;; reload")
 config.bind(",pd", "set content.proxy system;; reload")
 config.bind(",d", "config-cycle colors.webpage.darkmode.enabled")
 
-# Close windows with kill-buffer in Emacs: "d" closes them when typing outside insert mode
+# "d" and "D" are Emacs's (anthe-qutebrowser.el): they close the window and show the next or
+# previous one. Qutebrowser's own "d" closed it when typing outside insert mode
 # config.unbind("d")
 
 config.bind(",ff", "spawn firefox {url}")
