@@ -5,7 +5,11 @@
 ;;  A status bar at the top of each EXWM workspace, like a desktop's: the
 ;;  Doom workspaces on the left, the current one highlighted (a click
 ;;  switches), the date and time in the middle (a click opens the calendar),
-;;  and Bluetooth, the network and the battery on the right.
+;;  and on the right how much of Claude's session is used (a click tells
+;;  the rest, anthe-agents.el),
+;;  the processors and memory used (a click opens proced),
+;;  Bluetooth (a click opens a menu to turn it on or off and to connect the
+;;  paired devices), the network and the battery.
 ;;
 ;;  It is Emacs's own tab bar, shown on the EXWM workspaces only, not on
 ;;  floating windows.  While it shows, the time and the battery leave the
@@ -16,21 +20,40 @@
 (require 'tab-bar)
 (require 'dbus)
 (require 'battery)
+(require 'ansi-color)
 (require 'nerd-icons)
 
 (defvar anthe-bar-shown t
   "Whether the bar shows; `anthe-bar-toggle' switches it.")
 
 (defvar anthe-bar-interval 5
-  "Seconds between two looks at Bluetooth, the network and the battery.")
+  "Seconds between two looks at the system, Bluetooth, the network and the battery.")
 
 (defvar anthe-bar--status nil
-  "The right side of the bar, a list of (TEXT . HELP), from the last look.")
+  "The right side of the bar, a list of (TEXT HELP [COMMAND]), from the last look.")
 
 (defvar anthe-bar--timer nil)
 
 (defface anthe-bar-clock '((t :weight bold))
   "The date and time in the bar.")
+
+;; The workspaces: the others on the bar's own background, the current one
+;; highlighted. To change them, in config-local.el for instance:
+;;   (custom-set-faces! '(anthe-bar-current-workspace :background "#7e57c2" :foreground "white"))
+(defface anthe-bar-workspace '((t nil))
+  "The workspaces other than the current one, in the bar.")
+
+(defface anthe-bar-current-workspace '((t :inherit highlight :weight bold))
+  "The current workspace, in the bar.")
+
+(defun anthe-bar--on-bar (items)
+  "ITEMS with the bar's face under their own: text without a background of
+its own would take the default one, not the bar's."
+  (mapcar (lambda (item)
+            (let ((text (copy-sequence (nth 2 item))))
+              (add-face-text-property 0 (length text) 'tab-bar t text)
+              (append (list (car item) (cadr item) text) (nthcdr 3 item))))
+          items))
 
 ;;; Left: the workspaces
 
@@ -49,8 +72,8 @@
            menu-item
            ,(propertize (format " %d %s " (1+ i) name)
                         'face (if (equal name current)
-                                  '+workspace-tab-selected-face
-                                '+workspace-tab-face))
+                                  'anthe-bar-current-workspace
+                                'anthe-bar-workspace))
            ,(lambda () (interactive) (+workspace/switch-to name))
            :help ,(format "Switch to %s" name)))
        (+workspace-list-names)))))
@@ -68,38 +91,125 @@
       (anthe-bar-clock menu-item ,time calendar
        :help ,(format-time-string "%A %-d %B %Y, week %V")))))
 
-;;; Right: Bluetooth, the network, the battery
+;;; Right: the system, Bluetooth, the network, the battery
 
 (defun anthe-bar--icon (name &optional face)
   (nerd-icons-mdicon name :face face :v-adjust 0.0))
 
+(defun anthe-bar--bluez ()
+  "The Bluetooth adapter's properties, nil without one, and the paired
+devices as (PATH DEVICE BATTERY), each an alist of properties."
+  (let ((objects (dbus-get-all-managed-objects :system "org.bluez" "/")))
+    (cons (seq-some (lambda (o) (cadr (assoc "org.bluez.Adapter1" (cadr o)))) objects)
+          (delq nil
+                (mapcar (lambda (o)
+                          (let ((device (cadr (assoc "org.bluez.Device1" (cadr o)))))
+                            (when (cdr (assoc "Paired" device))
+                              (list (car o) device
+                                    (cadr (assoc "org.bluez.Battery1" (cadr o)))))))
+                        objects)))))
+
+(defun anthe-bar--device-name (device battery)
+  (concat (cdr (assoc "Alias" device))
+          (when battery (format " %d%%" (cdr (assoc "Percentage" battery))))))
+
 (defun anthe-bar--bluetooth ()
   "Off, on, or connected: the headphones by name with their battery, the
-keyboard and mouse only in the help."
-  (let* ((objects (mapcar #'cadr (dbus-get-all-managed-objects :system "org.bluez" "/")))
-         (adapter (seq-some (lambda (o) (cadr (assoc "org.bluez.Adapter1" o))) objects))
-         (devices
-          (delq nil
-                (mapcar
-                 (lambda (o)
-                   (let ((device (cadr (assoc "org.bluez.Device1" o)))
-                         (battery (cadr (assoc "org.bluez.Battery1" o))))
-                     (when (cdr (assoc "Connected" device))
-                       (cons (concat (cdr (assoc "Alias" device))
-                                     (when battery
-                                       (format " %d%%" (cdr (assoc "Percentage" battery)))))
-                             (string-prefix-p "audio" (or (cdr (assoc "Icon" device)) ""))))))
-                 objects)))
-         (audio (mapcar #'car (seq-filter #'cdr devices))))
+keyboard and mouse only in the help.  A click opens `anthe-bar-bluetooth-menu'."
+  (pcase-let* ((`(,adapter . ,paired) (anthe-bar--bluez))
+               (connected (seq-filter (lambda (d) (cdr (assoc "Connected" (nth 1 d)))) paired))
+               (audio (seq-filter (lambda (d) (string-prefix-p "audio" (or (cdr (assoc "Icon" (nth 1 d))) "")))
+                                  connected))
+               (names (lambda (devices)
+                        (string-join (mapcar (lambda (d) (apply #'anthe-bar--device-name (cdr d))) devices)
+                                     ", "))))
     (cond
      ((not adapter) nil)
      ((not (cdr (assoc "Powered" adapter)))
-      (cons (anthe-bar--icon "nf-md-bluetooth_off" 'shadow) "Bluetooth off"))
-     (devices
-      (cons (concat (anthe-bar--icon "nf-md-bluetooth_connect")
-                    (when audio (concat " " (string-join audio ", "))))
-            (concat "Bluetooth: " (string-join (mapcar #'car devices) ", "))))
-     (t (cons (anthe-bar--icon "nf-md-bluetooth") "Bluetooth on, nothing connected")))))
+      (list (anthe-bar--icon "nf-md-bluetooth_off" 'shadow) "Bluetooth off" #'anthe-bar-bluetooth-menu))
+     (connected
+      (list (concat (anthe-bar--icon "nf-md-bluetooth_connect")
+                    (when audio (concat " " (funcall names audio))))
+            (concat "Bluetooth: " (funcall names connected))
+            #'anthe-bar-bluetooth-menu))
+     (t (list (anthe-bar--icon "nf-md-bluetooth") "Bluetooth on, nothing connected"
+              #'anthe-bar-bluetooth-menu)))))
+
+(defun anthe-bar--bluetoothctl (&rest args)
+  "Run bluetoothctl with ARGS in the background, its last line in the echo
+area, and look again once done.  Connecting can take a while, or hang."
+  (let ((buffer (generate-new-buffer " *bluetoothctl*")))
+    (make-process
+     :name "bluetoothctl" :buffer buffer :noquery t :connection-type 'pipe
+     :command `("timeout" "20" "bluetoothctl" ,@args)
+     :sentinel (lambda (process _event)
+                 (unless (process-live-p process)
+                   (let ((lines (split-string (ansi-color-filter-apply
+                                               (with-current-buffer buffer (buffer-string)))
+                                              "\n" t "[ \t\r]+")))
+                     (message "Bluetooth: %s"
+                              (if (eq (process-exit-status process) 124) "no answer"
+                                (car (last lines)))))
+                   (kill-buffer buffer)
+                   (anthe-bar--look))))))
+
+(defun anthe-bar-bluetooth-menu ()
+  "A menu to turn Bluetooth on or off, and to connect or disconnect the
+paired devices, the connected ones ticked."
+  (interactive)
+  (pcase-let* ((`(,adapter . ,paired) (anthe-bar--bluez))
+               (powered (cdr (assoc "Powered" adapter))))
+    (unless adapter (user-error "No Bluetooth adapter"))
+    (popup-menu
+     `("Bluetooth"
+       [,(if powered "Turn Bluetooth off" "Turn Bluetooth on")
+        (anthe-bar--bluetoothctl "power" ,(if powered "off" "on"))]
+       "--"
+       ,@(mapcar (pcase-lambda (`(,_path ,device ,battery))
+                   (let ((connected (cdr (assoc "Connected" device))))
+                     (vector (anthe-bar--device-name device battery)
+                             `(anthe-bar--bluetoothctl ,(if connected "disconnect" "connect")
+                                                       ,(cdr (assoc "Address" device)))
+                             :style 'toggle :selected connected :active powered)))
+                 (sort paired :key (lambda (d) (cdr (assoc "Alias" (nth 1 d))))))))))
+
+;;; The system: processors and memory
+
+(defvar anthe-bar--cpu nil
+  "The processors' (BUSY . TOTAL) time at the last look, from /proc/stat.")
+
+(defun anthe-bar--proc (file)
+  (with-temp-buffer (insert-file-contents file) (buffer-string)))
+
+(defun anthe-bar--system ()
+  "How busy the processors were since the last look, and the memory used."
+  (let* ((times (mapcar #'string-to-number
+                        (seq-take (cdr (split-string (car (split-string (anthe-bar--proc "/proc/stat") "\n"))))
+                                  8)))
+         (idle (+ (nth 3 times) (nth 4 times)))
+         (total (apply #'+ times))
+         (cpu (and anthe-bar--cpu (> total (cdr anthe-bar--cpu))
+                   (/ (* 100.0 (- total idle (car anthe-bar--cpu)))
+                      (- total (cdr anthe-bar--cpu)))))
+         (memory (anthe-bar--proc "/proc/meminfo"))
+         (kib (lambda (name)
+                (string-match (concat "^" name ": *\\([0-9]+\\)") memory)
+                (string-to-number (match-string 1 memory))))
+         (memory-total (funcall kib "MemTotal"))
+         (memory-used (- memory-total (funcall kib "MemAvailable")))
+         (ram (/ (* 100.0 memory-used) memory-total))
+         (face (lambda (percent) (cond ((>= percent 90) 'error) ((>= percent 75) 'warning)))))
+    (setq anthe-bar--cpu (cons (- total idle) total))
+    (list (concat (anthe-bar--icon "nf-md-chip" (and cpu (funcall face cpu)))
+                  (propertize (if cpu (format " %d%%" cpu) " –") 'face (and cpu (funcall face cpu)))
+                  "  "
+                  (anthe-bar--icon "nf-md-memory" (funcall face ram))
+                  (propertize (format " %d%%" ram) 'face (funcall face ram)))
+          (format "Processors %s, load %s\nMemory %.1f of %.1f GiB used"
+                  (if cpu (format "%d%% busy" cpu) "–")
+                  (mapconcat (lambda (load) (format "%.2f" load)) (load-average t) " ")
+                  (/ memory-used 1048576.0) (/ memory-total 1048576.0))
+          #'proced)))
 
 (defun anthe-bar--nm (path interface property)
   (dbus-get-property :system "org.freedesktop.NetworkManager" path
@@ -119,18 +229,18 @@ keyboard and mouse only in the help."
          (link
           (cond
            ((not connected)
-            (cons (anthe-bar--icon "nf-md-wifi_off" 'warning) "Offline"))
+            (list (anthe-bar--icon "nf-md-wifi_off" 'warning) "Offline"))
            ((equal type "802-11-wireless")
             (let* ((ap (anthe-bar--nm primary ".Connection.Active" "SpecificObject"))
                    (strength (or (ignore-errors (anthe-bar--nm ap ".AccessPoint" "Strength")) 100)))
-              (cons (concat (anthe-bar--icon (format "nf-md-wifi_strength_%d"
+              (list (concat (anthe-bar--icon (format "nf-md-wifi_strength_%d"
                                                      (max 1 (min 4 (ceiling strength 25)))))
                             " " name)
                     (format "Wi-Fi %s, %d%%" name strength))))
-           (t (cons (anthe-bar--icon "nf-md-ethernet") (format "Wired: %s" name))))))
+           (t (list (anthe-bar--icon "nf-md-ethernet") (format "Wired: %s" name))))))
     (if vpn
-        (cons (concat (anthe-bar--icon "nf-md-vpn" 'success) " " (car link))
-              (concat (cdr link) ", VPN on"))
+        (list (concat (anthe-bar--icon "nf-md-vpn" 'success) " " (car link))
+              (concat (cadr link) ", VPN on"))
       link)))
 
 (defun anthe-bar--sentence (text)
@@ -152,19 +262,99 @@ keyboard and mouse only in the help."
          (face (cond (charging nil)
                      ((<= percent 10) 'error)
                      ((<= percent 20) 'warning)))
-         (time (alist-get ?t status)))
+         (time (alist-get ?t status))
+         (mode (anthe-bar--power-mode)))
     (when (alist-get ?p status)
-      (cons (concat (anthe-bar--icon icon face) " "
+      (list (concat (pcase mode
+                      ;; Balanced, the usual, goes without saying
+                      ("power-saver" (concat (anthe-bar--icon "nf-md-leaf" 'success) " "))
+                      ("performance" (concat (anthe-bar--icon "nf-md-rocket_launch" 'warning) " ")))
+                    (anthe-bar--icon icon face) " "
                     (propertize (format "%d%%" percent) 'face face))
             (concat (anthe-bar--sentence state)
                     (unless (member time '(nil "" "0:00" "N/A"))
-                      (format ", %s %s" time (if charging "to full" "left"))))))))
+                      (format ", %s %s" time (if charging "to full" "left")))
+                    (when mode
+                      (format "\nPower mode: %s" (alist-get mode anthe-bar--power-modes nil nil #'equal))))
+            (and mode #'anthe-bar-power-menu)))))
+
+;;; Power mode (power-profiles-daemon): SPC k e, or the battery's menu
+
+(defconst anthe-bar--power-modes
+  '(("power-saver" . "Power saver")
+    ("balanced" . "Balanced")
+    ("performance" . "Performance"))
+  "The power modes, by power-profiles-daemon's name.")
+
+(defun anthe-bar--power-mode ()
+  "The power mode on, nil without power-profiles-daemon."
+  (ignore-errors
+    (dbus-get-property :system "org.freedesktop.UPower.PowerProfiles"
+                       "/org/freedesktop/UPower/PowerProfiles"
+                       "org.freedesktop.UPower.PowerProfiles" "ActiveProfile")))
+
+(defun anthe-power-mode-set (mode)
+  "Switch to the power MODE, asked in the minibuffer."
+  (interactive
+   (let* ((current (anthe-bar--power-mode))
+          (choices (mapcar (lambda (mode)
+                             (cons (concat (cdr mode) (when (equal (car mode) current) " (on)"))
+                                   (car mode)))
+                           anthe-bar--power-modes)))
+     (unless current (user-error "No power modes: power-profiles-daemon isn't running"))
+     (list (cdr (assoc (completing-read "Power mode: " choices nil t) choices)))))
+  (let ((buffer (generate-new-buffer " *powerprofilesctl*")))
+    (make-process
+     :name "powerprofilesctl" :buffer buffer :noquery t :connection-type 'pipe
+     :command (list "powerprofilesctl" "set" mode)
+     :sentinel (lambda (process _event)
+                 (unless (process-live-p process)
+                   (if (zerop (process-exit-status process))
+                       (message "Power mode: %s" (alist-get mode anthe-bar--power-modes nil nil #'equal))
+                     (message "Power mode not changed: %s"
+                              (string-trim (with-current-buffer buffer (buffer-string)))))
+                   (kill-buffer buffer)
+                   (anthe-bar--look))))))
+
+(defun anthe-bar-power-menu ()
+  "A menu to switch the power mode, the one on ticked."
+  (interactive)
+  (let ((current (anthe-bar--power-mode)))
+    (popup-menu
+     `("Power mode"
+       ,@(mapcar (lambda (mode)
+                   (vector (cdr mode) `(anthe-power-mode-set ,(car mode))
+                           :style 'radio :selected (equal (car mode) current)))
+                 anthe-bar--power-modes)))))
+
+(map! :leader :desc "Power mode" "k e" #'anthe-power-mode-set)
+
+;;; Claude's plan limits, from the last reply (anthe-agents.el)
+
+(defun anthe-bar-claude-limits ()
+  "Show Claude's limits in words: the session's and the week's, and when
+they renew."
+  (interactive)
+  (message "%s" (anthe/claude-limits-help)))
+
+(defun anthe-bar--claude ()
+  "How much of Claude's 5-hour session is used, if known; a click tells
+the rest."
+  (when-let* (((fboundp 'anthe/claude-limits--percent))
+              (percent (anthe/claude-limits--percent :five-hour)))
+    (let ((face (cond ((>= percent 90) 'error) ((>= percent 75) 'warning))))
+      (list (concat (anthe-bar--icon "nf-md-robot_outline" face)
+                    (propertize (format " %d%%" percent) 'face face))
+            (anthe/claude-limits-help)
+            #'anthe-bar-claude-limits))))
 
 (defun anthe-bar--look ()
-  "Look at Bluetooth, the network and the battery, and redraw the bar."
+  "Look at Claude's limits, the system, Bluetooth, the network and the
+battery, and redraw the bar."
   (setq anthe-bar--status
         (delq nil (mapcar (lambda (look) (ignore-errors (funcall look)))
-                          '(anthe-bar--bluetooth anthe-bar--network anthe-bar--battery))))
+                          '(anthe-bar--claude anthe-bar--system anthe-bar--bluetooth
+                            anthe-bar--network anthe-bar--battery))))
   (force-mode-line-update t))
 
 (defun anthe-bar--right ()
@@ -173,7 +363,8 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
   (let* ((items (seq-map-indexed
                  (lambda (item i)
                    `(,(intern (format "anthe-bar-status-%d" i)) menu-item
-                     ,(concat "  " (car item)) ignore :help ,(cdr item)))
+                     ,(concat "  " (car item)) ,(or (nth 2 item) 'ignore)
+                     :help ,(nth 1 item)))
                  anthe-bar--status))
          (text (mapconcat (lambda (item) (nth 2 item)) items ""))
          (width (string-pixel-width (propertize text 'face 'tab-bar))))
@@ -183,7 +374,10 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
             ignore)
           items)))
 
-(setq tab-bar-format '(anthe-bar--workspaces anthe-bar--clock anthe-bar--right))
+(setq tab-bar-format
+      (list (lambda () (anthe-bar--on-bar (anthe-bar--workspaces)))
+            (lambda () (anthe-bar--on-bar (anthe-bar--clock)))
+            (lambda () (anthe-bar--on-bar (anthe-bar--right)))))
 
 ;;; The colours: the mode line's, the themes' tab bar being for tabs
 

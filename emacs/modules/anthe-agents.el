@@ -88,6 +88,131 @@ Sending kills the compose buffer, but its window would show the shell."
 
 (setopt agent-shell-persistent-prompt-enabled t)
 (setq agent-shell-session-restore-verbosity 'last)
+
+;; Killing a shell with a session asks first, not to lose it by accident.
+;; Not when agent-shell kills one itself: a shell still starting, or one
+;; restarted or closed with its viewport, which ask already.
+(defvar anthe/agent-shell--killing nil
+  "Non-nil while agent-shell kills a shell after asking itself.")
+
+(defun anthe/agent-shell--confirm-kill ()
+  "Ask before killing a shell with a session."
+  (or anthe/agent-shell--killing
+      (not (derived-mode-p 'agent-shell-mode))
+      (not (map-nested-elt agent-shell--state '(:session :id)))
+      (y-or-n-p (format "Kill the shell %s? " (buffer-name)))))
+
+(defun anthe/agent-shell--killing-asked (fn &rest args)
+  (let ((anthe/agent-shell--killing t))
+    (apply fn args)))
+
+(add-hook 'kill-buffer-query-functions #'anthe/agent-shell--confirm-kill)
+(with-eval-after-load 'agent-shell
+  (advice-add 'agent-shell-restart :around #'anthe/agent-shell--killing-asked))
+(with-eval-after-load 'agent-shell-viewport
+  (advice-add 'agent-shell-viewport--clean-up :around #'anthe/agent-shell--killing-asked))
+
+;;; Claude's plan limits: the 5-hour session and the week, as /usage
+;; Each reply brings them: in agent-shell, with the usage the ACP adapter
+;; sends (its `_claude/rateLimit'); in a terminal, to the status line
+;; (bin/claude-statusline), which keeps them in a file. They show in Claude
+;; shells' header, after the context, and in the top bar (anthe-bar.el).
+
+(defvar anthe/claude-limits nil
+  "Claude's plan limits at the last reply: a plist of :time, when they came,
+and :five-hour and :seven-day, each (PERCENT . RESETS-AT), in seconds.")
+
+(defvar anthe/claude-limits-file
+  (expand-file-name "claude-limits.json" (or (getenv "XDG_STATE_HOME") "~/.local/state"))
+  "Where bin/claude-statusline keeps the limits.")
+
+(defun anthe/claude-limits--set (time window)
+  "Keep the limits that came at TIME, WINDOW giving each (PERCENT . RESETS-AT)
+from its name, `five_hour' or `seven_day', nil if it didn't come."
+  (setq anthe/claude-limits
+        (list :time time
+              :five-hour (or (funcall window 'five_hour) (plist-get anthe/claude-limits :five-hour))
+              :seven-day (or (funcall window 'seven_day) (plist-get anthe/claude-limits :seven-day)))))
+
+(defun anthe/claude-limits ()
+  "The limits known, taking the status line's if they came later."
+  (when-let* ((attributes (file-attributes anthe/claude-limits-file))
+              (time (float-time (file-attribute-modification-time attributes)))
+              ((> time (or (plist-get anthe/claude-limits :time) 0)))
+              (limits (ignore-errors (json-read-file anthe/claude-limits-file))))
+    (anthe/claude-limits--set
+     time (lambda (name)
+            (when-let* ((window (alist-get name limits))
+                        (percent (alist-get 'used_percentage window)))
+              (cons percent (alist-get 'resets_at window))))))
+  anthe/claude-limits)
+
+(defun anthe/claude-limits--percent (window)
+  "WINDOW's percentage used, nil once it reset."
+  (let ((limit (plist-get (anthe/claude-limits) window)))
+    (when (and limit (> (cdr limit) (float-time)))
+      (round (car limit)))))
+
+(defun anthe/claude-limits-string ()
+  "Like \"5h 49% until 12:50 · 7d 75%\", coloured as they near 100%, nil
+if unknown: the session's renewal time, not the week's."
+  (let ((parts (delq nil
+                     (mapcar (pcase-lambda (`(,window . ,label))
+                               (when-let* ((percent (anthe/claude-limits--percent window)))
+                                 (concat
+                                  (propertize (format "%s %d%%" label percent)
+                                              'face (cond ((>= percent 90) 'error)
+                                                          ((>= percent 75) 'warning)))
+                                  (when (eq window :five-hour)
+                                    (format-time-string
+                                     " until %H:%M" (cdr (plist-get anthe/claude-limits window)))))))
+                             '((:five-hour . "5h") (:seven-day . "7d"))))))
+    (when parts (string-join parts " · "))))
+
+(defun anthe/claude-limits-help ()
+  "The limits in words, with when they reset."
+  (mapconcat (pcase-lambda (`(,window . ,label))
+               (let ((limit (plist-get (anthe/claude-limits) window)))
+                 (format "%s: %s" label
+                         (if-let* ((percent (anthe/claude-limits--percent window)))
+                             (format "%d%% used, resets %s" percent
+                                     (format-time-string "%a %-d %b %H:%M" (cdr limit)))
+                           "unknown"))))
+             '((:five-hour . "Claude session") (:seven-day . "Claude week"))
+             "\n"))
+
+(defun anthe/claude-limits--from-agent-shell (&rest args)
+  "Keep the limits a Claude shell's usage update brings, and show them in
+the other Claude shells too (this one redraws its header after)."
+  (when-let* ((windows (map-nested-elt (plist-get args :acp-update)
+                                       '(_meta _claude/rateLimit unifiedWindows))))
+    (anthe/claude-limits--set
+     (float-time)
+     (lambda (name)
+       (when-let* ((window (alist-get name windows))
+                   (utilization (alist-get 'utilization window)))
+         (cons (* 100 utilization) (alist-get 'resetsAt window)))))
+    (let ((current (current-buffer)))
+      (dolist (buffer (buffer-list))
+        (unless (eq buffer current)
+          (with-current-buffer buffer
+            (when (derived-mode-p 'agent-shell-mode)
+              (ignore-errors (agent-shell--update-header-and-mode-line)))))))))
+
+(defun anthe/agent-shell-with-limits (indicator)
+  "The context INDICATOR, then the limits in Claude shells.  It goes through
+`format-mode-line', hence the doubled %."
+  (if-let* (((eq (map-nested-elt (agent-shell--state) '(:agent-config :identifier)) 'claude-code))
+            (limits (anthe/claude-limits-string)))
+      (let ((limits (string-replace "%" "%%" limits)))
+        (if indicator (concat indicator " · " limits) limits))
+    indicator))
+
+(with-eval-after-load 'agent-shell-usage
+  (advice-add 'agent-shell--update-usage-from-notification :after
+              #'anthe/claude-limits--from-agent-shell)
+  (advice-add 'agent-shell--context-usage-indicator :filter-return
+              #'anthe/agent-shell-with-limits))
 ;; ;; With function (reusing the API key configured in vibe)
 ;; (setq agent-shell-mistral-authentication
 ;;       (agent-shell-mistral-make-authentication

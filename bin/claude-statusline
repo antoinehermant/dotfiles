@@ -1,0 +1,23 @@
+#!/bin/bash
+# Claude Code's status line (statusLine in ~/.claude/settings.json): the
+# model, how much of the plan's limits is used, the 5-hour session and the
+# week, as /usage, and when the session renews. It also keeps the limits in
+# a file, for Emacs's top bar (emacs/modules/anthe-agents.el).
+
+limits="${XDG_STATE_HOME:-$HOME/.local/state}/claude-limits.json"
+input=$(cat)
+
+# They come with each reply, for subscribers only
+if jq -e '.rate_limits | objects' <<<"$input" >/dev/null; then
+  jq -c '.rate_limits' <<<"$input" >"$limits.tmp" && mv "$limits.tmp" "$limits"
+fi
+
+jq -r '
+  def window($name; $tag; $until):
+    .rate_limits[$name] // empty
+    | select(.resets_at > now)
+    | "\($tag) \(.used_percentage | round)%"
+      + if $until then " until \(.resets_at | localtime | strftime("%H:%M"))" else "" end;
+  [.model.display_name // empty,
+   window("five_hour"; "5h"; true), window("seven_day"; "7d"; false)]
+  | join(" · ")' <<<"$input"
