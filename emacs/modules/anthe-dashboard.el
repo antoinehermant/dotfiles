@@ -83,16 +83,21 @@
 (setq dashboard-filter-agenda-entry #'dashboard-filter-time-no-habits)
 ;; Add the widget to dashboard-items
 
-(setq dashboard-items '((recents   . 5)
+(setq dashboard-items '(;; (recents   . 5)
                         ;; (bookmarks . 5)
                         (agenda    . 5)
-                        (projects  . 5)
+                        ;; (projects  . 5)
                         ;; (registers . 5)
                         ;; (custom   . dashboard-insert-cryolist)
                         ))
 (setq dashboard-week-agenda t)
 (setq dashboard-agenda-tags-format 'ignore)
 (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-time)
+
+;; The calendar's week, as in a calendar app (anthe-week.el), first
+(require 'anthe-week)
+(add-to-list 'dashboard-item-generators '(week . anthe-week-dashboard-insert))
+(add-to-list 'dashboard-items '(week . 0))
 
 (add-to-list 'dashboard-item-generators '(cryolist . dashboard-insert-cryolist))  
 (add-to-list 'dashboard-item-generators '(research-news . dashboard-insert-research-news))  

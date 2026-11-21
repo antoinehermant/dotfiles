@@ -108,12 +108,35 @@
                   (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :weight 'bold :height (cdr face)))
 
+  (defvar anthe/agenda-from-today nil
+    "Non-nil in an agenda block: show it from today's date at the top of the
+window, the days before hidden above it, where scrolling up shows them.")
+
+  (defun anthe/agenda-scroll-to-today ()
+    "Show the agenda from today, or from its top for another week, when
+`anthe/agenda-from-today' asks (set by the custom command, also on redo)."
+    (when anthe/agenda-from-today
+      (let ((today (save-excursion
+                     (goto-char (point-min))
+                     (let (found match)
+                       (while (and (not found)
+                                   (setq match (text-property-search-forward 'org-date-line t t)))
+                         (when (eql (get-text-property (prop-match-beginning match) 'day) (org-today))
+                           (setq found (prop-match-beginning match))))
+                       found))))
+        (goto-char (or today (point-min)))
+        (when-let ((window (get-buffer-window (current-buffer))))
+          (set-window-point window (point))
+          (set-window-start window (line-beginning-position))))))
+
+  (add-hook 'org-agenda-finalize-hook #'anthe/agenda-scroll-to-today 90)
+
   (setq org-agenda-custom-commands
         '(("d" "Dashboard"
            ((agenda "Agenda"
-                    ((org-agenda-start-day "0d")
-                     (org-agenda-span (- 8  (string-to-number (format-time-string "%u"))))
-                     (org-agenda-start-on-weekday nil)
+                    ;; The whole week, scrolled to today, as the PhD agenda
+                    ((org-agenda-span 'week)
+                     (org-agenda-start-on-weekday 1)
                      ;; (org-agenda-start-day "0")
                      ;; (org-agenda-skip-function
                      ;; '(org-agenda-skip-entry-if 'regexp ":habit:"))
@@ -127,7 +150,8 @@
                         (org-agenda-todo-ignore-deadlines 'far)))
             (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
             (tags-todo "+piano" ((org-agenda-overriding-header "Piano")))
-            (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
+            (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project"))))
+           ((anthe/agenda-from-today t)))
 
           ;; ("n" "Next Tasks"
           ;;  ((todo "NEXT"
@@ -151,8 +175,10 @@
            (
             ;; (tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
             (anthe-org-roam-refresh-agenda-list '("phd" "calendar" "inbox"))
-            (agenda "" ((org-agenda-start-day "0d")
-                        (org-agenda-span 7)
+            ;; The whole week from Monday, scrolled to today: the days before are
+            ;; above, and ] and [ show the next and previous weeks whole
+            (agenda "" ((org-agenda-span 'week)
+                        (org-agenda-start-on-weekday 1)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
@@ -172,7 +198,7 @@
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Idea Tasks"))))
            ;; ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
-           )
+           ((anthe/agenda-from-today t)))
 
           ;; Low-effort next actions
           ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
@@ -189,6 +215,14 @@
 (setq org-wild-notifier-alert-times-property "NOTIF") 
 
 (setq alert-default-style 'notifications)
+;; Its check runs in another Emacs, which would stop at the question of a file
+;; missing, today's daily note before it's written, and so never notify
+(setq org-agenda-skip-unavailable-files t)
+(add-to-list 'org-wild-notifier-additional-environment-regexes
+             "\\`org-agenda-skip-unavailable-files\\'")
+;; The calendar's events have their own reminders (anthe-week.el); khalel tags
+;; them with their calendar
+(setq org-wild-notifier-tags-blacklist '("infomaniak" "outlook"))
 (org-wild-notifier-mode)
 (add-to-list 'org-default-properties "NOTIF")
 
