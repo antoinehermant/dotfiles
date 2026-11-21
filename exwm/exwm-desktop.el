@@ -92,20 +92,17 @@
 ;;     ("Ncview" (exwm-floating-toggle-floating)
 ;;            (exwm-layout-toggle-mode-line))))
 
-(defun anthe/configure-window-by-class ()
-  "Configure window properties based on application class.
-Only toggle floating for main windows, not their child dialogs."
-  (interactive)
-  (when (or
-         ;; Ncview: Only toggle if not already floating (main window only)
-         (and (string-match-p "Ncview" exwm-class-name)
-              (not exwm--floating-frame))
-         ;; Matplotlib: Only toggle if not already floating (main window only)
-         (and (string-match-p "Matplotlib" exwm-class-name)
-              (not exwm--floating-frame))
-         ;; VirtualBox Manager: Always toggle (no child windows to worry about)
-         (string= "VirtualBox Manager" exwm-class-name))
-    (exwm-floating-toggle-floating)))
+(defvar anthe/exwm-floating-classes '("Ncview" "Matplotlib" "VirtualBox Manager")
+  "The X window classes always floating, all their windows, any case.")
+
+(defun anthe/exwm-floating-p ()
+  "Whether the X window being managed is to float: its class, or its
+instance's, is in `anthe/exwm-floating-classes'."
+  (let ((case-fold-search t))
+    (seq-some (lambda (class)
+                (or (string-equal-ignore-case class (or exwm-class-name ""))
+                    (string-equal-ignore-case class (or exwm-instance-name ""))))
+              anthe/exwm-floating-classes)))
 
 (defun efs/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
@@ -225,9 +222,21 @@ Only toggle floating for main windows, not their child dialogs."
 
   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
   ;; (add-hook 'exwm-manage-finish-hook #'efs/set-ncview-floating)
-  (add-hook 'exwm-manage-finish-hook #'anthe/configure-window-by-class)
+  ;; Some windows always float, decided as EXWM takes each, before it shows:
+  ;; toggling it after (`exwm-floating-toggle-floating' in
+  ;; `exwm-manage-finish-hook') toggled the selected window's, not always the new
+  ;; one (a second matplotlib figure, ncview's other windows)
+  (setq exwm-manage-configurations '(((anthe/exwm-floating-p) floating t)))
 
   (add-hook 'exwm-mode-hook #'doom-mark-buffer-as-real-h)
+
+  ;; A new window's buffer joins the workspace it opens in: Doom adds a buffer
+  ;; only when switched to, which EXWM showing it isn't
+  (defun anthe/exwm-add-to-workspace ()
+    "Add this new EXWM buffer to the current workspace."
+    (when (bound-and-true-p persp-mode)
+      (persp-add-buffer (current-buffer) (get-current-persp) nil)))
+  (add-hook 'exwm-manage-finish-hook #'anthe/exwm-add-to-workspace)
 
   (setq exwm-layout-show-all-buffers t)
   (setq exwm-workspace-show-all-buffers t)
