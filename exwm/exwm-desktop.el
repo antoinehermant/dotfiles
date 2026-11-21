@@ -438,6 +438,9 @@ instance's, is in `anthe/exwm-floating-classes'."
   ;; (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
 
   (efs/run-in-background "dunst")
+  ;; Mounts USB drives and SD cards as they are plugged in, on
+  ;; /run/media/anthe/LABEL, and says so; SPC k u ejects one (anthe-bar.el)
+  (efs/run-in-background "udiskie --automount --notify --no-tray --no-file-manager")
 
   (exwm-wm-mode))
 

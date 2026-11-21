@@ -8,6 +8,7 @@
 ;;  and on the right how much of Claude's session is used (a click tells
 ;;  the rest, anthe-agents.el),
 ;;  the processors and memory used (a click opens proced),
+;;  the USB drives plugged in (a click opens a menu to open or eject them),
 ;;  Bluetooth (a click opens a menu to turn it on or off and to connect the
 ;;  paired devices), the network and the battery.
 ;;
@@ -329,6 +330,118 @@ paired devices, the connected ones ticked."
 
 (map! :leader :desc "Power mode" "k e" #'anthe-power-mode-set)
 
+;;; Drives: the USB drives and SD cards plugged in (udisks), mounted by
+;;; udiskie as they come (exwm-desktop.el). SPC k u, or a click, ejects one
+
+(defun anthe-bar--bytes (bytes)
+  "A D-Bus byte array, as a mount point or a device, as a string."
+  (decode-coding-string (apply #'unibyte-string (seq-take-while #'cl-plusp bytes)) 'utf-8))
+
+(defun anthe-bar--drives ()
+  "The filesystems on drives that aren't the laptop's own, as plists:
+:label, :device, :mount (nil if not mounted), :drive (the udisks object)."
+  (let* ((objects (ignore-errors
+                    (dbus-get-all-managed-objects :system "org.freedesktop.UDisks2"
+                                                  "/org/freedesktop/UDisks2")))
+         (interface (lambda (object name) (cadr (assoc name (cadr object)))))
+         (get (lambda (props name) (cdr (assoc name props)))))
+    (delq nil
+          (mapcar
+           (lambda (object)
+             (let ((block (funcall interface object "org.freedesktop.UDisks2.Block"))
+                   (fs (funcall interface object "org.freedesktop.UDisks2.Filesystem")))
+               (when (and block fs
+                          (not (funcall get block "HintSystem"))
+                          (not (funcall get block "HintIgnore")))
+                 (let ((device (anthe-bar--bytes (funcall get block "PreferredDevice")))
+                       (mount (car (funcall get fs "MountPoints"))))
+                   (list :label (let ((label (funcall get block "IdLabel")))
+                                  (if (string-empty-p label)
+                                      (file-name-nondirectory device)
+                                    label))
+                         :device device
+                         :size (funcall get block "Size")
+                         :mount (and mount (anthe-bar--bytes mount))
+                         :drive (funcall get block "Drive"))))))
+           objects))))
+
+(defun anthe-bar--drive-help (drive)
+  (let ((mount (plist-get drive :mount)))
+    (concat (plist-get drive :label) ", "
+            (file-size-human-readable (plist-get drive :size) 'si " ") ", "
+            (if mount
+                (let ((info (file-system-info mount)))
+                  (format "%s free, on %s"
+                          (file-size-human-readable (nth 2 info) 'si " ") mount))
+              "not mounted"))))
+
+(defun anthe-bar--drives-status ()
+  "The drives plugged in, by name, the mounted ones bright.  A click opens
+`anthe-bar-drives-menu'."
+  (when-let* ((drives (anthe-bar--drives)))
+    (list (concat (anthe-bar--icon "nf-md-usb_flash_drive")
+                  (mapconcat (lambda (d)
+                               (concat " " (propertize (plist-get d :label)
+                                                       'face (unless (plist-get d :mount) 'shadow))))
+                             drives))
+          (mapconcat #'anthe-bar--drive-help drives "\n")
+          #'anthe-bar-drives-menu)))
+
+(defun anthe-bar--udiskie (command &rest args)
+  "Run COMMAND (udiskie-mount or udiskie-umount) with ARGS in the
+background, its outcome in the echo area, and look again once done."
+  (let ((buffer (generate-new-buffer " *udiskie*")))
+    (make-process
+     :name command :buffer buffer :noquery t :connection-type 'pipe
+     :command (cons command args)
+     :sentinel (lambda (process _event)
+                 (unless (process-live-p process)
+                   (let ((output (string-trim (with-current-buffer buffer (buffer-string)))))
+                     (message "%s" (cond ((not (zerop (process-exit-status process)))
+                                          (concat "Not done: " (car (last (split-string output "\n" t)))))
+                                         ((equal command "udiskie-umount")
+                                          "Ejected: it can be unplugged")
+                                         (t (or (car (last (split-string output "\n" t))) "Mounted")))))
+                   (kill-buffer buffer)
+                   (anthe-bar--look))))))
+
+(defun anthe-eject-drive (drive)
+  "Unmount DRIVE, every filesystem on it, and power it off, to unplug it
+safely.  Asked in the minibuffer among those plugged in, if several."
+  (interactive
+   (let* ((drives (or (anthe-bar--drives) (user-error "No drive plugged in")))
+          (choices (mapcar (lambda (d) (cons (anthe-bar--drive-help d) d)) drives)))
+     (list (if (cdr choices)
+               (cdr (assoc (completing-read "Eject: " choices nil t) choices))
+             (car drives)))))
+  (message "Ejecting %s…" (plist-get drive :label))
+  ;; A buffer visiting a file on it would keep it busy
+  (when-let* ((mount (plist-get drive :mount)))
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (and (or buffer-file-name (derived-mode-p 'dired-mode))
+                   (file-in-directory-p default-directory mount)
+                   (not (buffer-modified-p)))
+          (kill-buffer buffer)))))
+  (anthe-bar--udiskie "udiskie-umount" "--detach" (plist-get drive :device)))
+
+(defun anthe-bar-drives-menu ()
+  "A menu to open, mount or eject the drives plugged in."
+  (interactive)
+  (popup-menu
+   `("Drives"
+     ,@(apply #'append
+              (mapcar (lambda (d)
+                        (let ((mount (plist-get d :mount)))
+                          (list (vector (anthe-bar--drive-help d) nil :active nil)
+                                (if mount
+                                    (vector "  Open" `(dired ,mount))
+                                  (vector "  Mount" `(anthe-bar--udiskie "udiskie-mount" ,(plist-get d :device))))
+                                (vector "  Eject" `(anthe-eject-drive ',d)))))
+                      (anthe-bar--drives))))))
+
+(map! :leader :desc "Eject a drive" "k u" #'anthe-eject-drive)
+
 ;;; Claude's plan limits, from the last reply (anthe-agents.el)
 
 (defun anthe-bar-claude-limits ()
@@ -349,12 +462,12 @@ the rest."
             #'anthe-bar-claude-limits))))
 
 (defun anthe-bar--look ()
-  "Look at Claude's limits, the system, Bluetooth, the network and the
-battery, and redraw the bar."
+  "Look at Claude's limits, the system, the drives, Bluetooth, the network
+and the battery, and redraw the bar."
   (setq anthe-bar--status
         (delq nil (mapcar (lambda (look) (ignore-errors (funcall look)))
-                          '(anthe-bar--claude anthe-bar--system anthe-bar--bluetooth
-                            anthe-bar--network anthe-bar--battery))))
+                          '(anthe-bar--claude anthe-bar--system anthe-bar--drives-status
+                            anthe-bar--bluetooth anthe-bar--network anthe-bar--battery))))
   (force-mode-line-update t))
 
 (defun anthe-bar--right ()
