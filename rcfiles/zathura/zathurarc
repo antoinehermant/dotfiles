@@ -1,0 +1,33 @@
+# Zathura as an Emacs buffer (EXWM): only the page, in the middle, on Emacs's
+# background, with no bars. The colours are the Emacs theme's, written to
+# emacs-colours by anthe-pdf.el: the paper is the background, the ink the text.
+
+set guioptions ""
+set recolor true
+# Night mode as pdf-view's: lightness inverted, colours kept
+set recolor-keephue true
+set recolor-adjust-lightness true
+set adjust-open "best-fit"
+set pages-per-row 1
+set selection-clipboard clipboard
+set window-title-basename true
+set window-title-page true
+set zoom-center true
+# A page change (J and K, C-j and C-k in Emacs) shows the whole page, centred;
+# C-d and C-u scroll half the window, not to the next page's edge
+set vertical-center true
+
+# Link hints (f), as qutebrowser's: letters in a small orange box at each link's
+# start, followed once typed.  Settings of a patch (link-hints.patch), with the
+# zathura it builds in ~/.local:
+#   git clone --branch VERSION https://github.com/pwmt/zathura ~/software/zathura
+#   cd ~/software/zathura && git apply ~/.dotfiles/rcfiles/zathura/link-hints.patch
+#   meson setup build --prefix ~/.local -Dmanpages=disabled -Dtests=disabled
+#   ninja -C build install
+#   ln -s /usr/lib/x86_64-linux-gnu/zathura/libpdf-poppler.so ~/.local/lib/x86_64-linux-gnu/zathura/
+set hint-chars "asdfghjkl"
+set hint-bg "#F78C6C"
+set hint-fg "#FFFFFF"
+set hint-font "monospace bold 12"
+
+include emacs-colours

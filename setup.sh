@@ -33,6 +33,12 @@ mkdir -p ~/.config/dunst
 ln -sf ~/.dotfiles/rcfiles/dunstrc ~/.config/dunst/dunstrc
 ln -sf ~/.dotfiles/bin/notify-bell ~/.local/bin/notify-bell
 
+# Zathura, as an Emacs buffer in EXWM (its colours are written by Emacs)
+mkdir -p ~/.config/zathura
+ln -sf ~/.dotfiles/rcfiles/zathura/zathurarc ~/.config/zathura/zathurarc
+mkdir -p ~/.config/nsxiv/exec
+ln -sf ~/.dotfiles/rcfiles/nsxiv/exec/win-title ~/.config/nsxiv/exec/win-title
+
 # ncview config
 ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc
 

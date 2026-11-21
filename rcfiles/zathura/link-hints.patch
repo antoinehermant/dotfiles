@@ -1,0 +1,534 @@
+diff --git a/data/meson.build b/data/meson.build
+index f63e269..4c4b637 100644
+--- a/data/meson.build
++++ b/data/meson.build
+@@ -16,41 +16,44 @@ if rsvg_convert.found()
+   endforeach
+ endif
+ 
+-i18n = import('i18n')
+-podir = join_paths(meson.project_source_root(), 'po')
++# Translated desktop and metainfo files only with gettext's msgfmt
++if find_program('msgfmt', required: false).found()
++  i18n = import('i18n')
++  podir = join_paths(meson.project_source_root(), 'po')
+ 
+-desktop = i18n.merge_file(
+-  input: 'org.pwmt.zathura.desktop.in',
+-  output: 'org.pwmt.zathura.desktop',
+-  install: true,
+-  install_dir: desktopdir,
+-  po_dir: podir,
+-  type: 'desktop'
+-)
+-
+-appdata = i18n.merge_file(
+-  input: 'org.pwmt.zathura.metainfo.xml.in',
+-  output: 'org.pwmt.zathura.metainfo.xml',
+-  install: true,
+-  install_dir: metainfodir,
+-  po_dir: podir,
+-)
+-
+-desktop_file_validate = find_program('desktop-file-validate', required: get_option('tests'), native: true)
+-if desktop_file_validate.found()
+-  test('validate-desktop',
+-    desktop_file_validate,
+-    args: [desktop.full_path()]
++  desktop = i18n.merge_file(
++    input: 'org.pwmt.zathura.desktop.in',
++    output: 'org.pwmt.zathura.desktop',
++    install: true,
++    install_dir: desktopdir,
++    po_dir: podir,
++    type: 'desktop'
+   )
+-endif
+ 
+-appstreamcli = find_program('appstreamcli', required: get_option('tests'), native: true)
+-if appstreamcli.found()
+-  test(
+-    'validate-appdata',
+-    appstreamcli,
+-    args: ['validate', '--no-net', appdata.full_path()],
++  appdata = i18n.merge_file(
++    input: 'org.pwmt.zathura.metainfo.xml.in',
++    output: 'org.pwmt.zathura.metainfo.xml',
++    install: true,
++    install_dir: metainfodir,
++    po_dir: podir,
+   )
++
++  desktop_file_validate = find_program('desktop-file-validate', required: get_option('tests'), native: true)
++  if desktop_file_validate.found()
++    test('validate-desktop',
++      desktop_file_validate,
++      args: [desktop.full_path()]
++    )
++  endif
++
++  appstreamcli = find_program('appstreamcli', required: get_option('tests'), native: true)
++  if appstreamcli.found()
++    test(
++      'validate-appdata',
++      appstreamcli,
++      args: ['validate', '--no-net', appdata.full_path()],
++    )
++  endif
+ endif
+ 
+ conf_data = configuration_data()
+@@ -71,15 +74,16 @@ fish_completion = configure_file(
+   configuration: conf_data
+ )
+ 
++# Under the prefix, not where bash-completion and fish are, for a local install
+ bash_comp = dependency('bash-completion', required: false)
+-if bash_comp.found()
++if bash_comp.found() and prefix == '/usr'
+   bash_compdir = bash_comp.get_variable(pkgconfig: 'completionsdir')
+ else
+   bash_compdir = join_paths(datadir, 'bash-completion', 'completions')
+ endif
+ 
+ fish_comp = dependency('fish', required: false)
+-if fish_comp.found()
++if fish_comp.found() and prefix == '/usr'
+   fish_compdir = fish_comp.get_variable(pkgconfig: 'completionsdir')
+ else
+   fish_compdir = join_paths(datadir, 'fish', 'vendor_completions.d')
+diff --git a/data/org.pwmt.zathura.xml b/data/org.pwmt.zathura.xml
+index 7f19a58..6567714 100644
+--- a/data/org.pwmt.zathura.xml
++++ b/data/org.pwmt.zathura.xml
+@@ -29,6 +29,8 @@
+     <property type='u' name='pagenumber' access='read' />
+     <property type='u' name='numberofpages' access='read' />
+     <property type='s' name='documentinfo' access='read' />
++    <!-- The length of the link hints shown, 0 if none -->
++    <property type='u' name='linkhints' access='read' />
+     <!-- Open editor with given input file at line and column. -->
+     <signal name='Edit'>
+       <arg type='s' name='input' direction='out' />
+diff --git a/meson.build b/meson.build
+index 65a9194..81918db 100644
+--- a/meson.build
++++ b/meson.build
+@@ -108,7 +108,9 @@ include_directories = [
+ ]
+ 
+ subdir('data')
+-subdir('po')
++if find_program('msgfmt', required: false).found()
++  subdir('po')
++endif
+ 
+ # source files
+ sources = files(
+diff --git a/zathura/callbacks.c b/zathura/callbacks.c
+index 084d75a..aa3f891 100644
+--- a/zathura/callbacks.c
++++ b/zathura/callbacks.c
+@@ -380,12 +380,16 @@ static gboolean handle_link(GtkEntry* entry, girara_session_t* session, zathura_
+ 
+   int index = 0;
+   if (eval == TRUE) {
+-    index = atoi(input);
+-    if (index == 0 && g_strcmp0(input, "0") != 0) {
+-      girara_notify(session, GIRARA_WARNING, _("Invalid input '%s' given."), input);
+-      eval = FALSE;
++    /* a hint, or the link's number as before */
++    index = zathura_hint_index(zathura, input);
++    if (index < 0) {
++      index = atoi(input);
++      if (index == 0 && g_strcmp0(input, "0") != 0) {
++        girara_notify(session, GIRARA_WARNING, _("Invalid input '%s' given."), input);
++        eval = FALSE;
++      }
++      index = index - 1;
+     }
+-    index = index - 1;
+   }
+ 
+   zathura_document_t* document = zathura_get_document(zathura);
+@@ -429,6 +433,14 @@ static gboolean handle_link(GtkEntry* entry, girara_session_t* session, zathura_
+   return eval;
+ }
+ 
++void cb_hint_typed(GtkEditable* editable, void* data) {
++  zathura_t* zathura     = data;
++  g_autofree char* input = gtk_editable_get_chars(editable, 0, -1);
++  if (zathura_hint_index(zathura, input) >= 0) {
++    g_signal_emit_by_name(editable, "activate");
++  }
++}
++
+ gboolean cb_sc_follow(GtkEntry* entry, void* data) {
+   girara_session_t* session = data;
+   return handle_link(entry, session, ZATHURA_LINK_ACTION_FOLLOW);
+@@ -733,7 +745,13 @@ void cb_hide_links(GtkWidget* widget, gpointer data) {
+   gulong handler_id = GPOINTER_TO_UINT(g_object_steal_data(G_OBJECT(widget), "handler_id"));
+   g_signal_handler_disconnect(G_OBJECT(widget), handler_id);
+ 
+-  zathura_t* zathura           = data;
++  zathura_t* zathura     = data;
++  gulong hint_handler_id = GPOINTER_TO_UINT(g_object_steal_data(G_OBJECT(widget), "hint_handler_id"));
++  if (hint_handler_id != 0) {
++    g_signal_handler_disconnect(G_OBJECT(zathura->ui.session->gtk.inputbar_entry), hint_handler_id);
++  }
++  zathura->ui.link_hints = 0;
++
+   zathura_document_t* document = zathura_get_document(zathura);
+   unsigned int number_of_pages = zathura_document_get_number_of_pages(document);
+   for (unsigned int page_id = 0; page_id < number_of_pages; page_id++) {
+diff --git a/zathura/callbacks.h b/zathura/callbacks.h
+index c1ab2bf..45d61e1 100644
+--- a/zathura/callbacks.h
++++ b/zathura/callbacks.h
+@@ -279,4 +279,12 @@ void cb_gesture_zoom_scale_changed(GtkGestureZoom* self, gdouble scale, void* da
+  */
+ void cb_hide_links(GtkWidget* widget, gpointer data);
+ 
++/**
++ * Follows the link whose whole hint is typed
++ *
++ * @param editable The input bar's entry
++ * @param data The zathura session
++ */
++void cb_hint_typed(GtkEditable* editable, void* data);
++
+ #endif // CALLBACKS_H
+diff --git a/zathura/config.c b/zathura/config.c
+index d5a7de7..77e9cc1 100644
+--- a/zathura/config.c
++++ b/zathura/config.c
+@@ -65,6 +65,10 @@ static void cb_color_change(girara_session_t* session, const char* name, girara_
+     parse_color(&zathura->ui.colors.highlight_color, string_value);
+   } else if (g_strcmp0(name, "highlight-fg") == 0) {
+     parse_color(&zathura->ui.colors.highlight_color_fg, string_value);
++  } else if (g_strcmp0(name, "hint-bg") == 0) {
++    parse_color(&zathura->ui.colors.hint_bg, string_value);
++  } else if (g_strcmp0(name, "hint-fg") == 0) {
++    parse_color(&zathura->ui.colors.hint_fg, string_value);
+   } else if (g_strcmp0(name, "highlight-active-color") == 0) {
+     parse_color(&zathura->ui.colors.highlight_color_active, string_value);
+   } else if (g_strcmp0(name, "recolor-darkcolor") == 0) {
+@@ -539,6 +543,10 @@ void config_load_default(zathura_t* zathura) {
+   girara_setting_add(gsession, "recolor-lightcolor",     "#000000", STRING, false, _("Recoloring (light color)"), cb_color_change, NULL);
+   girara_setting_add(gsession, "highlight-color",        NULL,      STRING, false, _("Color for highlighting"), cb_color_change, NULL);
+   girara_setting_add(gsession, "highlight-fg",           NULL,      STRING, false, _("Foreground color for highlighting"),cb_color_change, NULL);
++  girara_setting_add(gsession, "hint-bg",                NULL,      STRING, false, _("Background color of link hints"), cb_color_change, NULL);
++  girara_setting_add(gsession, "hint-fg",                NULL,      STRING, false, _("Text color of link hints"), cb_color_change, NULL);
++  girara_setting_add(gsession, "hint-chars",             "asdfghjkl", STRING, false, _("Characters of link hints"), NULL, NULL);
++  girara_setting_add(gsession, "hint-font",              "monospace bold 12", STRING, false, _("Font of link hints"), NULL, NULL);
+   girara_setting_add(gsession, "highlight-active-color", NULL,      STRING, false, _("Color for highlighting (active)"), cb_color_change, NULL);
+   girara_setting_add(gsession, "render-loading-bg",      NULL,      STRING, false, _("'Loading ...' background color"), cb_color_change, NULL);
+   girara_setting_add(gsession, "render-loading-fg",      NULL,      STRING, false, _("'Loading ...' foreground color"), cb_color_change, NULL);
+@@ -552,6 +560,8 @@ void config_load_default(zathura_t* zathura) {
+   // apply some color settings that need their callbacks to run
+   girara_setting_set(gsession, "highlight-color", "rgba(159,251,0,0.5)");
+   girara_setting_set(gsession, "highlight-fg", "rgba(0,0,0,0.5)");
++  girara_setting_set(gsession, "hint-bg", "#F78C6C");
++  girara_setting_set(gsession, "hint-fg", "#FFFFFF");
+   girara_setting_set(gsession, "highlight-active-color", "rgba(0,188,0,0.5)");
+   girara_setting_set(gsession, "render-loading-bg", "#FFFFFF");
+   girara_setting_set(gsession, "render-loading-fg", "#000000");
+diff --git a/zathura/dbus-interface.c b/zathura/dbus-interface.c
+index c1cbc96..1b9df9a 100644
+--- a/zathura/dbus-interface.c
++++ b/zathura/dbus-interface.c
+@@ -533,6 +533,8 @@ static GVariant* handle_get_property(GDBusConnection* UNUSED(connection), const
+     return g_variant_new_uint32(zathura_document_get_number_of_pages(document));
+   } else if (g_strcmp0(property_name, "documentinfo") == 0) {
+     return json_document_info(priv->zathura);
++  } else if (g_strcmp0(property_name, "linkhints") == 0) {
++    return g_variant_new_uint32(zathura_hint_length(priv->zathura));
+   }
+ 
+   return NULL;
+diff --git a/zathura/page-widget.c b/zathura/page-widget.c
+index b67f5b0..9fefedb 100644
+--- a/zathura/page-widget.c
++++ b/zathura/page-widget.c
+@@ -288,14 +288,15 @@ static void zathura_page_widget_finalize(GObject* object) {
+   G_OBJECT_CLASS(zathura_page_widget_parent_class)->finalize(object);
+ }
+ 
+-static void set_font_from_property(cairo_t* cairo, zathura_t* zathura, cairo_font_weight_t weight) {
++static void set_font_from_setting(cairo_t* cairo, zathura_t* zathura, cairo_font_weight_t weight,
++                                  const char* setting) {
+   if (zathura == NULL) {
+     return;
+   }
+ 
+   /* get user font description */
+   char* font = NULL;
+-  girara_setting_get(zathura->ui.session, "font", &font);
++  girara_setting_get(zathura->ui.session, setting, &font);
+   if (font == NULL) {
+     return;
+   }
+@@ -322,6 +323,10 @@ static void set_font_from_property(cairo_t* cairo, zathura_t* zathura, cairo_fon
+     size = size * font_dpi / 72;
+   }
+ 
++  if (g_strcmp0(setting, "font") != 0) {
++    weight = pango_font_description_get_weight(descr) >= PANGO_WEIGHT_BOLD ? CAIRO_FONT_WEIGHT_BOLD
++                                                                            : CAIRO_FONT_WEIGHT_NORMAL;
++  }
+   cairo_select_font_face(cairo, family, CAIRO_FONT_SLANT_NORMAL, weight);
+   cairo_set_font_size(cairo, size);
+ 
+@@ -329,6 +334,15 @@ static void set_font_from_property(cairo_t* cairo, zathura_t* zathura, cairo_fon
+   g_free(font);
+ }
+ 
++/* The box of a link's hint: at its start, across its middle */
++static zathura_rectangle_t hint_box(zathura_rectangle_t link, double width, double height) {
++  const double middle      = (link.y1 + link.y2) / 2;
++  zathura_rectangle_t box = {link.x1, middle - height / 2, link.x1 + width, middle + height / 2};
++  return box;
++}
++
++#define HINT_PADDING 3
++
+ static cairo_text_extents_t get_text_extents(const char* string, zathura_t* zathura, cairo_font_weight_t weight) {
+   cairo_text_extents_t text = {
+       0,
+@@ -350,7 +364,7 @@ static cairo_text_extents_t get_text_extents(const char* string, zathura_t* zath
+     return text;
+   }
+ 
+-  set_font_from_property(cairo, zathura, weight);
++  set_font_from_setting(cairo, zathura, weight, "hint-font");
+   cairo_text_extents(cairo, string, &text);
+ 
+   /* add some margin (for some reason the reported extents can be a bit short) */
+@@ -387,7 +401,7 @@ static void zathura_page_widget_set_property(GObject* object, guint prop_id, con
+ 
+     if (priv->links.retrieved == TRUE && priv->links.list != NULL) {
+       /* get size of text that should be large enough for every link hint */
+-      text = get_text_extents("888", priv->zathura, CAIRO_FONT_WEIGHT_BOLD);
++      text = get_text_extents("WWWW", priv->zathura, CAIRO_FONT_WEIGHT_BOLD);
+ 
+       for (size_t idx = 0; idx != girara_list_size(priv->links.list); ++idx) {
+         zathura_link_t* link = girara_list_nth(priv->links.list, idx);
+@@ -397,8 +411,7 @@ static void zathura_page_widget_set_property(GObject* object, guint prop_id, con
+           redraw_rect(pageview, &rectangle);
+ 
+           /* also redraw area for link hint */
+-          rectangle.x2 = rectangle.x1 + text.width;
+-          rectangle.y1 = rectangle.y2 - text.height;
++          rectangle = hint_box(rectangle, text.width + 2 * HINT_PADDING, 2 * text.height + 2 * HINT_PADDING);
+           redraw_rect(pageview, &rectangle);
+         }
+       }
+@@ -596,7 +609,7 @@ static gboolean zathura_page_widget_draw(GtkWidget* widget, cairo_t* cairo) {
+     }
+ 
+     /* draw links */
+-    set_font_from_property(cairo, zathura, CAIRO_FONT_WEIGHT_BOLD);
++    set_font_from_setting(cairo, zathura, CAIRO_FONT_WEIGHT_BOLD, "hint-font");
+ 
+     if (priv->links.draw == true && priv->links.n != 0) {
+       unsigned int link_counter = 0;
+@@ -605,20 +618,32 @@ static gboolean zathura_page_widget_draw(GtkWidget* widget, cairo_t* cairo) {
+         if (link != NULL) {
+           zathura_rectangle_t rectangle = recalc_rectangle(priv->page, zathura_link_get_position(link));
+ 
+-          /* draw position */
+-          const GdkRGBA color = zathura->ui.colors.highlight_color;
++          /* the hint, as qutebrowser's: letters in a small box at the link's start */
++          g_autofree char* label = zathura_hint_label(zathura, priv->links.offset + link_counter++);
++          cairo_text_extents_t text_extents;
++          cairo_font_extents_t font_extents;
++          cairo_text_extents(cairo, label, &text_extents);
++          cairo_font_extents(cairo, &font_extents);
++          const zathura_rectangle_t box =
++              hint_box(rectangle, text_extents.x_advance + 2 * HINT_PADDING,
++                       font_extents.ascent + font_extents.descent + HINT_PADDING);
++
++          const double radius = 3;
++          cairo_new_sub_path(cairo);
++          cairo_arc(cairo, box.x2 - radius, box.y1 + radius, radius, -G_PI / 2, 0);
++          cairo_arc(cairo, box.x2 - radius, box.y2 - radius, radius, 0, G_PI / 2);
++          cairo_arc(cairo, box.x1 + radius, box.y2 - radius, radius, G_PI / 2, G_PI);
++          cairo_arc(cairo, box.x1 + radius, box.y1 + radius, radius, G_PI, 3 * G_PI / 2);
++          cairo_close_path(cairo);
++          const GdkRGBA color = zathura->ui.colors.hint_bg;
+           cairo_set_source_rgba(cairo, color.red, color.green, color.blue, color.alpha);
+-          cairo_rectangle(cairo, rectangle.x1, rectangle.y1, (rectangle.x2 - rectangle.x1),
+-                          (rectangle.y2 - rectangle.y1));
+           cairo_fill(cairo);
+ 
+-          /* draw text */
+-          const GdkRGBA color_fg = zathura->ui.colors.highlight_color_fg;
++          const GdkRGBA color_fg = zathura->ui.colors.hint_fg;
+           cairo_set_source_rgba(cairo, color_fg.red, color_fg.green, color_fg.blue, color_fg.alpha);
+-          cairo_move_to(cairo, rectangle.x1 + 1, rectangle.y2 - 1);
+-          char* link_number = g_strdup_printf("%i", priv->links.offset + ++link_counter);
+-          cairo_show_text(cairo, link_number);
+-          g_free(link_number);
++          cairo_move_to(cairo, box.x1 + HINT_PADDING,
++                        box.y1 + HINT_PADDING / 2.0 + font_extents.ascent);
++          cairo_show_text(cairo, label);
+         }
+       }
+     }
+diff --git a/zathura/shortcuts.c b/zathura/shortcuts.c
+index 7e92b1f..ce0d189 100644
+--- a/zathura/shortcuts.c
++++ b/zathura/shortcuts.c
+@@ -57,6 +57,8 @@ static bool draw_links(zathura_t* zathura) {
+       g_object_set(obj_page_widget, "draw-links", FALSE, NULL);
+     }
+   }
++  /* the hints' length follows from the number of links; they draw later */
++  zathura->ui.link_hints = page_offset;
+   return show_links;
+ }
+ 
+@@ -77,6 +79,13 @@ static bool link_shortcuts(zathura_t* zathura, girara_callback_inputbar_activate
+ 
+     zathura_document_set_adjust_mode(document, ZATHURA_ADJUST_INPUTBAR);
+     girara_dialog(zathura->ui.session, text, FALSE, NULL, callback, zathura->ui.session);
++
++    /* a whole hint typed is enough, as in qutebrowser */
++    GtkWidget* entry      = GTK_WIDGET(zathura->ui.session->gtk.inputbar_entry);
++    gulong hint_handler_id = g_signal_connect(entry, "changed", G_CALLBACK(cb_hint_typed), zathura);
++    g_object_set_data(G_OBJECT(inputbar), "hint_handler_id", GUINT_TO_POINTER(hint_handler_id));
++  } else {
++    zathura->ui.link_hints = 0;
+   }
+ 
+   return false;
+diff --git a/zathura/utils.c b/zathura/utils.c
+index 376d8d8..0bfa98d 100644
+--- a/zathura/utils.c
++++ b/zathura/utils.c
+@@ -732,3 +732,60 @@ bool search_document(zathura_t* zathura, girara_argument_t* argument, bool disab
+ 
+   return false;
+ }
++
++char* zathura_hint_chars(zathura_t* zathura) {
++  char* chars = NULL;
++  girara_setting_get(zathura->ui.session, "hint-chars", &chars);
++  if (chars == NULL || strlen(chars) < 2) {
++    g_free(chars);
++    chars = g_strdup("asdfghjkl");
++  }
++  return chars;
++}
++
++unsigned int zathura_hint_length(zathura_t* zathura) {
++  const unsigned int count = zathura->ui.link_hints;
++  if (count == 0) {
++    return 0;
++  }
++
++  g_autofree char* chars = zathura_hint_chars(zathura);
++  const unsigned int base = strlen(chars);
++  unsigned int length     = 1;
++  for (unsigned long labels = base; labels < count; labels *= base) {
++    length++;
++  }
++  return length;
++}
++
++char* zathura_hint_label(zathura_t* zathura, unsigned int index) {
++  g_autofree char* chars    = zathura_hint_chars(zathura);
++  const unsigned int base   = strlen(chars);
++  const unsigned int length = MAX(zathura_hint_length(zathura), 1);
++
++  char* label = g_malloc0(length + 1);
++  for (unsigned int i = length; i > 0; i--) {
++    label[i - 1] = chars[index % base];
++    index /= base;
++  }
++  return label;
++}
++
++int zathura_hint_index(zathura_t* zathura, const char* input) {
++  const unsigned int length = zathura_hint_length(zathura);
++  if (input == NULL || length == 0 || strlen(input) != length) {
++    return -1;
++  }
++
++  g_autofree char* chars  = zathura_hint_chars(zathura);
++  const unsigned int base = strlen(chars);
++  unsigned long index     = 0;
++  for (const char* c = input; *c != '\0'; c++) {
++    const char* digit = strchr(chars, g_ascii_tolower(*c));
++    if (digit == NULL) {
++      return -1;
++    }
++    index = index * base + (digit - chars);
++  }
++  return index < zathura->ui.link_hints ? (int)index : -1;
++}
+diff --git a/zathura/utils.h b/zathura/utils.h
+index a34320c..6fa6946 100644
+--- a/zathura/utils.h
++++ b/zathura/utils.h
+@@ -191,4 +191,39 @@ girara_list_t* flatten_rectangles(girara_list_t* rectangles);
+  */
+ bool search_document(zathura_t* zathura, girara_argument_t* argument, bool disable_notify);
+ 
++/**
++ * The characters of link hints: the setting hint-chars, at least two
++ *
++ * @param zathura The zathura session
++ * @return The characters, to be freed
++ */
++char* zathura_hint_chars(zathura_t* zathura);
++
++/**
++ * The length of the link hints shown: all have the same, enough for
++ * the number of links labelled
++ *
++ * @param zathura The zathura session
++ * @return The length, 0 if no link is labelled
++ */
++unsigned int zathura_hint_length(zathura_t* zathura);
++
++/**
++ * The hint of a link, as qutebrowser's: letters of hint-chars
++ *
++ * @param zathura The zathura session
++ * @param index The index of the link, from 0
++ * @return The hint, to be freed
++ */
++char* zathura_hint_label(zathura_t* zathura, unsigned int index);
++
++/**
++ * The link a hint is of
++ *
++ * @param zathura The zathura session
++ * @param input The hint typed
++ * @return The index of the link, from 0, or -1 if input is not a hint
++ */
++int zathura_hint_index(zathura_t* zathura, const char* input);
++
+ #endif // UTILS_H
+diff --git a/zathura/zathura.h b/zathura/zathura.h
+index 3dd93b7..aa998ed 100644
+--- a/zathura/zathura.h
++++ b/zathura/zathura.h
+@@ -111,6 +111,8 @@ struct zathura_s {
+       GdkRGBA highlight_color;        /**< Color for highlighting */
+       GdkRGBA highlight_color_fg;     /**< Color for highlighting (foreground) */
+       GdkRGBA highlight_color_active; /** Color for highlighting */
++      GdkRGBA hint_bg;                /**< Background of link hints */
++      GdkRGBA hint_fg;                /**< Text of link hints */
+       GdkRGBA render_loading_bg;      /**< Background color for render "Loading..." */
+       GdkRGBA render_loading_fg;      /**< Foreground color for render "Loading..." */
+       GdkRGBA signature_success;      /**> Color for highlighing valid signatures */
+@@ -121,6 +123,7 @@ struct zathura_s {
+     GtkWidget* view;            /**< Scrolled Window */
+     GtkWidget* document_widget; /**< Widget that contains all rendered pages */
+     GtkWidget* index;           /**< Widget to show the index of the document */
++    unsigned int link_hints;    /**< Number of links labelled for following, 0 if none */
+   } ui;
+ 
+   struct {
