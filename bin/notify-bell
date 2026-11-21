@@ -1,0 +1,25 @@
+#!/bin/bash
+# A gentle bell for each notification, run by dunst (rcfiles/dunstrc).
+# Not for low urgency ones, not while off (SPC z b in Emacs), not for apps
+# that ring their own, and once for notifications arriving together.
+
+off="${XDG_STATE_HOME:-$HOME/.local/state}/notify-bell-off"
+last="${XDG_RUNTIME_DIR:-/tmp}/notify-bell-last"
+sound=/usr/share/sounds/freedesktop/stereo/message.oga
+volume=0.3 # of the full volume
+# Apps with their own sound, by name, and sites, as qutebrowser starts the
+# body of their notifications with a link to them
+own_sound_apps='^(discord|vesktop)$'
+own_sound_sites='^<a href="https://(discord\.com|app\.slack\.com)/'
+
+[ -e "$off" ] && exit 0
+[ "$DUNST_URGENCY" = LOW ] && exit 0
+grep -qiE "$own_sound_apps" <<< "$DUNST_APP_NAME" && exit 0
+[ "$DUNST_APP_NAME" = qutebrowser ] && grep -qE "$own_sound_sites" <<< "$DUNST_BODY" && exit 0
+
+now=$(date +%s%N)
+previous=$(cat "$last" 2>/dev/null || echo 0)
+((now - previous < 1500000000)) && exit 0
+echo "$now" >"$last"
+
+paplay --volume="$(awk -v v="$volume" 'BEGIN { printf "%d", v * 65536 }')" "$sound" &

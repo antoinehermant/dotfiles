@@ -31,6 +31,7 @@ ln -sf ~/.dotfiles/bin/radicale-set-password ~/.local/bin/radicale-set-password
 # Notifications (dunst, started by EXWM)
 mkdir -p ~/.config/dunst
 ln -sf ~/.dotfiles/rcfiles/dunstrc ~/.config/dunst/dunstrc
+ln -sf ~/.dotfiles/bin/notify-bell ~/.local/bin/notify-bell
 
 # ncview config
 ln -sf ~/.dotfiles/rcfiles/.ncviewrc ~/.ncviewrc

@@ -138,8 +138,23 @@ counts the session as active, which allows it."
   "Run dunstctl with ARGS."
   (apply #'call-process "dunstctl" nil 0 nil args))
 
+(defvar anthe/notify-bell-off
+  (expand-file-name "notify-bell-off" (or (getenv "XDG_STATE_HOME") "~/.local/state"))
+  "While this file is, the notifications ring no bell (bin/notify-bell).")
+
+(defun anthe/notify-bell-toggle ()
+  "Turn the notifications' bell off, or on again."
+  (interactive)
+  (if (file-exists-p anthe/notify-bell-off)
+      (progn (delete-file anthe/notify-bell-off)
+             (message "Notification bell on"))
+    (make-directory (file-name-directory anthe/notify-bell-off) t)
+    (write-region "" nil anthe/notify-bell-off nil 'silent)
+    (message "Notification bell off")))
+
 (map! :leader
       (:prefix ("z" . "notifications")
+       :desc "Bell on or off" "b" #'anthe/notify-bell-toggle
        :desc "Dismiss" "z" (cmd! (anthe/dunstctl "close"))
        :desc "Dismiss all" "a" (cmd! (anthe/dunstctl "close-all"))
        :desc "Open" "o" (cmd! (anthe/dunstctl "action"))
