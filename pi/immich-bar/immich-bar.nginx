@@ -1,0 +1,47 @@
+# Immich with the search bar over it (bar.js), on port 2284, installed to
+# /etc/nginx/sites-available/immich-bar, linked from sites-enabled. Immich
+# itself stays on 2283, for the phone app; the bar's files are in
+# /opt/immich-bar.
+map $http_upgrade $immich_bar_connection {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    # On every address, as nginx starts before wg0 exists, but only answered
+    # through WireGuard and Tailscale
+    listen 2284;
+    listen [::]:2284;
+    allow 10.158.145.0/24;
+    allow 100.64.0.0/10;
+    allow fd7a:115c:a1e0::/48;
+    allow 127.0.0.1;
+    deny all;
+
+    client_max_body_size 0;
+
+    location /bar/ {
+        alias /opt/immich-bar/;
+        add_header Cache-Control "no-cache";
+    }
+
+    location / {
+        proxy_pass http://10.158.145.1:2283;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $immich_bar_connection;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_request_buffering off;
+        proxy_buffering off;
+
+        # The bar on each page: Immich's pages uncompressed, to add it
+        proxy_set_header Accept-Encoding "";
+        sub_filter_types text/html;
+        sub_filter_once on;
+        sub_filter '</body>' '<script src="/bar/bar.js"></script></body>';
+    }
+}

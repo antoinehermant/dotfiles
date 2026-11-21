@@ -35,6 +35,9 @@ c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 
 # "gh pism/pism" opens that repo, "gh antoinehermant" a profile
 c.url.searchengines["gh"] = "https://github.com/{unquoted}"
+# "ph 2025 christmas" shows the photos of 2025 tagged christmas, in Immich on
+# the Pi, through its search bar (pi/immich-bar)
+c.url.searchengines["ph"] = "http://10.158.145.1:2284/bar/?q={}"
 
 # Paste the clipboard like Emacs' yank
 config.bind("<Ctrl-y>", "insert-text {clipboard}", mode="insert")
