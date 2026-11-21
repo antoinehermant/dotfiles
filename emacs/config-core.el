@@ -111,7 +111,10 @@
 (display-time-mode)
 (display-line-numbers-mode)
 
-(setq display-line-numbers-type 'relative)
+;; Relative to the screen lines: a wrapped line counts as the lines it shows,
+;; and folded text doesn't count, as j and k move (see evil-respect-visual-line-mode
+;; in init.el)
+(setq display-line-numbers-type 'visual)
 
 (custom-theme-set-faces! 'anthe-night-owl
   '(line-number :foreground "#ffffff")
