@@ -499,6 +499,40 @@ With STEP -1, show the previous one. `u' opens the window again.
                "a" "c" "M" "b" "B" "u" "U" "v" "V" "R" "." "?"))
   (evil-define-key* 'normal qutebrowser-exwm-mode-map (kbd key) #'anthe/qutebrowser-key-chain))
 
+;; Where to save a download is asked in Emacs, with find-file's completion
+;; (TAB, C-j/C-k, C-h or DEL up a directory), instead of qutebrowser's
+;; prompt.  C-g cancels the download.  Without Emacs, qutebrowser's own
+;; prompt has the same keys (qutebrowser/config.py).
+(defconst anthe/qutebrowser--download-default
+  "(lambda q: q.default if q is not None and q.mode.name == 'download' else '')(__import__('qutebrowser.mainwindow.prompt', fromlist=['prompt']).prompt_queue._question)"
+  "Python giving the suggested path of the download prompt shown, or \"\".")
+
+(defun anthe/qutebrowser--download-prompt (info)
+  "When the prompt qutebrowser shows is a download's, ask the path in Emacs.
+INFO is the plist of the `entered-mode' signal."
+  (when (equal (plist-get info :mode) "KeyMode.prompt")
+    ;; Not in the signal's process filter: the minibuffer waits for keys
+    (run-at-time 0 nil #'anthe/qutebrowser--read-download (plist-get info :x11-win-id))))
+
+(defun anthe/qutebrowser--read-download (x11-win-id)
+  "Ask where to save the download prompted in the window X11-WIN-ID, and
+answer the prompt, or cancel the download on C-g."
+  (let ((default (qutebrowser-rpc-request :eval (list :code anthe/qutebrowser--download-default))))
+    (unless (string-empty-p default)
+      (let ((win-id (qutebrowser-rpc-request :x11-win-id-to-win-id (list :x11-win-id x11-win-id)))
+            (path (condition-case nil
+                      (read-file-name "Save download to: " (file-name-directory default) default
+                                      nil (file-name-nondirectory default))
+                    (quit nil))))
+        (if path
+            ;; Called directly: :prompt-accept would split a path with spaces
+            (qutebrowser-rpc-request
+             :eval (list :code (format "objreg.get('prompt-container', scope='window', window=%d, from_command=True).prompt_accept(%s)"
+                                       win-id (json-encode (expand-file-name path)))))
+          (qutebrowser-rpc-request :command (list :commands ":mode-leave" :win-id win-id)))))))
+
+(add-hook 'qutebrowser-on-entered-mode-functions #'anthe/qutebrowser--download-prompt)
+
 (custom-set-faces!
   '(vertico-group-title :foreground "#51afef")
   '(completions-annotations :foreground "#d2a6ff" :slant italic)

@@ -15,6 +15,12 @@ config.set("fonts.default_size", "11.5pt")
 config.bind("<Ctrl-j>", "completion-item-focus next", mode="command")
 config.bind("<Ctrl-k>", "completion-item-focus prev", mode="command")
 
+# The file prompt (downloads) like Emacs' completion: TAB, C-j and C-k go through the
+# candidates, C-h goes up a directory. In EXWM, Emacs asks instead (anthe-qutebrowser.el)
+config.bind("<Ctrl-j>", "prompt-item-focus next", mode="prompt")
+config.bind("<Ctrl-k>", "prompt-item-focus prev", mode="prompt")
+config.bind("<Ctrl-h>", "rl-filename-rubout", mode="prompt")
+
 config.bind(",ps", "set content.proxy socks5://localhost:1080;; reload")
 config.bind(",pd", "set content.proxy system;; reload")
 config.bind(",d", "config-cycle colors.webpage.darkmode.enabled")
