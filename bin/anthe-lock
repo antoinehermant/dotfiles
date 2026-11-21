@@ -1,0 +1,73 @@
+#!/bin/sh
+# Lock the screen: the wallpaper, the time and a ring that lights up as you
+# type the password; Enter unlocks (i3lock-color, built in ~/.local/bin, with
+# rcfiles/i3lock/jarvis-ring.patch). Everything
+# keeps running behind it, Claude included; only sleep stops them.
+#
+#   anthe-lock          closing the lid still suspends the laptop
+#   anthe-lock --away   it doesn't: the laptop stays awake until unlocked,
+#                       lid closed or not, so work goes on while you're away
+#
+# Run by Emacs (SPC k z, SPC k Z) and by xss-lock, which locks before the
+# laptop sleeps and after 10 minutes idle (exwm-desktop.el).
+
+wallpaper=/usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png
+font="Ubuntu Sans"
+# The wallpaper blurred and tinted Night Owl blue, so the ring and the text
+# read on it; made once
+background=${XDG_CACHE_HOME:-$HOME/.cache}/anthe-lock.png
+[ "$background" -nt "$wallpaper" ] ||
+    convert "$wallpaper" -resize 50% -blur 0x24 -fill '#011627' -colorize 45% "$background"
+
+# The ring: "jarvis", the HUD's (rcfiles/i3lock/jarvis-ring.patch), or "plain"
+ring=jarvis
+
+# Already locked
+pgrep -x -u "$(id -u)" i3lock-color >/dev/null && exit 0
+
+# Night Owl: background, text, blue, purple, cyan, red
+bg=011627 fg=d6deeb blue=82aaff purple=c792ea cyan=7fdbca red=ef5350
+
+away=
+[ "$1" = --away ] && { away=1; shift; }
+
+if [ "$ring" = jarvis ]; then
+    # Animated at 30 frames a second; its own words in the ring
+    set -- --jarvis --radius=120 --refresh-rate=0.033 \
+        --time-pos="ix:iy+6" --date-pos="ix:iy+275" --greeter-pos="ix:iy+305" \
+        --verif-text="" --wrong-text="" --noinput-text="" --lock-text="" --lockfailed-text="" \
+        "$@"
+else
+    set -- --indicator --radius=110 --ring-width=6 --show-failed-attempts \
+        --inside-color="${bg}b0" --ring-color="${blue}cc" --line-uses-inside \
+        --separator-color=00000000 --keyhl-color="${purple}ff" --bshl-color="${red}ff" \
+        --insidever-color="${bg}d0" --ringver-color="${cyan}ff" \
+        --insidewrong-color="${bg}d0" --ringwrong-color="${red}ff" \
+        --time-pos="ix:iy+12" --date-pos="ix:iy+150" --greeter-pos="ix:iy+180" \
+        --verif-pos="ix:iy+8" --wrong-pos="ix:iy+8" \
+        --verif-text="checking…" --wrong-text="wrong password" --noinput-text="empty" \
+        --lock-text="locking…" --lockfailed-text="lock failed!" \
+        "$@"
+fi
+set -- --nofork --ignore-empty-password \
+    --image="$background" --fill --color="$bg" \
+    --clock --force-clock --time-str="%H:%M" --date-str="%A %-d %B" \
+    --time-font="$font" --date-font="$font" --greeter-font="$font" \
+    --verif-font="$font" --wrong-font="$font" \
+    --time-size=48 --date-size=16 --greeter-size=15 --verif-size=18 --wrong-size=18 \
+    --time-color="${fg}ff" --date-color="${fg}cc" --greeter-color="${fg}99" \
+    --verif-color="${cyan}ff" --wrong-color="${red}ff" \
+    --greeter-text="$(id -un) · type your password, Enter" \
+    --pass-media-keys --pass-volume-keys "$@"
+
+# The screen goes off a minute after locking; a key (Shift is best: it types
+# nothing) or the mouse wakes it. exec keeps this PID for the lock
+lock=$$
+(sleep 60; kill -0 "$lock" 2>/dev/null && xset dpms force off) &
+
+if [ "$away" ]; then
+    exec systemd-inhibit --what=sleep:idle:handle-lid-switch --mode=block \
+         --who="anthe-lock --away" --why="Locked, working while away" \
+         i3lock-color "$@"
+fi
+exec i3lock-color "$@"

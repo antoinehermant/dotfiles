@@ -441,6 +441,9 @@ instance's, is in `anthe/exwm-floating-classes'."
   ;; Mounts USB drives and SD cards as they are plugged in, on
   ;; /run/media/anthe/LABEL, and says so; SPC k u ejects one (anthe-bar.el)
   (efs/run-in-background "udiskie --automount --notify --no-tray --no-file-manager")
+  ;; Locks the screen before the laptop sleeps (lid closed) and after the
+  ;; screen saver's 10 minutes idle (bin/anthe-lock)
+  (efs/run-in-background "xss-lock -- anthe-lock")
 
   (exwm-wm-mode))
 
@@ -487,6 +490,23 @@ instance's, is in `anthe/exwm-floating-classes'."
         :desc "Toggle floating" "SPC" #'exwm-floating-toggle-floating
         :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
+
+;; Lock the screen: black until the password and Enter.  Everything goes on
+;; running behind it; the away lock also keeps the laptop from sleeping until
+;; unlocked, lid closed or not, so Claude can work while you're away
+(defun anthe-lock ()
+  "Lock the screen.  Closing the lid still suspends the laptop."
+  (interactive)
+  (start-process "anthe-lock" nil "anthe-lock"))
+
+(defun anthe-lock-away ()
+  "Lock the screen and keep the laptop awake until unlocked, lid closed or not."
+  (interactive)
+  (start-process "anthe-lock" nil "anthe-lock" "--away"))
+
+(map! :leader
+      :desc "Lock the screen" "k z" #'anthe-lock
+      :desc "Lock, keep working" "k Z" #'anthe-lock-away)
 
 ;; remap capslock to ctrl
 (shell-command "setxkbmap -layout us -variant altgr-intl")

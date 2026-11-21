@@ -33,6 +33,11 @@ mkdir -p ~/.config/dunst
 ln -sf ~/.dotfiles/rcfiles/dunstrc ~/.config/dunst/dunstrc
 ln -sf ~/.dotfiles/bin/notify-bell ~/.local/bin/notify-bell
 
+# The lock screen (SPC k z, SPC k Z away; xss-lock, started by EXWM):
+# i3lock-color with the Jarvis ring, built by hand in ~/.local/bin/i3lock-color
+# (rcfiles/i3lock/jarvis-ring.patch says how)
+ln -sf ~/.dotfiles/bin/anthe-lock ~/.local/bin/anthe-lock
+
 # Zathura, as an Emacs buffer in EXWM (its colours are written by Emacs)
 mkdir -p ~/.config/zathura
 ln -sf ~/.dotfiles/rcfiles/zathura/zathurarc ~/.config/zathura/zathurarc
