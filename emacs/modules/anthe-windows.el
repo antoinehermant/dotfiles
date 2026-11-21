@@ -14,6 +14,8 @@
 ;;
 ;;; Code:
 
+(require 'color)
+
 ;; Without these, windows snap to whole character cells
 (setq window-resize-pixelwise t
       frame-resize-pixelwise t)
@@ -90,6 +92,87 @@ otherwise the left or top one, so the border follows the key."
 
 (map! :leader
       :desc "Resize windows" "w ." #'anthe/window-resize)
+
+;;; A gentle flash of the window switched into, to see where the cursor went
+;;; among many windows: its text's background goes a little towards the text
+;;; colour and fades back.  Only with three windows or more on the frame; not
+;;; on coming back from the minibuffer, nor in EXWM buffers (an X window,
+;;; which an overlay can't tint).
+
+(defvar anthe/window-flash-strength 0.09
+  "How far towards the text colour the flash takes the background, 0 to 1.")
+
+(defvar anthe/window-flash-duration 0.4
+  "Seconds the flash takes to fade.")
+
+(defvar anthe/window-flash--steps 12)
+(defvar anthe/window-flash--overlay nil)
+(defvar anthe/window-flash--timer nil)
+(defvar anthe/window-flash--last nil
+  "The window last selected, but the minibuffer's.")
+
+(defun anthe/window-flash--stop ()
+  "End the flash going on."
+  (when (timerp anthe/window-flash--timer)
+    (cancel-timer anthe/window-flash--timer))
+  (when (overlayp anthe/window-flash--overlay)
+    (delete-overlay anthe/window-flash--overlay))
+  (setq anthe/window-flash--timer nil
+        anthe/window-flash--overlay nil))
+
+(defun anthe/window-flash (&optional window)
+  "Flash the text of WINDOW, the selected one by default, gently."
+  (interactive)
+  (anthe/window-flash--stop)
+  (let* ((window (or window (selected-window)))
+         (background (color-name-to-rgb (face-background 'default nil t)))
+         (foreground (color-name-to-rgb (face-foreground 'default nil t)))
+         (overlay (with-current-buffer (window-buffer window)
+                    (make-overlay (window-start window) (window-end window t))))
+         (step 0))
+    (when (and background foreground)
+      ;; Only in this window, should the buffer show in others
+      (overlay-put overlay 'window window)
+      (overlay-put overlay 'priority 1000)
+      (setq anthe/window-flash--overlay overlay
+            anthe/window-flash--timer
+            (run-at-time
+             0 (/ anthe/window-flash-duration anthe/window-flash--steps)
+             (lambda ()
+               (if (>= step anthe/window-flash--steps)
+                   (anthe/window-flash--stop)
+                 ;; Fading fast first, then slowly
+                 (let ((amount (* anthe/window-flash-strength
+                                  (expt (- 1 (/ (float step) anthe/window-flash--steps)) 2))))
+                   (overlay-put overlay 'face
+                                `(:background
+                                  ,(apply #'color-rgb-to-hex
+                                          (append (cl-mapcar (lambda (b f) (+ b (* amount (- f b))))
+                                                             background foreground)
+                                                  '(2)))
+                                  :extend t)))
+                 (setq step (1+ step)))))))))
+
+(defun anthe/window-flash--selected (frame)
+  "Flash the window selected in FRAME, when it is another one."
+  (let ((window (frame-selected-window frame)))
+    (when (and (eq frame (selected-frame))
+               (not (window-minibuffer-p window))
+               (not (eq window anthe/window-flash--last)))
+      (setq anthe/window-flash--last window)
+      (unless (or (with-current-buffer (window-buffer window) (derived-mode-p 'exwm-mode))
+                  ;; With two windows, which one is selected is plain enough
+                  (< (length (window-list (window-frame window) 'nomini)) 3))
+        (anthe/window-flash window)))))
+
+(define-minor-mode anthe/window-flash-mode
+  "Flash the window switched into, gently."
+  :global t
+  (if anthe/window-flash-mode
+      (add-hook 'window-selection-change-functions #'anthe/window-flash--selected)
+    (remove-hook 'window-selection-change-functions #'anthe/window-flash--selected)))
+
+(anthe/window-flash-mode 1)
 
 (provide 'anthe-windows)
 ;;; anthe-windows.el ends here
