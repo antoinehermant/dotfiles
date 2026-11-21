@@ -1,0 +1,5 @@
+# Mounts the USB disk (/etc/fstab) as soon as it powers on, the Tapo strip
+# switching it on long after the pi booted. Installed to
+# /etc/udev/rules.d/90-storage1.rules; the fstab line is
+# UUID=3028895c-a8c1-4912-827b-b9e06b92b5c3 /mnt/storage1 ext4 defaults,noatime,nofail,x-systemd.device-timeout=5s 0 2
+ACTION=="add", SUBSYSTEM=="block", ENV{ID_FS_UUID}=="3028895c-a8c1-4912-827b-b9e06b92b5c3", ENV{SYSTEMD_WANTS}+="mnt-storage1.mount"

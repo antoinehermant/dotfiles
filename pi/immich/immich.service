@@ -1,0 +1,20 @@
+# Immich while the USB disk is mounted, installed to
+# /etc/systemd/system/immich.service. It starts as the disk mounts and
+# stops before it unmounts (nas_power.py's off).
+[Unit]
+Description=Immich photos, while the USB disk is mounted
+Requires=docker.service
+BindsTo=mnt-storage1.mount
+After=docker.service mnt-storage1.mount wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/immich
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=mnt-storage1.mount

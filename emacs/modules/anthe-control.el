@@ -29,10 +29,36 @@
   (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py sound_system")))
     (message "%s" output)))
 
+;; The Pi's USB disk, through its power page on the Pi (pi/nas-power), which
+;; unmounts it before switching its Tapo socket off: from anywhere on the
+;; WireGuard, and never cut while in use.
+(defvar anthe/nas-power-url "http://10.158.145.1:8095")
+
 (defun my-switch-drive-1 ()
+  "Switch the Pi's USB disk off if it is on, on otherwise."
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py drive_1")))
-    (message "%s" output)))
+  (let* ((status (ignore-errors
+                   (json-parse-string
+                    (shell-command-to-string
+                     (format "curl -s -m 10 %s/status" anthe/nas-power-url))
+                    :object-type 'plist)))
+         (action (if (eq (plist-get status :socket) t) "off" "on"))
+         (buffer (generate-new-buffer " *nas-power*")))
+    (if (not status)
+        (message "The Pi's disk page doesn't answer (WireGuard up?)")
+      (message "Switching the Pi's disk %s…" action)
+      ;; Switching on waits for the disk to mount, up to 90 s
+      (make-process
+       :name "nas-power" :buffer buffer :noquery t
+       :command (list "curl" "-s" "-m" "120" "-X" "POST"
+                      (format "%s/%s" anthe/nas-power-url action))
+       :sentinel (lambda (process _event)
+                   (unless (process-live-p process)
+                     (message "%s" (with-current-buffer buffer
+                                     (if (string-empty-p (buffer-string))
+                                         "The Pi's disk page didn't answer"
+                                       (string-trim (buffer-string)))))
+                     (kill-buffer buffer)))))))
 
 (defun my-switch-desk-lamp ()
   (interactive)

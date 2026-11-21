@@ -1,0 +1,24 @@
+# Over Immich's own docker-compose.yml, both in /opt/immich on the Pi.
+# Photos and videos live on the USB disk, the database on the SD card
+# (/opt/immich/.env, not here as it holds the database password).
+#
+# immich.service starts and stops Immich with the disk, so Docker doesn't
+# restart it by itself, at boot for instance, while the disk is off.
+# Only on the WireGuard address, as Radicale.
+services:
+  immich-server:
+    ports: !override
+      - '10.158.145.1:2283:2283'
+    restart: "no"
+    # Nothing restarts it, so it waits for the database rather than failing
+    depends_on: !override
+      redis:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+  immich-machine-learning:
+    restart: "no"
+  redis:
+    restart: "no"
+  database:
+    restart: "no"
