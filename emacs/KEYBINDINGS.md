@@ -188,3 +188,4 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 - Agenda `l` (`SPC o a a l`): what was done, latest first, with the day; `s t` or `\` filters by tag.
 - Skip a habit (or any repeating task) to its next time without marking it done, so nothing is logged: `SPC m s` in the agenda, `SPC m d n` in Org (`anthe-tasks-skip`).
 - Week and month calendars: an event lasting a day or more (a trip) is a bar on top across its days, with its start time, `… Title` in the weeks after its first; it no longer stretches the hours to midnight. The hover gives its end day.
+- Agenda `h` (`SPC o a a h`), Later: what waits, out of the other views (HOLD: after something else, WAIT: on someone, IDEA, and what is scheduled after today), for the weekly review. The dashboard and PhD views no longer list HOLD and IDEA, nor a task scheduled later before its day; the PhD view's Idea section went there.

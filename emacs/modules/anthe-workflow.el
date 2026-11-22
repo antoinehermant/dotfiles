@@ -151,15 +151,19 @@ window, the days before hidden above it, where scrolling up shows them.")
             ;;   ((org-agenda-overriding-header "Habits")))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
             ;; Everything in the Inbox here; the sections below, only what is
-            ;; out of it, so nothing shows twice
-            (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
+            ;; out of it, so nothing shows twice. HOLD and IDEA wait in the
+            ;; Later view (h), and what is scheduled later waits for its day
+            (tags-todo "inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Inbox")))
             (tags-todo "phd-inbox/TODO"
                        ((org-agenda-overriding-header "PhD Tasks")
                         (org-agenda-todo-ignore-deadlines 'far)))
-            (tags-todo "+perso-habit-inbox" ((org-agenda-overriding-header "Personal Tasks")))
-            (tags-todo "+piano-inbox" ((org-agenda-overriding-header "Piano")))
-            (tags-todo "+emacs-inbox" ((org-agenda-overriding-header "Emacs Project"))))
-           ((anthe/agenda-from-today t)))
+            (tags-todo "+perso-habit-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Personal Tasks")))
+            (tags-todo "+piano-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Piano")))
+            (tags-todo "+emacs-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Emacs Project"))))
+           ((anthe/agenda-from-today t)
+            ;; A task scheduled later stays out of the lists until its day
+            (org-agenda-tags-todo-honor-ignore-options t)
+            (org-agenda-todo-ignore-scheduled 'future)))
 
           ;; ("n" "Next Tasks"
           ;;  ((todo "NEXT"
@@ -192,7 +196,7 @@ window, the days before hidden above it, where scrolling up shows them.")
                          (quote ((agenda time-up priority-down tag-up))))))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
             ;; Only the work in the Inbox, and the projects below without it
-            (tags-todo "inbox+phd" ((org-agenda-overriding-header "Inbox (PhD)")))
+            (tags-todo "inbox+phd/-HOLD-IDEA" ((org-agenda-overriding-header "Inbox (PhD)")))
             (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
             (tags-todo "phd+ice_core-inbox/TODO" ((org-agenda-overriding-header "  Ice Core")
                                                   (org-agenda-compact-blocks t)))
@@ -201,14 +205,14 @@ window, the days before hidden above it, where scrolling up shows them.")
             (tags-todo "phd/PROJ"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Project Tasks")))
-            (tags-todo "phd/IDEA"
-                       ((org-agenda-span 7)
-                        (org-agenda-overriding-header "Idea Tasks")))
-            (tags-todo "phd+admin-inbox"
+            (tags-todo "phd+admin-inbox/-HOLD-IDEA"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Admin"))))
            ;; ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
-           ((anthe/agenda-from-today t)))
+           ((anthe/agenda-from-today t)
+            ;; A task scheduled later stays out of the lists until its day
+            (org-agenda-tags-todo-honor-ignore-options t)
+            (org-agenda-todo-ignore-scheduled 'future)))
 
           ;; Low-effort next actions
           ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"

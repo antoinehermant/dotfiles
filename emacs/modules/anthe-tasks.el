@@ -19,6 +19,8 @@
 ;;   `SPC k o A' archives every DONE and KILL of the agenda files at once.
 ;; - The agenda `l' (`SPC o a a l') lists what was done, latest first;
 ;;   `s t' or `\' filters it by tag.
+;; - The agenda `h' (`SPC o a a h'): what waits (HOLD, WAIT, IDEA, scheduled
+;;   later), out of the other views; read at the weekly review.
 ;;
 ;;; Code:
 
@@ -332,7 +334,22 @@ the current buffer."
                          (org-agenda-prefix-format '((tags . " %(anthe-tasks--closed-date)  %-12:c")))
                          (org-agenda-sorting-strategy '((tags user-defined-down)))
                          (org-agenda-cmp-user-defined #'anthe-tasks--cmp-closed)))))
+               t)
+  ;; What waits, out of the other views: read at the weekly review
+  (add-to-list 'org-agenda-custom-commands
+               '("h" "Later: on hold, waiting, ideas, scheduled later"
+                 ((todo "HOLD" ((org-agenda-overriding-header "On hold: after something else")))
+                  (todo "WAIT" ((org-agenda-overriding-header "Waiting on someone")))
+                  (todo "IDEA" ((org-agenda-overriding-header "Ideas")))
+                  (tags-todo "-habit+SCHEDULED>=\"<tomorrow>\"/-HOLD-IDEA"
+                             ((org-agenda-overriding-header "Scheduled later")
+                              (org-agenda-prefix-format '((tags . " %-12:c %(anthe-tasks--scheduled-date)  ")))))))
                t))
+
+(defun anthe-tasks--scheduled-date ()
+  "The day the entry at point is scheduled, for the agenda prefix."
+  (let ((scheduled (org-entry-get nil "SCHEDULED")))
+    (if scheduled (substring scheduled 1 11) (make-string 10 ?\s))))
 
 ;;; Skipping a habit
 
