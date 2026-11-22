@@ -42,6 +42,8 @@ a colour like \"#82aaff\".  Other calendars take `violet'.")
 (cl-defstruct (anthe-week-event (:constructor anthe-week-event-create)
                                 (:copier nil))
   title calendar location description organizer id file pos start end all-day
+  ;; In the bars on top: all-day, or lasting a day or more
+  banner
   ;; The reminders, minutes before the start
   alarms
   ;; Absolute days, the first and the last; minutes from midnight
@@ -82,6 +84,7 @@ a colour like \"#82aaff\".  Other calendars take `violet'.")
                                 (+ (* 60 (decoded-time-hour decoded)) (decoded-time-minute decoded))))))
               (push (anthe-week-event-create
                      :title title :file file :pos pos :start start :end stop :all-day all-day
+                     :banner (or all-day (>= (float-time (time-subtract stop start)) 86400))
                      :calendar (funcall field "^:CALENDAR: *\\(.*\\)$")
                      :location (let ((where (funcall field "^- Where: *\\(.*\\)$")))
                                  (unless (equal where "") where))
@@ -92,8 +95,11 @@ a colour like \"#82aaff\".  Other calendars take `violet'.")
                      :id id :alarms (and id alarms (gethash id alarms))
                      :first (time-to-days start) :last (time-to-days stop)
                      :from (funcall minutes start)
-                     ;; An event ending another day ends at midnight here
-                     :to (if (> (time-to-days stop) (time-to-days start)) (* 24 60)
+                     ;; An event ending another day ends at midnight here, unless
+                     ;; it lasts a day or more: a bar, ending at its time
+                     :to (if (and (> (time-to-days stop) (time-to-days start))
+                                  (< (float-time (time-subtract stop start)) 86400))
+                             (* 24 60)
                            (funcall minutes stop)))
                     events)))
           (goto-char end)))
@@ -263,10 +269,11 @@ set their lane, and the lanes of the events at the same time as them."
           (push e group)))
       (close))))
 
-(defun anthe-week--event-text (event width row today now &optional continued)
+(defun anthe-week--event-text (event width row today now &optional continued earlier)
   "The ROW of EVENT's block, WIDTH wide: a coloured edge, then the time and
 the title, wrapped, then the place.  CONTINUED: only its colour, for the
-days after the first of an all-day event."
+days after the first of an event in the bars.  EARLIER: a bar begun before
+this week, its title without its time."
   (let* ((past (or (< (anthe-week-event-last event) today)
                    (and (= (anthe-week-event-last event) today)
                         (not (anthe-week-event-all-day event))
@@ -274,8 +281,11 @@ days after the first of an all-day event."
          (colour (anthe-week--calendar-colour event))
          (background (anthe-week--blend colour (if past 0.12 0.3)))
          (foreground (if past (face-foreground 'shadow nil t) (face-foreground 'default nil t)))
-         (lines (if (anthe-week-event-all-day event)
-                    (list (anthe-week-event-title event))
+         (lines (if (anthe-week-event-banner event)
+                    (list (if (anthe-week-event-all-day event)
+                              (anthe-week-event-title event)
+                            (concat (format-time-string "%H:%M " (anthe-week-event-start event))
+                                    (anthe-week-event-title event))))
                   (append (split-string
                            (string-fill (concat (format-time-string "%H:%M" (anthe-week-event-start event))
                                                 " " (anthe-week-event-title event))
@@ -283,7 +293,9 @@ days after the first of an all-day event."
                            "\n")
                           (when (anthe-week-event-location event)
                             (list (anthe-week-event-location event))))))
-         (line (if continued "" (or (nth row lines) "")))
+         (line (cond (continued "")
+                     (earlier (concat "… " (anthe-week-event-title event)))
+                     (t (or (nth row lines) ""))))
          (text (concat (propertize (if continued " " "▎") 'face `(:foreground ,colour :background ,background))
                        (propertize (truncate-string-to-width line (max 0 (1- width)) nil ?\s "…")
                                    'face `(:foreground ,foreground :background ,background
@@ -317,7 +329,10 @@ command while point is on it, but not over what a command said."
                 (concat (format-time-string "%A %-d %B" (anthe-week-event-start event)) " to "
                         (format-time-string "%A %-d %B" (anthe-week-event-end event))))
             (concat (format-time-string "%A %-d %B, %H:%M" (anthe-week-event-start event))
-                    (format-time-string " to %H:%M" (anthe-week-event-end event))))
+                    (format-time-string (if (= (anthe-week-event-first event) (anthe-week-event-last event))
+                                            " to %H:%M"
+                                          " to %A %-d %B, %H:%M")
+                                        (anthe-week-event-end event))))
           (when (anthe-week-event-location event)
             (concat "\n" (anthe-week-event-location event)))
           (when (anthe-week-event-calendar event)
@@ -327,7 +342,7 @@ command while point is on it, but not over what a command said."
   "Insert the week from MONDAY, an absolute day, at most WIDTH columns wide.
 COMPACT: a row an hour instead of two, and only the hours with events.
 Each cell has its day and time, as `anthe-week-slot', for adding an event."
-  (let* ((gutter 6)
+  (let* ((gutter 7)                  ; "all day" and a space
          (per-hour (if compact 1 2))
          (slot (/ 60 per-hour))
          (column (max 8 (1- (/ (- width gutter) 7))))
@@ -336,9 +351,9 @@ Each cell has its day and time, as `anthe-week-slot', for adding an event."
          (decoded (decode-time))
          (now (+ (* 60 (decoded-time-hour decoded)) (decoded-time-minute decoded)))
          (events (anthe-week--events monday (+ monday 6)))
-         (all-day (sort (seq-filter #'anthe-week-event-all-day events)
+         (all-day (sort (seq-filter #'anthe-week-event-banner events)
                         :key (lambda (e) (list (anthe-week-event-first e) (- (anthe-week-event-last e))))))
-         (timed (seq-remove #'anthe-week-event-all-day events))
+         (timed (seq-remove #'anthe-week-event-banner events))
          (hours (unless (and compact timed) (list anthe-week-hours)))
          (first-hour (apply #'min (append (mapcar #'car hours)
                                           (mapcar (lambda (e) (/ (anthe-week-event-from e) 60)) timed))))
@@ -396,7 +411,9 @@ Each cell has its day and time, as `anthe-week-slot', for adding an event."
                                     (anthe-week--blank (make-string column ?\s) nil)))
                   ;; The title on its first day this week, its colour on the others
                   ((or (= day monday) (= day (anthe-week-event-first e)))
-                   (insert (funcall separator) (anthe-week--event-text e column 0 today now)))
+                   (insert (funcall separator)
+                           (anthe-week--event-text e column 0 today now nil
+                                                   (< (anthe-week-event-first e) day))))
                   ;; The separator too, for one block
                   (t (insert (anthe-week--event-text e (1+ column) 0 today now t))))
             (funcall cell (- (point) column) day nil)))
@@ -407,9 +424,9 @@ Each cell has its day and time, as `anthe-week-slot', for adding an event."
              (minutes (+ (* 60 first-hour) (* row slot)))
              (line-face (and hour-line `(:overline ,grid))))
         (insert (cond ((eql row now-row)
-                       (propertize (format "%02d:%02d " (/ now 60) (% now 60)) 'face `(error bold ,@line-face)))
+                       (propertize (string-pad (format "%02d:%02d" (/ now 60) (% now 60)) gutter) 'face `(error bold ,@line-face)))
                       ((= 0 (% row per-hour))
-                       (propertize (format "%02d:00 " (+ first-hour (/ row per-hour))) 'face `(shadow ,@line-face)))
+                       (propertize (string-pad (format "%02d:00" (+ first-hour (/ row per-hour))) gutter) 'face `(shadow ,@line-face)))
                       (t (make-string gutter ?\s))))
         (dolist (day days)
           (let ((here (sort (seq-filter (lambda (e) (and (= (anthe-week-event-first e) day)
@@ -487,7 +504,7 @@ as many as fit, and how many more.  Each cell has its day, as
     (dotimes (week weeks)
       (let* ((monday (+ start (* 7 week)))
              (days (number-sequence monday (+ monday 6)))
-             (all-day (sort (seq-filter (lambda (e) (and (anthe-week-event-all-day e)
+             (all-day (sort (seq-filter (lambda (e) (and (anthe-week-event-banner e)
                                                          (<= (anthe-week-event-first e) (+ monday 6))
                                                          (>= (anthe-week-event-last e) monday)))
                                         events)
@@ -507,7 +524,7 @@ as many as fit, and how many more.  Each cell has its day, as
                                                                           (anthe-week-event-last e))))
                                                      all-day))
                                          (number-sequence 0 (1- (length lanes))))
-                                 (sort (seq-filter (lambda (e) (and (not (anthe-week-event-all-day e))
+                                 (sort (seq-filter (lambda (e) (and (not (anthe-week-event-banner e))
                                                                     (= (anthe-week-event-first e) day)))
                                                    events)
                                        :key #'anthe-week-event-from)))
@@ -530,7 +547,7 @@ as many as fit, and how many more.  Each cell has its day, as
                          (hidden (when (> (length here) fits)
                                    (seq-filter #'identity (nthcdr (1- fits) here))))
                          (item (and (> line 0) (nth (1- line) here)))
-                         (continued (and item (anthe-week-event-all-day item)
+                         (continued (and item (anthe-week-event-banner item)
                                          (> day (max monday (anthe-week-event-first item))))))
                     (unless continued (insert (funcall separator line-face)))
                     (cond
@@ -551,7 +568,7 @@ as many as fit, and how many more.  Each cell has its day, as
                                             'help-echo (mapconcat #'anthe-week--describe hidden "\n\n"))
                                 (funcall blank (max 0 (- column (length more)))))))
                      ((null item) (insert (funcall blank column)))
-                     ((anthe-week-event-all-day item)
+                     ((anthe-week-event-banner item)
                       (insert (anthe-week--event-text item (if continued (1+ column) column) 0 today now continued)))
                      (t (insert (anthe-week--month-event-text item column today now))))
                     (put-text-property (if continued cell (1+ cell)) (point) 'anthe-week-slot (cons day nil))))
