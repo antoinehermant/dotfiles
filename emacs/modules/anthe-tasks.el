@@ -334,6 +334,20 @@ the current buffer."
                          (org-agenda-cmp-user-defined #'anthe-tasks--cmp-closed)))))
                t))
 
+;;; Skipping a habit
+
+(defun anthe-tasks-skip ()
+  "Move a repeating task (a habit) to its next time without marking it done:
+nothing is logged, so the habit's graph keeps the day empty."
+  (interactive)
+  (let ((org-log-repeat nil)
+        (org-log-done nil)
+        (org-todo-log-states nil))
+    (if (derived-mode-p 'org-agenda-mode)
+        (org-agenda-todo "DONE")
+      (org-todo "DONE")))
+  (message "Skipped to the next time"))
+
 ;;; Keys
 
 (map! :leader
@@ -343,13 +357,15 @@ the current buffer."
 (map! :after org
       :map org-mode-map
       :localleader
-      :desc "To the Inbox" "r i" #'anthe-tasks-to-inbox)
+      :desc "To the Inbox" "r i" #'anthe-tasks-to-inbox
+      :desc "Skip to the next time" "d n" #'anthe-tasks-skip)
 
 (map! :after org-agenda
       :map org-agenda-mode-map
       :localleader
       :desc "To the Inbox" "i" #'anthe-tasks-to-inbox
-      :desc "Archive to the Log" "A" #'org-agenda-archive-default)
+      :desc "Archive to the Log" "A" #'org-agenda-archive-default
+      :desc "Skip to the next time" "s" #'anthe-tasks-skip)
 
 (provide 'anthe-tasks)
 ;;; anthe-tasks.el ends here
