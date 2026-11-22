@@ -76,15 +76,15 @@
 
   (setq org-capture-templates
         `(("t" "Tasks / Projects")
-          ("ti" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+          ("ti" "Inbox" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
           ;; From mu4e, %a is a link that opens the message
-          ("tm" "Mail" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+          ("tm" "Mail" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
            "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
           ("tw" "Work / PhD" entry (file+olp"~/org/roam/PhDRoadmap.org" "TODOLIST")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
-          ("tp" "Perso" entry (file+olp"~/org/roam/Tasks.org" "Perso")
-           "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ("tp" "Perso" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
+           "* TODO %? :perso:\n  %U\n  %i" :empty-lines 1)
           ("te" "Emacs" entry (file+olp"~/org/roam/Emacs.org" "TODOLIST")
            "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
           ;; ("e" "Events" entry (file+olp "~/org/roam/Events.org" "Calendar")

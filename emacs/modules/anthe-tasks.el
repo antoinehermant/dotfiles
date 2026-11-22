@@ -26,7 +26,7 @@
 (require 'org-id)
 (require 'org-roam)
 
-(defvar anthe-tasks-inbox-file (expand-file-name "~/org/roam/Tasks.org")
+(defvar anthe-tasks-inbox-file (expand-file-name "~/org/roam/Inbox.org")
   "The file of the Inbox.")
 
 (defvar anthe-tasks-inbox-heading "Inbox"

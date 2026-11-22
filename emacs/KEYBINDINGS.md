@@ -182,7 +182,7 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 
 - Task flow (`anthe-tasks.el`). The open TODOs of the last daily note move to today's under `* Carried over` (with `:SINCE:` and `:CARRIED:`), with a copy of that day's `Stopped` note; it runs when today's daily is opened or captured into, and once a day from 5:00 (agenda or a minute idle).
 - `SPC k n s`: the `Stopped` note of the hard stop in today's daily (doing, next step, still open, waiting on me, first thing tomorrow).
-- `SPC m r i` in Org, `SPC m i` in the agenda: move the TODO to the Inbox of `Tasks.org`.
+- `SPC m r i` in Org, `SPC m i` in the agenda: move the TODO to the Inbox (`~/org/roam/Inbox.org`, renamed from `Tasks.org`, one heading; `SPC X t p` captures there tagged `perso`).
 - `#` in a heading offers the tags in use; the one chosen becomes a tag of the heading.
 - `SPC m A` (Org, and now the agenda too) archives into `~/org/roam/Log.org`, a date tree in the agenda, the tags kept. `SPC k o A` archives every DONE and KILL of the agenda files (not the dailies), `C-u` the current buffer only.
 - Agenda `l` (`SPC o a a l`): what was done, latest first, with the day; `s t` or `\` filters by tag.
