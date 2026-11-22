@@ -27,6 +27,7 @@
 (require 'org)
 (require 'org-id)
 (require 'org-roam)
+(require 'org-roam-dailies)
 
 (defvar anthe-tasks-inbox-file (expand-file-name "~/org/roam/Inbox.org")
   "The file of the Inbox.")
@@ -170,10 +171,14 @@ The last \"Stopped\" note of that day is copied there too."
                    (if stopped " and the Stopped note" "")))))))
 
 (defun anthe-tasks--carry-over-once ()
-  "Carry over once a day, from 5:00, so a late night stays on its day."
-  (when (and (not (equal anthe-tasks--carried-on (format-time-string "%F")))
+  "Carry over once a day, from 5:00, so a late night stays on its day.
+Not while Emacs starts (the idle timer does it a minute later), and an
+error only shows a message: it runs from the agenda and a timer."
+  (when (and after-init-time
+             (not (equal anthe-tasks--carried-on (format-time-string "%F")))
              (>= (decoded-time-hour (decode-time)) 5))
-    (anthe-tasks-carry-over)))
+    (with-demoted-errors "Carry-over: %S"
+      (anthe-tasks-carry-over))))
 
 (defun anthe-tasks--carry-over-advice (&rest _)
   (anthe-tasks-carry-over))
