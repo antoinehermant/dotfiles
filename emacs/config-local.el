@@ -58,6 +58,7 @@
 (require 'anthe-vterm)
 (require 'anthe-windows)
 (require 'anthe-workflow)
+(require 'anthe-tasks)
 
 (map! :leader
       :desc "App launcher" "\\" #'app-launcher-run-app)
