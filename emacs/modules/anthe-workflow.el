@@ -131,6 +131,12 @@ window, the days before hidden above it, where scrolling up shows them.")
 
   (add-hook 'org-agenda-finalize-hook #'anthe/agenda-scroll-to-today 90)
 
+  (defun anthe/agenda-skip-non-work-inbox ()
+    "Skip the Inbox entries not tagged phd, for the PhD agenda."
+    (let ((tags (org-get-tags)))
+      (when (and (member "inbox" tags) (not (member "phd" tags)))
+        (or (outline-next-heading) (point-max)))))
+
   (setq org-agenda-custom-commands
         '(("d" "Dashboard"
            ((agenda "Agenda"
@@ -144,13 +150,15 @@ window, the days before hidden above it, where scrolling up shows them.")
             ;; (tags-todo "+habit" ;; FIXME: I could'nt make move habits to a specfic section because it shows it as regular task, not habit with the tracker
             ;;   ((org-agenda-overriding-header "Habits")))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
+            ;; Everything in the Inbox here; the sections below, only what is
+            ;; out of it, so nothing shows twice
             (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
-            (tags-todo "phd/TODO"
+            (tags-todo "phd-inbox/TODO"
                        ((org-agenda-overriding-header "PhD Tasks")
                         (org-agenda-todo-ignore-deadlines 'far)))
-            (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
-            (tags-todo "+piano" ((org-agenda-overriding-header "Piano")))
-            (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project"))))
+            (tags-todo "+perso-habit-inbox" ((org-agenda-overriding-header "Personal Tasks")))
+            (tags-todo "+piano-inbox" ((org-agenda-overriding-header "Piano")))
+            (tags-todo "+emacs-inbox" ((org-agenda-overriding-header "Emacs Project"))))
            ((anthe/agenda-from-today t)))
 
           ;; ("n" "Next Tasks"
@@ -179,24 +187,26 @@ window, the days before hidden above it, where scrolling up shows them.")
             ;; above, and ] and [ show the next and previous weeks whole
             (agenda "" ((org-agenda-span 'week)
                         (org-agenda-start-on-weekday 1)
+                        (org-agenda-skip-function #'anthe/agenda-skip-non-work-inbox)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
-            (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
+            ;; Only the work in the Inbox, and the projects below without it
+            (tags-todo "inbox+phd" ((org-agenda-overriding-header "Inbox (PhD)")))
             (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
-            (tags-todo "phd+ice_core/TODO" ((org-agenda-overriding-header "  Ice Core")
-                                            (org-agenda-compact-blocks t)))
-            (tags-todo "phd+database/TODO" ((org-agenda-overriding-header "  AntADatabase")
-                                            (org-agenda-compact-blocks t)))
+            (tags-todo "phd+ice_core-inbox/TODO" ((org-agenda-overriding-header "  Ice Core")
+                                                  (org-agenda-compact-blocks t)))
+            (tags-todo "phd+database-inbox/TODO" ((org-agenda-overriding-header "  AntADatabase")
+                                                  (org-agenda-compact-blocks t)))
             (tags-todo "phd/PROJ"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Project Tasks")))
             (tags-todo "phd/IDEA"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Idea Tasks")))
-            (tags-todo "phd+admin"
+            (tags-todo "phd+admin-inbox"
                        ((org-agenda-span 7)
-                        (org-agenda-overriding-header "Idea Tasks"))))
+                        (org-agenda-overriding-header "Admin"))))
            ;; ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
            ((anthe/agenda-from-today t)))
 
