@@ -82,9 +82,10 @@ Sending kills the compose buffer, but its window would show the shell."
 (dolist (command '(agent-shell-viewport-compose-send agent-shell-viewport-compose-cancel))
   (advice-add command :around #'anthe/agent-shell--close-compose-window))
 
-;; ;; With string
-(setq agent-shell-mistral-authentication
-      (agent-shell-mistral-make-authentication :api-key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
+;; Mistral, where its key is (not on the HPC)
+(when-let* ((key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
+  (setq agent-shell-mistral-authentication
+        (agent-shell-mistral-make-authentication :api-key key)))
 
 (setopt agent-shell-persistent-prompt-enabled t)
 (setq agent-shell-session-restore-verbosity 'last)
