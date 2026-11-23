@@ -1,0 +1,29 @@
+#!/bin/bash
+# Neovim's plugins, parsers and language servers as one archive in the home,
+# for UBELIX, where the home's network storage is slow to read many small
+# files: a login node unpacks it once to its local disk ($NVIM_LOCAL, which
+# nvim/lua/config/lazy.lua reads), and Neovim starts from there.
+#
+#   nvim-plugins unpack   $NVIM_LOCAL from the archive, if not there yet
+#   nvim-plugins pack     the archive from $NVIM_LOCAL (Neovim runs it after
+#                         :Lazy sync, install or update)
+set -euo pipefail
+LOCAL=${NVIM_LOCAL:-/tmp/$USER/nvim}
+ARCHIVE=${NVIM_ARCHIVE:-$HOME/.cache/nvim-local.tar.gz}
+
+case "${1:-}" in
+    unpack)
+        [ -d "$LOCAL/lazy" ] && exit 0
+        mkdir -p "$LOCAL" && chmod 700 "$(dirname "$LOCAL")"
+        [ -f "$ARCHIVE" ] && tar -xzf "$ARCHIVE" -C "$LOCAL"
+        ;;
+    pack)
+        [ -d "$LOCAL/lazy" ] || { echo "nvim-plugins: no $LOCAL/lazy" >&2; exit 1; }
+        mkdir -p "$(dirname "$ARCHIVE")"
+        tar -czf "$ARCHIVE.tmp" -C "$LOCAL" . && mv "$ARCHIVE.tmp" "$ARCHIVE"
+        ;;
+    *)
+        sed -n '2,10s/^# \{0,1\}//p' "$0"
+        exit 1
+        ;;
+esac
