@@ -20,9 +20,10 @@ function ubelix() {
 }
 
 # UBELIX's work session: tmux there (bin/hpc-session, on the hpc branch),
-# attached as left, with X forwarding for ncview and Emacs's windows
+# attached as left, with X forwarding for ncview and Emacs's windows.
+# hpc restart: a fresh one; hpc stop: end it
 function hpc() {
-    ssh -t -X ubelix3 '~/.dotfiles/bin/hpc-session'
+    ssh -t -X ubelix3 "~/.dotfiles/bin/hpc-session $*"
 }
 
 function hermant() {

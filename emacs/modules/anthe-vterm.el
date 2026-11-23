@@ -89,6 +89,23 @@
 
 (add-to-list 'vterm-eval-cmds '("anthe/vterm-raw" anthe/vterm-raw))
 
+;; tmux in a vterm (UBELIX's session): C-b, its prefix, goes to it in normal
+;; state too, with the key after it (C-b d would else be evil's delete)
+(defun anthe/vterm-tmux-prefix ()
+  "Send C-b and the next key to the terminal, whatever evil's state."
+  (interactive)
+  (vterm-send-key "b" nil nil t)
+  (let ((key (read-key "C-b ")))
+    (cond ((memq key '(up down left right))
+           (vterm-send-key (format "<%s>" key)))
+          ((and (characterp key) (< key 32))     ; C-something
+           (vterm-send-key (char-to-string (+ key 96)) nil nil t))
+          ((characterp key)
+           (vterm-send-string (char-to-string key))))))
+
+(evil-define-key '(normal visual motion) vterm-mode-map
+  (kbd "C-b") #'anthe/vterm-tmux-prefix)
+
 (defun multi-vterm-execute-region-or-current-line ()
   "Insert text of current line in multi-vterm and execute."
   (interactive)
