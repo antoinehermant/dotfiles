@@ -36,11 +36,11 @@
         (add-to-list 'default-frame-alist '(alpha-background . 100))
         (setq frame-transparency-toggle-state nil))
     (progn
-      (set-frame-parameter nil 'alpha-background 85)
-      (add-to-list 'default-frame-alist '(alpha-background . 85))
+      (set-frame-parameter nil 'alpha-background 90)
+      (add-to-list 'default-frame-alist '(alpha-background . 90))
       (setq frame-transparency-toggle-state t)))
   (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state 85 100)))
+           (if frame-transparency-toggle-state 90 100)))
 
 
 (set-frame-parameter nil 'alpha-background 85)

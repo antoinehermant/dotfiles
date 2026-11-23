@@ -48,7 +48,8 @@
   (start-process-shell-command
    ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
    ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
-   "feh" nil "feh --bg-scale /usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png"))
+   ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png"))
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/osselo-Ask_a_friend.jpg"))
 ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/98315-deep-space-wallpaper-1920x1080.jpg"))
 
 
