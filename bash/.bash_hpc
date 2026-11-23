@@ -17,10 +17,21 @@ _emc_run() {
 emc()   { _emc_run "$CONDA_BASE/envs/emacs/bin/emacs" "$@"; }
 doomc() { _emc_run "$HOME/.config/emacs/bin/doom" "$@"; }
 
-# Emacs's server "hpc" (bin/hpc-session starts it): et in this terminal, eg
-# in a window (X forwarding). If it doesn't run, the first starts it.
-et() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -t -a "" "$@"; }
-eg() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -c -n -a "" "$@"; }
+# My Emacs, always on in the session's second tab (bin/hpc-session): an
+# ordinary Emacs in the terminal, not a daemon (UBELIX kills those on its
+# login nodes), whose server "hpc" et and eg open: et in this terminal, eg
+# in a window (X forwarding; close those before disconnecting, as GTK's
+# Emacs may crash when its X connection goes).
+ehpc() {
+    _emc_run "$CONDA_BASE/envs/emacs/bin/emacs" -nw \
+        --eval '(progn (require (quote server)) (setq server-name "hpc") (server-start))' "$@"
+}
+_ehpc_client() {
+    _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc "$@" ||
+        echo "No Emacs running: in tmux's second tab, type ehpc (hpc restart starts all again)"
+}
+et() { _ehpc_client -t "$@"; }
+eg() { _ehpc_client -c -n "$@"; }
 
 # Neovim, 0.11 (the system's is 0.8), in any shell from the login node's
 # local disk (bin/nvim-plugins): unpacked first if it isn't yet
@@ -34,7 +45,7 @@ v() { nvim "$@"; }
 
 # My tmux session (bin/hpc-session): back to it after a plain ssh ubelix3,
 # or started if it doesn't run
-hpc() { ~/.dotfiles/bin/hpc-session; }
+hpc() { ~/.dotfiles/bin/hpc-session "$@"; }
 
 # In tmux, a shell started before the last connection keeps its X display:
 # read the session's again at each prompt, for ncview
