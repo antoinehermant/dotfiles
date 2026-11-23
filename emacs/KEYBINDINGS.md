@@ -47,7 +47,7 @@ In mu4e (main view, message list and message, Evil normal state), see
 `gu` UniBe go to the inbox of that account; `J` jumps to a folder, choosing
 the account first. `gb` opens the message at point in qutebrowser, for HTML
 that renders badly in Emacs. Saved searches (`b` then the key): `i` all the
-inboxes, `T` To do (flagged). In the main view, `q` only closes it, for the dashboard if nothing else is left in the workspace (mu4e goes
+inboxes, `T` To do (flagged). In the main view, `q` closes it (kills the buffer, for the dashboard if nothing else is left in the workspace; mu4e goes
 on syncing and notifying) and `Q` quits mu4e. `R` replies, `W` replies to all (in the message
 too, where it was Evil's next WORD).
 
