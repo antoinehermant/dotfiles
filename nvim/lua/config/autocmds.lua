@@ -1,8 +1,14 @@
--- Autocmds are automatically loaded on the VeryLazy event
--- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
---
--- Add any additional autocmds here
--- with `vim.api.nvim_create_autocmd`
---
--- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
--- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+-- Autocommands, after LazyVim's
+
+-- A NetCDF file opens in ncview (an X window), not as text
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  pattern = { "*.nc", "*.nc4", "*.netcdf" },
+  callback = function(ev)
+    require("config.hpc").ncview(ev.match)
+    vim.schedule(function()
+      if vim.api.nvim_buf_is_valid(ev.buf) then
+        vim.cmd("silent! bwipeout " .. ev.buf)
+      end
+    end)
+  end,
+})
