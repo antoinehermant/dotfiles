@@ -40,8 +40,8 @@
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/jedi-core-20250602.2109/")
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/company-jedi-20200324.25/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pyenv-mode/")
-(use-package! company-jedi)
-(add-to-list 'company-backends 'company-jedi)
+;; (use-package! company-jedi)
+;; (add-to-list 'company-backends 'company-jedi)
 
 (use-package! elpy
   :after python-mode

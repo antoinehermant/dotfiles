@@ -42,6 +42,7 @@
 (require 'anthe-vterm)
 
 (setq doom-theme 'doom-ayu-dark)
+(set-face-attribute 'default nil :height 126)
 ;;(add-to-list 'load-path "~/software/emacs-libvterm")
 
 (setq exec-path (append exec-path '("/software.9/software/CMake/3.26.3-GCCcore-12.3.0/bin")))
@@ -120,20 +121,24 @@
 (map! :leader
       :desc "Submit batch job" "k s" #'sbatch-buffer)
 
-(define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
-  "Major mode for displaying slurm queue."
-  (setq buffer-undo-list t)  ; Disable undo history
-  (setq buffer-offer-save nil)  ; Disable save prompts
-  (setq buffer-read-only t)  ; Make buffer read-only
-  (local-set-key (kbd "q") 'quit-window)
-  (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
-  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
-
 (defvar-local slurm-queue-timer nil
   "Timer for auto-reloading slurm queue.")
 
 (defvar slurm-queue-last-update 0
   "Timestamp of last update.")
+
+(define-derived-mode slurm-queue-mode special-mode "SlurmQueue"
+  "Major mode for displaying slurm queue."
+  (setq buffer-undo-list t)
+  (setq buffer-offer-save nil)
+  (setq buffer-read-only t)
+  (local-set-key (kbd "q") 'quit-window)
+  (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
+  (evil-local-set-key 'normal (kbd "r") 'slurm-queue-toggle-reload)
+  ;; Cancel existing timer if any before creating new one
+  (when slurm-queue-timer
+    (cancel-timer slurm-queue-timer))
+  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
 
 (defun slurm-queue-toggle-reload ()
   "Toggle auto-reload of slurm queue."
@@ -143,8 +148,9 @@
         (cancel-timer slurm-queue-timer)
         (setq slurm-queue-timer nil)
         (message "Slurm queue auto-reload disabled"))
-    (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
-    (message "Slurm queue auto-reload enabled (1s)")))
+    (progn
+      (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
+      (message "Slurm queue auto-reload enabled (1s)"))))
 
 (defun squeue-reload ()
   (interactive)
@@ -158,23 +164,24 @@
         (insert (shell-command-to-string command))
         (goto-char (point-min))))))
 
-
 (defun squeue (command)
   (interactive)
   (let ((buf-name "*slurm-squeue*"))
-    (let ((window (get-buffer-window buf-name)))
-      (if window
-          (progn
-            (when slurm-queue-timer
-              (cancel-timer slurm-queue-timer))
-            (quit-window nil window)
-            (kill-buffer buf-name))
-        (let ((new-buf (get-buffer-create buf-name)))
-          (with-current-buffer new-buf
-            (slurm-queue-mode)
-            (setq-local my-squeue-command command)
-            (squeue-reload))
-          (display-buffer new-buf))))))
+    ;; Always kill existing buffer first (if any) to clean up timers
+    (when-let ((existing-buf (get-buffer buf-name)))
+      (with-current-buffer existing-buf
+        (when slurm-queue-timer
+          (cancel-timer slurm-queue-timer)))
+      (when-let ((window (get-buffer-window buf-name)))
+        (quit-window nil window))
+      (kill-buffer existing-buf))
+    ;; Create fresh buffer with new timer
+    (let ((new-buf (get-buffer-create buf-name)))
+      (with-current-buffer new-buf
+        (slurm-queue-mode)
+        (setq-local my-squeue-command command)
+        (squeue-reload))
+      (display-buffer new-buf))))
 
 (defvar my-squeue-commands nil
   "A list of squeue commands")
@@ -198,7 +205,7 @@
   "Return window height for slurm-squeue buffer, capped at 1/3 of frame."
   (with-current-buffer buffer
     (min (1+ (count-lines (point-min) (point-max)))
-         (floor (* (frame-height) 0.33)))))
+         (floor (* (frame-height) 0.25)))))
 
 (add-to-list 'popper-reference-buffers "*slurm-squeue*")
 (add-to-list 'display-buffer-alist
@@ -225,6 +232,12 @@
 ;; Lauching LSP is slow there, so we don't start it on python-mode
 (remove-hook 'python-mode-hook #'lsp-deferred)
 (remove-hook 'python-mode-local-vars-hook #'lsp!)
+
+;; The conda Emacs starts without the modules' libraries, which clash with
+;; conda's (emc in ~/.bashrc): the programs it starts get them back, as
+;; ncview needs netCDF's (HDF5, udunits...), and vterm's shells their modules'
+(when-let ((libraries (getenv "MODULES_LD_LIBRARY_PATH")))
+  (setenv "LD_LIBRARY_PATH" libraries))
 
 (provide 'config-ubelix)
 ;;; config-ubelix.el ends here

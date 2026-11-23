@@ -142,7 +142,10 @@
 (map! :leader
       :desc "Find file at point" "f f" #'find-file-at-point
       :desc "Wrap lines" "t w" #'toggle-truncate-lines
-      :desc "async shell" "&" #'async-shell-command)
+      :desc "async shell" "&" #'async-shell-command
+      :desc "Workspace swap left" "TAB h" #'+workspace/swap-left
+      :desc "Workspace swap right" "TAB l" #'+workspace/swap-right
+      )
 
 (global-set-key (kbd "C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "C-<right>") 'enlarge-window-horizontally)
