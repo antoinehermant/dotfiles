@@ -19,15 +19,17 @@
 ;;
 ;;; Code:
 
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
-(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-web-server/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/emacs-websocket/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
 (straight-use-package 'elpy)
-(straight-use-package 'jupyter)
+;; (straight-use-package 'jupyter)
 ;; (use-package! python-mode)
 ;; (straight-use-package 'virtualenv)
 ;; (straight-use-package 'pipenv)
@@ -40,6 +42,8 @@
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/jedi-core-20250602.2109/")
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/company-jedi-20200324.25/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pyenv-mode/")
+(add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
+;; Off on UBELIX: slow, and LSP does it
 ;; (use-package! company-jedi)
 ;; (add-to-list 'company-backends 'company-jedi)
 
@@ -97,31 +101,56 @@
   ;; (evil-scroll-line-to-center nil)
   )
 
-(defun my-python-mode-setup ()
-  "Setup keybindings for Python mode."
-  (map! :map python-mode-map
-        :leader
-        :desc "Run region or line in Python shell" "r j" #'python-shell-send-region-or-current-line
-        :desc "Run buffer in Python shell" "r b" #'python-shell-send-buffer
-        :desc "Run current cell in Python shell" "r [" #'my-run-cell-and-forward-cell
-        :desc "Activate pyvenv" "r a" #'pyvenv-activate
-        :desc "Run python" "r p" #'run-python
-        :desc "Run python" "r r" #'python-shell-restart
-        :desc "Forward to next cell" "]" #'code-cells-forward-cell
-        :desc "Backward to previous cell" "[" #'code-cells-backward-cell
-        :desc "Jupyter run REPL" "r J" #'jupyter-run-repl))
+(defun anthe/jupyter-run-repl ()
+  "Run `jupyter-run-repl', activating the jupyter package on first use."
+  (interactive)
+  (unless (fboundp 'jupyter-run-repl)
+    (straight-use-package 'jupyter)
+    (require 'jupyter-repl))
+  (call-interactively #'jupyter-run-repl))
 
-(add-hook 'python-mode-hook #'my-python-mode-setup)
+(defun anthe/python-only (command)
+  "Return COMMAND as a binding only active in Python or code cells buffers.
+A `:leader' binding ignores `:map' and is global, so the mode is checked instead."
+  `(menu-item "" ,command
+    :filter ,(lambda (cmd) (when (or (derived-mode-p 'python-base-mode)
+                                     (bound-and-true-p code-cells-mode))
+                             cmd))))
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode))
 
+(defun anthe/python-shell-exit-sentinel (process _event)
+  "Close the window and kill the buffer of a Python shell that exited.
+Only on `exit' (`exit()' or EOF): `python-shell-restart' kills the process
+with a signal and reuses the buffer."
+  (when (and (eq (process-status process) 'exit)
+             (buffer-live-p (process-buffer process)))
+    (let ((buffer (process-buffer process)))
+      (dolist (window (get-buffer-window-list buffer nil t))
+        (quit-window nil window))
+      (kill-buffer buffer))))
+
+(defun anthe/python-shell-kill-on-exit ()
+  "Kill the Python shell buffer when its process exits, like vterm."
+  (when-let ((process (get-buffer-process (current-buffer))))
+    (add-function :after (process-sentinel process)
+                  #'anthe/python-shell-exit-sentinel)))
+
+(add-hook 'inferior-python-mode-hook #'anthe/python-shell-kill-on-exit)
+
 ;; Keybindings
 (map! :leader
-      :desc "Forward to next cell" "]" #'code-cells-forward-cell
-      :desc "Backward to previous cell" "[" #'code-cells-backward-cell
+      ;; Start a REPL from anywhere
       :desc "Activate conda env" "r a" #'pyvenv-activate
       :desc "Run python" "r p" #'run-python
-      :desc "Jupyter run REPL" "r J" #'jupyter-run-repl)
+      :desc "Jupyter run REPL" "r J" #'anthe/jupyter-run-repl
+      ;; Only in Python buffers
+      :desc "Forward to next cell" "]" (anthe/python-only #'code-cells-forward-cell)
+      :desc "Backward to previous cell" "[" (anthe/python-only #'code-cells-backward-cell)
+      :desc "Run region or line in Python shell" "r j" (anthe/python-only #'python-shell-send-region-or-current-line)
+      :desc "Run buffer in Python shell" "r b" (anthe/python-only #'python-shell-send-buffer)
+      :desc "Run current cell in Python shell" "r ]" (anthe/python-only #'my-run-cell-and-forward-cell)
+      :desc "Restart Python shell" "r r" (anthe/python-only #'python-shell-restart))
 
 (provide 'anthe-python)
 ;;; anthe-python.el ends here

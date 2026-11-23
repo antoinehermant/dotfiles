@@ -76,12 +76,15 @@
 
   (setq org-capture-templates
         `(("t" "Tasks / Projects")
-          ("ti" "Inbox" entry (file+olp"~/org/roam/Tasks.org" "Inbox")
+          ("ti" "Inbox" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ;; From mu4e, %a is a link that opens the message
+          ("tm" "Mail" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
           ("tw" "Work / PhD" entry (file+olp"~/org/roam/PhDRoadmap.org" "TODOLIST")
            "* TODO %?\n  %U\n  %i" :empty-lines 1)
-          ("tp" "Perso" entry (file+olp"~/org/roam/Tasks.org" "Perso")
-           "* TODO %?\n  %U\n  %i" :empty-lines 1)
+          ("tp" "Perso" entry (file+olp"~/org/roam/Inbox.org" "Inbox")
+           "* TODO %? :perso:\n  %U\n  %i" :empty-lines 1)
           ("te" "Emacs" entry (file+olp"~/org/roam/Emacs.org" "TODOLIST")
            "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
           ;; ("e" "Events" entry (file+olp "~/org/roam/Events.org" "Calendar")
@@ -105,12 +108,41 @@
                   (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :weight 'bold :height (cdr face)))
 
+  (defvar anthe/agenda-from-today nil
+    "Non-nil in an agenda block: show it from today's date at the top of the
+window, the days before hidden above it, where scrolling up shows them.")
+
+  (defun anthe/agenda-scroll-to-today ()
+    "Show the agenda from today, or from its top for another week, when
+`anthe/agenda-from-today' asks (set by the custom command, also on redo)."
+    (when anthe/agenda-from-today
+      (let ((today (save-excursion
+                     (goto-char (point-min))
+                     (let (found match)
+                       (while (and (not found)
+                                   (setq match (text-property-search-forward 'org-date-line t t)))
+                         (when (eql (get-text-property (prop-match-beginning match) 'day) (org-today))
+                           (setq found (prop-match-beginning match))))
+                       found))))
+        (goto-char (or today (point-min)))
+        (when-let ((window (get-buffer-window (current-buffer))))
+          (set-window-point window (point))
+          (set-window-start window (line-beginning-position))))))
+
+  (add-hook 'org-agenda-finalize-hook #'anthe/agenda-scroll-to-today 90)
+
+  (defun anthe/agenda-skip-non-work-inbox ()
+    "Skip the Inbox entries not tagged phd, for the PhD agenda."
+    (let ((tags (org-get-tags)))
+      (when (and (member "inbox" tags) (not (member "phd" tags)))
+        (or (outline-next-heading) (point-max)))))
+
   (setq org-agenda-custom-commands
         '(("d" "Dashboard"
            ((agenda "Agenda"
-                    ((org-agenda-start-day "0d")
-                     (org-agenda-span (- 8  (string-to-number (format-time-string "%u"))))
-                     (org-agenda-start-on-weekday nil)
+                    ;; The whole week, scrolled to today, as the PhD agenda
+                    ((org-agenda-span 'week)
+                     (org-agenda-start-on-weekday 1)
                      ;; (org-agenda-start-day "0")
                      ;; (org-agenda-skip-function
                      ;; '(org-agenda-skip-entry-if 'regexp ":habit:"))
@@ -118,13 +150,20 @@
             ;; (tags-todo "+habit" ;; FIXME: I could'nt make move habits to a specfic section because it shows it as regular task, not habit with the tracker
             ;;   ((org-agenda-overriding-header "Habits")))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
-            (tags-todo "inbox" ((org-agenda-overriding-header "Inbox")))
-            (tags-todo "phd/TODO"
+            ;; Everything in the Inbox here; the sections below, only what is
+            ;; out of it, so nothing shows twice. HOLD and IDEA wait in the
+            ;; Later view (h), and what is scheduled later waits for its day
+            (tags-todo "inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Inbox")))
+            (tags-todo "phd-inbox/TODO"
                        ((org-agenda-overriding-header "PhD Tasks")
                         (org-agenda-todo-ignore-deadlines 'far)))
-            (tags-todo "+perso-habit" ((org-agenda-overriding-header "Personal Tasks")))
-            (tags-todo "+piano" ((org-agenda-overriding-header "Piano")))
-            (tags-todo "+emacs" ((org-agenda-overriding-header "Emacs Project")))))
+            (tags-todo "+perso-habit-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Personal Tasks")))
+            (tags-todo "+piano-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Piano")))
+            (tags-todo "+emacs-inbox/-HOLD-IDEA" ((org-agenda-overriding-header "Emacs Project"))))
+           ((anthe/agenda-from-today t)
+            ;; A task scheduled later stays out of the lists until its day
+            (org-agenda-tags-todo-honor-ignore-options t)
+            (org-agenda-todo-ignore-scheduled 'future)))
 
           ;; ("n" "Next Tasks"
           ;;  ((todo "NEXT"
@@ -147,28 +186,33 @@
           ("w" "PhD Agenda"
            (
             ;; (tags-todo "+dailies+SCHEDULED<=\"<today>+1\"")
-            (anthe-org-roam-refresh-agenda-list '("phd" "calendar"))
-            (agenda "" ((org-agenda-start-day "0d")
-                        (org-agenda-span 7)
+            (anthe-org-roam-refresh-agenda-list '("phd" "calendar" "inbox"))
+            ;; The whole week from Monday, scrolled to today: the days before are
+            ;; above, and ] and [ show the next and previous weeks whole
+            (agenda "" ((org-agenda-span 'week)
+                        (org-agenda-start-on-weekday 1)
+                        (org-agenda-skip-function #'anthe/agenda-skip-non-work-inbox)
                         (org-agenda-sorting-strategy
                          (quote ((agenda time-up priority-down tag-up))))))
             (tags-todo "@daily" ((org-agenda-overriding-header "Daily Notes")))
+            ;; Only the work in the Inbox, and the projects below without it
+            (tags-todo "inbox+phd/-HOLD-IDEA" ((org-agenda-overriding-header "Inbox (PhD)")))
             (tags-todo "LEVEL=999" ((org-agenda-overriding-header "Active Projects")))
-            (tags-todo "phd+ice_core/TODO" ((org-agenda-overriding-header "  Ice Core")
-                                            (org-agenda-compact-blocks t)))
-            (tags-todo "phd+database/TODO" ((org-agenda-overriding-header "  AntADatabase")
-                                            (org-agenda-compact-blocks t)))
+            (tags-todo "phd+ice_core-inbox/TODO" ((org-agenda-overriding-header "  Ice Core")
+                                                  (org-agenda-compact-blocks t)))
+            (tags-todo "phd+database-inbox/TODO" ((org-agenda-overriding-header "  AntADatabase")
+                                                  (org-agenda-compact-blocks t)))
             (tags-todo "phd/PROJ"
                        ((org-agenda-span 7)
                         (org-agenda-overriding-header "Project Tasks")))
-            (tags-todo "phd/IDEA"
+            (tags-todo "phd+admin-inbox/-HOLD-IDEA"
                        ((org-agenda-span 7)
-                        (org-agenda-overriding-header "Idea Tasks")))
-            (tags-todo "phd+admin"
-                       ((org-agenda-span 7)
-                        (org-agenda-overriding-header "Idea Tasks"))))
+                        (org-agenda-overriding-header "Admin"))))
            ;; ((org-agenda-category-filter-preset '("+calendar" "+PhD")))
-           )
+           ((anthe/agenda-from-today t)
+            ;; A task scheduled later stays out of the lists until its day
+            (org-agenda-tags-todo-honor-ignore-options t)
+            (org-agenda-todo-ignore-scheduled 'future)))
 
           ;; Low-effort next actions
           ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
@@ -185,6 +229,14 @@
 (setq org-wild-notifier-alert-times-property "NOTIF") 
 
 (setq alert-default-style 'notifications)
+;; Its check runs in another Emacs, which would stop at the question of a file
+;; missing, today's daily note before it's written, and so never notify
+(setq org-agenda-skip-unavailable-files t)
+(add-to-list 'org-wild-notifier-additional-environment-regexes
+             "\\`org-agenda-skip-unavailable-files\\'")
+;; The calendar's events have their own reminders (anthe-week.el); khalel tags
+;; them with their calendar
+(setq org-wild-notifier-tags-blacklist '("infomaniak" "outlook"))
 (org-wild-notifier-mode)
 (add-to-list 'org-default-properties "NOTIF")
 
@@ -263,7 +315,7 @@
 ;; (require 'org-caldav)
 
 ;; ;; URL of the caldav server
-;; (setq org-caldav-url "https://sync.infomaniak.com/calendars/AH07332")
+;; (setq org-caldav-url "https://sync.infomaniak.com/calendars/USER")
 
 ;; ;; calendar ID on server
 ;; (setq org-caldav-calendar-id "8f599f55-213b-43b2-a84f-ba16a2aa36f6")
@@ -278,13 +330,70 @@
 ;; (setq org-icalendar-timezone "Europe/Berlin")
 
 (map! :leader
-      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib
-      :desc "View citation network" "k c v" #'view-citation-network
-      :desc "Batch process bib entries" "k c b" #'batch-process-bib-entries
-      :desc "Goto today's notes" "k n d" (lambda () (interactive) (org-roam-dailies-goto-today "d"))
       :desc "Goto today's journal" "k n j" #'anthe-roam-journal-goto-today
       :desc "Org capture" "k x" #'org-capture
-      :desc "Org Agenda" "k a" #'org-agenda)
+      :desc "Org Agenda" "k a" #'org-agenda
+      :desc "Workspace swap left" "TAB h" #'+workspace/swap-left
+      :desc "Workspace swap right" "TAB l" #'+workspace/swap-right
+      )
+
+;; A project opens in its own workspace, never in the main one, even empty:
+;; main stays the first workspace
+(setq +workspaces-on-switch-project-behavior t)
+
+(defun anthe/workspace-keep-main (&rest _)
+  "Make the main workspace if it is gone, and keep it first."
+  (when (bound-and-true-p persp-mode)
+    (unless (+workspace-exists-p +workspaces-main)
+      (save-window-excursion (+workspace-new +workspaces-main)))
+    (let ((first (list persp-nil-name +workspaces-main)))
+      (setq persp-names-cache
+            (append first (seq-difference persp-names-cache first))))))
+
+(add-hook 'persp-mode-hook #'anthe/workspace-keep-main)
+(add-hook 'persp-created-functions #'anthe/workspace-keep-main)
+(add-hook 'projectile-after-switch-project-hook #'anthe/workspace-keep-main)
+
+;; Doom finds a project's workspace by its `+workspace-project' parameter
+;; only, which a recycled or restored workspace lacks: it then made a second
+;; one, "python/anta_database" beside "anta_database"
+(defun anthe/workspace-of-project (root)
+  "The workspace of the project ROOT: by its parameter, else its name or buffers."
+  (let* ((root (file-truename (file-name-as-directory root)))
+         (name (let ((default-directory root)) (doom-project-name)))
+         (persps (delq nil (persp-persps)))
+         (unmarked (seq-remove (lambda (ws)
+                                 (or (persp-parameter '+workspace-project ws)
+                                     (+workspace--protected-p (persp-name ws))))
+                               persps)))
+    (or (seq-find (lambda (ws)
+                    (ignore-errors
+                      (file-equal-p (persp-parameter '+workspace-project ws) root)))
+                  persps)
+        (seq-find (lambda (ws) (equal (persp-name ws) name)) unmarked)
+        (seq-find (lambda (ws)
+                    (seq-some (lambda (buffer)
+                                (and (buffer-file-name buffer)
+                                     (file-in-directory-p
+                                      (buffer-file-name buffer) root)))
+                              (persp-buffers ws)))
+                  unmarked))))
+
+(defun anthe/workspace-switch-to-project (&optional dir)
+  "Switch to the workspace of the project DIR if there is one.
+Before `+workspaces-switch-to-project-h', which then does nothing."
+  (when-let* (((bound-and-true-p persp-mode))
+              (root (file-truename (or dir default-directory)))
+              (ws (anthe/workspace-of-project root)))
+    (set-persp-parameter '+workspace-project root ws)
+    (+workspace-switch (persp-name ws))
+    (unless current-prefix-arg
+      (funcall +workspaces-switch-project-function root))
+    (+workspace-message (format "Switched to '%s'" (persp-name ws)) 'success)
+    t))
+
+(advice-add '+workspaces-switch-to-project-h :before-until
+            #'anthe/workspace-switch-to-project)
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here

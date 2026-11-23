@@ -116,11 +116,12 @@
 (defun my-shell-buffer-p (buffer)
   "Return t if BUFFER is a shell-like buffer."
   (with-current-buffer buffer
-    (or (derived-mode-p 'shell-mode)
-        (derived-mode-p 'term-mode)
-        (derived-mode-p 'vterm-mode)
-        (derived-mode-p 'eshell-mode)
-        (derived-mode-p 'comint-mode))))
+    (and (not (derived-mode-p 'anthe-sysmon-mode))
+         (or (derived-mode-p 'shell-mode)
+             (derived-mode-p 'term-mode)
+             (derived-mode-p 'vterm-mode)
+             (derived-mode-p 'eshell-mode)
+             (derived-mode-p 'comint-mode)))))
 
 (defun my-update-shell-buffer-list ()
   "Update the list of shell-like buffers."
@@ -174,11 +175,24 @@ DIRECTION should be 1 for next, -1 for previous."
 (define-key vterm-mode-map (kbd "M-1") '+workspace/switch-to-0)
 (define-key vterm-mode-map (kbd "M-2") '+workspace/switch-to-1)
 (define-key vterm-mode-map (kbd "M-3") '+workspace/switch-to-2)
+(define-key vterm-mode-map (kbd "M-4") '+workspace/switch-to-3)
+(define-key vterm-mode-map (kbd "M-5") '+workspace/switch-to-4)
 (define-key vterm-mode-map (kbd "M-`") 'popper-cycle)
 
 
+(defun anthe/multi-vterm-popup ()
+  "Open a new multi-vterm terminal in the popper popup.
+`multi-vterm' shows it with `switch-to-buffer', in the current window,
+which bypasses popper. `pop-to-buffer' goes through `display-buffer'."
+  (interactive)
+  (let ((buffer (multi-vterm-get-buffer)))
+    (setq multi-vterm-buffer-list (nconc multi-vterm-buffer-list (list buffer)))
+    (with-current-buffer buffer
+      (multi-vterm-internal))
+    (pop-to-buffer buffer)))
+
 (map! :leader
-      :desc "New vterm (multi-vterm)" "V" #'multi-vterm
+      :desc "New vterm popup (multi-vterm)" "v v" #'anthe/multi-vterm-popup
       :desc "Next vterm (multi-vterm)" "v n" #'multi-vterm-next
       :desc "Previous vterm (multi-vterm)" "v p" #'multi-vterm-prev
       :desc "Execute region of line in vterm" "v r" #'multi-vterm-execute-region-or-current-line

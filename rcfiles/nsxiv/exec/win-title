@@ -1,0 +1,10 @@
+#!/bin/sh
+# nsxiv's window title: the file's name, and its place when there are several.
+# Emacs names the EXWM buffer after it, "Image: NAME" (anthe-viewers.el).
+# Arguments: $1 the file's path, $2 its number, $3 the number of files
+name="${1##*/}"
+if [ "${3:-1}" -gt 1 ]; then
+	printf "%s [%s/%s]" "$name" "$2" "$3"
+else
+	printf "%s" "$name"
+fi

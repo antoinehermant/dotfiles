@@ -17,10 +17,13 @@
 ;; `load-theme' function. This is the default:
 ;;
 
-(setq doom-theme 'night-owl)
-;; (setq doom-theme 'doom-night-owl)
+;; The theme is anthe-night-owl, from the dotfiles: Doom loads `doom-theme'
+;; once this file is read, from the folders of `custom-theme-load-path'
+(add-to-list 'custom-theme-load-path "~/.dotfiles/emacs/themes/anthe-night-owl/")
+(setq doom-theme 'anthe-night-owl)
 
-(custom-set-faces!
+;; These colours are the night owl's: Light Owl and the others keep their own
+(custom-theme-set-faces! 'anthe-night-owl
   '(org-level-2 :foreground "#C792EA" )
   '(org-list-dt :foreground "#F78C6C" :weight bold)
   )
@@ -108,9 +111,12 @@
 (display-time-mode)
 (display-line-numbers-mode)
 
-(setq display-line-numbers-type 'relative)
+;; Relative to the screen lines: a wrapped line counts as the lines it shows,
+;; and folded text doesn't count, as j and k move (see evil-respect-visual-line-mode
+;; in init.el)
+(setq display-line-numbers-type 'visual)
 
-(custom-set-faces!
+(custom-theme-set-faces! 'anthe-night-owl
   '(line-number :foreground "#ffffff")
   '(line-number-current-line :weight bold :foreground "#51afef" :slant normal) ; Explicitly set slant
   '(font-lock-keyword-face :foreground "#51afef")
@@ -147,10 +153,6 @@
       :desc "Workspace swap right" "TAB l" #'+workspace/swap-right
       )
 
-(global-set-key (kbd "C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "C-<up>") 'enlarge-window)
-(global-set-key (kbd "C-<down>") 'shrink-window)
 
 (provide 'config-core)
 ;;; config-core.el ends here

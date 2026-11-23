@@ -1,0 +1,34 @@
+# What `backup` (bin/backup) leaves out of the snapshots of ~.
+# Patterns are restic's: a leading / anchors at the root of the file system.
+
+# Raw data, to move to a data archive on the pi instead
+/home/anthe/data/isochrones
+
+# Caches and trash
+/home/anthe/.cache
+/home/anthe/.local/share/Trash
+/home/anthe/.config/google-chrome
+/home/anthe/.config/Code/Cache*
+/home/anthe/.config/emacs/.local/cache
+/home/anthe/.config/emacs.bak
+/home/anthe/.local/share/qutebrowser/webengine
+__pycache__
+node_modules
+.ipynb_checkpoints
+
+# Toolchains and packages that reinstall
+/home/anthe/snap
+/home/anthe/.cargo
+/home/anthe/.rustup
+/home/anthe/.npm
+/home/anthe/.gradle
+/home/anthe/.android
+/home/anthe/.arduino15
+/home/anthe/.vscode
+/home/anthe/.venv
+/home/anthe/.local/share/android-sdk
+/home/anthe/.local/share/pipx
+/home/anthe/software/miniconda3
+/home/anthe/software/install-tl-*
+/home/anthe/software/*.AppImage
+/home/anthe/software/*.tar.gz

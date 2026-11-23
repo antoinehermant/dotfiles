@@ -1,0 +1,5 @@
+# Installed to /etc/default/hd-idle.
+# Spins the USB disk (WD20EZRX, /mnt/storage1) down after 30 min without
+# reads or writes; the symlink is resolved again when the disk comes back
+START_HD_IDLE=true
+HD_IDLE_OPTS="-s 1 -i 0 -a /dev/disk/by-id/wwn-0x50014ee6ad77c433 -i 1800 -l /var/log/hd-idle.log"

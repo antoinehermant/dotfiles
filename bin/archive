@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Move folders I rarely need to the pi, and get them back.
+#
+#   archive put ~/data/x   copy ~/data/x to the pi's archive, check every byte,
+#                          then remove it here and leave a link ~/data/x -> ~/nas/data/x
+#   archive get ~/data/x   bring it back here (the copy on the pi stays)
+#   archive ls             what is archived, with sizes
+#
+# The archive keeps the path under ~: ~/data/x is /mnt/storage1/anthe/archive/data/x
+# on the pi, and ~/nas/data/x here, where nas.service mounts it on demand.
+# Scripts that read ~/data/x keep working through the link, at network speed.
+#
+# The archive is not in the restic snapshots of the laptop: until the pi has a
+# second disk, the archive is its only copy.
+set -euo pipefail
+
+REMOTE=pi
+ARCHIVE=/mnt/storage1/anthe/archive
+NAS=$HOME/nas
+
+die() { echo "archive: $*" >&2; exit 1; }
+
+relative() {
+    local path
+    path=$(realpath -s "$1")
+    [[ $path == "$HOME"/* ]] || die "$1 is not under ~"
+    [[ $path != "$NAS"/* ]] || die "$1 is already in the archive"
+    echo "${path#"$HOME"/}"
+}
+
+case "${1:-}" in
+    put)
+        [ $# -eq 2 ] || die "usage: archive put PATH"
+        rel=$(relative "$2")
+        src=$HOME/$rel
+        [ -L "$src" ] && die "$2 is a link, already archived?"
+        [ -e "$src" ] || die "$2 does not exist"
+        echo "Copying ~/$rel ($(du -sh "$src" | cut -f1)) to $REMOTE:$ARCHIVE/$rel"
+        ssh "$REMOTE" mkdir -p "$(dirname "$ARCHIVE/$rel")"
+        trailing=; [ -d "$src" ] && trailing=/
+        rsync -a --info=progress2 "$src$trailing" "$REMOTE:$ARCHIVE/$rel$trailing"
+        echo "Checking every file against the copy..."
+        diff=$(rsync -a --checksum --dry-run --itemize-changes \
+                     "$src$trailing" "$REMOTE:$ARCHIVE/$rel$trailing")
+        [ -z "$diff" ] || die "the copy differs, nothing removed:"$'\n'"$diff"
+        rm -rf "$src"
+        ln -s "$NAS/$rel" "$src"
+        # The mount sees new folders after its 5 s listing cache
+        for _ in {1..10}; do [ -e "$src" ] && break; sleep 1; done
+        echo "~/$rel is archived; it is now a link to ~/nas/$rel"
+        ;;
+    get)
+        [ $# -eq 2 ] || die "usage: archive get PATH"
+        src=$(realpath -s "$2")
+        [[ $src == "$NAS"/* ]] && src=$HOME/${src#"$NAS"/}
+        rel=$(relative "$src")
+        [ -L "$src" ] || [ ! -e "$src" ] || die "$2 is already here"
+        ssh "$REMOTE" test -e "$ARCHIVE/$rel" || die "~/$rel is not in the archive"
+        trailing=; ssh "$REMOTE" test -d "$ARCHIVE/$rel" && trailing=/
+        tmp=$src.archive-get
+        rsync -a --info=progress2 "$REMOTE:$ARCHIVE/$rel$trailing" "$tmp$trailing"
+        rm -f "$src"
+        mv "$tmp" "$src"
+        echo "~/$rel is back here (the archive keeps its copy)"
+        ;;
+    ls)
+        # The archived folders are the links into ~/nas
+        find "$HOME" -path "$NAS" -prune -o -path "$HOME/.cache" -prune \
+             -o -maxdepth 5 -lname "$NAS/*" -printf '%P\n' | sort | while read -r rel; do
+            printf '%s\t~/%s\n' "$(ssh "$REMOTE" du -sh "$ARCHIVE/$rel" | cut -f1)" "$rel"
+        done
+        ;;
+    *)
+        sed -n '2,14s/^# \{0,1\}//p' "$0"
+        exit 1
+        ;;
+esac

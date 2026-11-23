@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup: a restic snapshot of ~ on the pi (bin/backup)
+After=network-online.target
+
+[Service]
+Type=oneshot
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/home/anthe/.dotfiles/bin/backup

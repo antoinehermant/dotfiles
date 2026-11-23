@@ -21,6 +21,7 @@
 
 (require 'openwith)
 
+;; Videos open in mpv as an Emacs buffer (anthe-viewers.el)
 (use-package! openwith
   :config
   (setq openwith-associations
@@ -29,9 +30,6 @@
                  '(file))
           ,(list (openwith-make-extension-regexp '("nc~"))
                  "ncview"
-                 '(file))
-          ,(list (openwith-make-extension-regexp '("mp4"))
-                 "mpv"
                  '(file))
           ,(list (openwith-make-extension-regexp '("WAV"))
                  "vlc"

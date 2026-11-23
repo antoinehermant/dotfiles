@@ -1,0 +1,16 @@
+# The disk's power page (nas_power.py), installed to
+# /etc/systemd/system/nas-power.service. It listens on the WireGuard
+# address, which only exists once wg0 is up.
+[Unit]
+Description=Switch the USB disk on and off smoothly
+After=wg-quick@wg0.service network-online.target
+Wants=wg-quick@wg0.service
+
+[Service]
+User=anthe
+ExecStart=/opt/nas-power/nas_power.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

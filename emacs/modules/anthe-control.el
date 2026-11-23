@@ -29,15 +29,65 @@
   (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py sound_system")))
     (message "%s" output)))
 
+;; The Pi's USB disk, through its power page on the Pi (pi/nas-power), which
+;; unmounts it before switching its Tapo socket off: from anywhere on the
+;; WireGuard, and never cut while in use.
+(defvar anthe/nas-power-url "http://10.158.145.1:8095")
+
 (defun my-switch-drive-1 ()
+  "Switch the Pi's USB disk off if it is on, on otherwise."
   (interactive)
-  (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_devices.py drive_1")))
-    (message "%s" output)))
+  (let* ((status (ignore-errors
+                   (json-parse-string
+                    (shell-command-to-string
+                     (format "curl -s -m 10 %s/status" anthe/nas-power-url))
+                    :object-type 'plist)))
+         (action (if (eq (plist-get status :socket) t) "off" "on"))
+         (buffer (generate-new-buffer " *nas-power*")))
+    (if (not status)
+        (message "The Pi's disk page doesn't answer (WireGuard up?)")
+      (message "Switching the Pi's disk %s…" action)
+      ;; Switching on waits for the disk to mount, up to 90 s
+      (make-process
+       :name "nas-power" :buffer buffer :noquery t
+       :command (list "curl" "-s" "-m" "120" "-X" "POST"
+                      (format "%s/%s" anthe/nas-power-url action))
+       :sentinel (lambda (process _event)
+                   (unless (process-live-p process)
+                     (message "%s" (with-current-buffer buffer
+                                     (if (string-empty-p (buffer-string))
+                                         "The Pi's disk page didn't answer"
+                                       (string-trim (buffer-string)))))
+                     (kill-buffer buffer)))))))
 
 (defun my-switch-desk-lamp ()
   (interactive)
   (let ((output (shell-command-to-string "/home/anthe/projects/perso/python/python-utils/python_utils/home/switch_lights.py desk_lamp")))
     (message "%s" output)))
+
+;; Tapo lamps and scenes (light_scene.py: ambiance, coding, small), also
+;; said to J.A.R.V.I.S. Run in the background: a lamp that doesn't answer
+;; takes a few seconds.
+(defvar anthe/light-scripts "/home/anthe/projects/perso/python/python-utils/python_utils/home/")
+
+(defun anthe/light-run (script &rest args)
+  "Run the light SCRIPT with ARGS in the background, its output in the echo area."
+  (let ((buffer (generate-new-buffer " *light*")))
+    (make-process
+     :name "light" :buffer buffer :noquery t
+     :command (cons (concat anthe/light-scripts script) args)
+     :sentinel (lambda (process _event)
+                 (unless (process-live-p process)
+                   (message "%s" (with-current-buffer buffer (string-trim (buffer-string))))
+                   (kill-buffer buffer))))))
+
+(defun anthe/light-switch (lamp)
+  "Toggle LAMP, its name in ~/.secrets/.tapo.profile."
+  (anthe/light-run "switch_lights.py" lamp))
+
+(defun anthe/light-scene (scene)
+  "Set the lights to SCENE, from light_scene.py."
+  (anthe/light-run "light_scene.py" scene))
 
 (defun my-sync-pi-nas ()
   (interactive)
@@ -55,7 +105,86 @@
       :desc "Switch sound system" "k t s" #'my-switch-sound-system
       :desc "Switch drive" "k t d" #'my-switch-drive-1
       :desc "Switch pi VPN" "k t v" #'anthe/pivpn-toggle
-      :desc "Switch laptop charger" "k t c" #'my-switch-laptop-charger)
+      :desc "Switch laptop charger" "k t c" #'my-switch-laptop-charger
+      :desc "Switch armchair lamp" "k t a" (cmd! (anthe/light-switch "armchair_lamp"))
+      :desc "Switch ceiling lamp" "k t p" (cmd! (anthe/light-switch "ceiling_lamp"))
+      (:prefix ("k t m" . "light scenes")
+       :desc "Ambiance" "a" (cmd! (anthe/light-scene "ambiance"))
+       :desc "Coding (dark blue)" "c" (cmd! (anthe/light-scene "coding"))
+       :desc "Small lights on/off" "s" (cmd! (anthe/light-scene "small"))))
+
+;; Power off, like a desktop's: the charger off first if the Tapo strip
+;; answers (at home), then Emacs and EXWM quit as on C-x C-c, saving files
+;; and workspaces but not asking about running shells, and the laptop powers
+;; off once they're done.
+(defun anthe/charger-off ()
+  "Switch the laptop charger off, if the Tapo strip answers."
+  (message "Switching the charger off...")
+  (message "%s"
+           (if (eq 0 (call-process "timeout" nil nil nil "10"
+                                   (concat anthe/light-scripts "switch_devices.py")
+                                   "laptop_charger" "off"))
+               "Charger off"
+             "Charger not reachable, left as it is")))
+
+(defun anthe/power-off ()
+  "Quit Emacs and EXWM, saving files and workspaces, and power off."
+  (interactive)
+  (unless (equal "yes" (dbus-call-method :system "org.freedesktop.login1" "/org/freedesktop/login1"
+                                         "org.freedesktop.login1.Manager" "CanPowerOff"))
+    (user-error "Power off isn't allowed here"))
+  (when (y-or-n-p "Power off the laptop? ")
+    (let ((asking (seq-filter #'process-query-on-exit-flag (process-list))))
+      (unwind-protect
+          (progn
+            (dolist (process asking) (set-process-query-on-exit-flag process nil))
+            (let ((confirm-kill-emacs #'anthe/power--quit))
+              (save-buffers-kill-emacs)))
+        ;; Still here: a question about saving was answered no
+        (dolist (process asking)
+          (when (process-live-p process) (set-process-query-on-exit-flag process t)))))))
+
+(defun anthe/power--quit (prompt)
+  "Asked instead of \"Really exit Emacs?\": switch the charger off, then quit."
+  (anthe/charger-off)
+  (add-hook 'kill-emacs-hook #'anthe/power--schedule 100)
+  (if (bound-and-true-p exwm-wm-mode)
+      (exwm--confirm-kill-emacs prompt 'force)
+    t))
+
+(defun anthe/power--schedule ()
+  "Power off in 3 s, Emacs quit by then.  Asked now, while logind still
+counts the session as active, which allows it."
+  (call-process "systemctl" nil nil nil "poweroff" "--when=+3s"))
+
+(map! :leader :desc "Power off" "q p" #'anthe/power-off)
+
+;; Notifications (dunst, see rcfiles/dunstrc)
+(defun anthe/dunstctl (&rest args)
+  "Run dunstctl with ARGS."
+  (apply #'call-process "dunstctl" nil 0 nil args))
+
+(defvar anthe/notify-bell-off
+  (expand-file-name "notify-bell-off" (or (getenv "XDG_STATE_HOME") "~/.local/state"))
+  "While this file is, the notifications ring no bell (bin/notify-bell).")
+
+(defun anthe/notify-bell-toggle ()
+  "Turn the notifications' bell off, or on again."
+  (interactive)
+  (if (file-exists-p anthe/notify-bell-off)
+      (progn (delete-file anthe/notify-bell-off)
+             (message "Notification bell on"))
+    (make-directory (file-name-directory anthe/notify-bell-off) t)
+    (write-region "" nil anthe/notify-bell-off nil 'silent)
+    (message "Notification bell off")))
+
+(map! :leader
+      (:prefix ("z" . "notifications")
+       :desc "Bell on or off" "b" #'anthe/notify-bell-toggle
+       :desc "Dismiss" "z" (cmd! (anthe/dunstctl "close"))
+       :desc "Dismiss all" "a" (cmd! (anthe/dunstctl "close-all"))
+       :desc "Open" "o" (cmd! (anthe/dunstctl "action"))
+       :desc "Bring back the last" "h" (cmd! (anthe/dunstctl "history-pop"))))
 
 
 (provide 'anthe-control)

@@ -48,7 +48,8 @@
   (start-process-shell-command
    ;; "feh" nil  "feh --bg-scale /usr/share/backgrounds/Einsamer_Raum_by_Orbite_Lambda.jpg")
    ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/wallhaven-x8z9yo.jpg"))
-   "feh" nil "feh --bg-scale /usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png"))
+   ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/Resolute_Raccoon_Wallpaper_Dimmed_3840x2160.png"))
+   "feh" nil "feh --bg-scale /usr/share/backgrounds/osselo-Ask_a_friend.jpg"))
 ;; "feh" nil "feh --bg-scale /usr/share/backgrounds/98315-deep-space-wallpaper-1920x1080.jpg"))
 
 
@@ -92,20 +93,17 @@
 ;;     ("Ncview" (exwm-floating-toggle-floating)
 ;;            (exwm-layout-toggle-mode-line))))
 
-(defun anthe/configure-window-by-class ()
-  "Configure window properties based on application class.
-Only toggle floating for main windows, not their child dialogs."
-  (interactive)
-  (when (or
-         ;; Ncview: Only toggle if not already floating (main window only)
-         (and (string-match-p "Ncview" exwm-class-name)
-              (not exwm--floating-frame))
-         ;; Matplotlib: Only toggle if not already floating (main window only)
-         (and (string-match-p "Matplotlib" exwm-class-name)
-              (not exwm--floating-frame))
-         ;; VirtualBox Manager: Always toggle (no child windows to worry about)
-         (string= "VirtualBox Manager" exwm-class-name))
-    (exwm-floating-toggle-floating)))
+(defvar anthe/exwm-floating-classes '("Ncview" "Matplotlib" "VirtualBox Manager")
+  "The X window classes always floating, all their windows, any case.")
+
+(defun anthe/exwm-floating-p ()
+  "Whether the X window being managed is to float: its class, or its
+instance's, is in `anthe/exwm-floating-classes'."
+  (let ((case-fold-search t))
+    (seq-some (lambda (class)
+                (or (string-equal-ignore-case class (or exwm-class-name ""))
+                    (string-equal-ignore-case class (or exwm-instance-name ""))))
+              anthe/exwm-floating-classes)))
 
 (defun efs/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
@@ -225,9 +223,21 @@ Only toggle floating for main windows, not their child dialogs."
 
   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
   ;; (add-hook 'exwm-manage-finish-hook #'efs/set-ncview-floating)
-  (add-hook 'exwm-manage-finish-hook #'anthe/configure-window-by-class)
+  ;; Some windows always float, decided as EXWM takes each, before it shows:
+  ;; toggling it after (`exwm-floating-toggle-floating' in
+  ;; `exwm-manage-finish-hook') toggled the selected window's, not always the new
+  ;; one (a second matplotlib figure, ncview's other windows)
+  (setq exwm-manage-configurations '(((anthe/exwm-floating-p) floating t)))
 
   (add-hook 'exwm-mode-hook #'doom-mark-buffer-as-real-h)
+
+  ;; A new window's buffer joins the workspace it opens in: Doom adds a buffer
+  ;; only when switched to, which EXWM showing it isn't
+  (defun anthe/exwm-add-to-workspace ()
+    "Add this new EXWM buffer to the current workspace."
+    (when (bound-and-true-p persp-mode)
+      (persp-add-buffer (current-buffer) (get-current-persp) nil)))
+  (add-hook 'exwm-manage-finish-hook #'anthe/exwm-add-to-workspace)
 
   (setq exwm-layout-show-all-buffers t)
   (setq exwm-workspace-show-all-buffers t)
@@ -263,8 +273,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (push (kbd "M-m") exwm-input-prefix-keys)
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-  (define-key exwm-mode-map [?\M-i] 'exwm-input-release-keyboard)
-  (define-key exwm-mode-map [?\M-k] 'exwm-reset)
   ;; (global-set-key (kbd "s-/") 'counsel-linux-app)
   ;; (global-set-key (kbd "s-,") 'switch-to-buffer)
   ;; (setq exwm-manage-configurations
@@ -274,13 +282,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;; Keep in mind that changing this list after EXWM initializes has no effect.
   (setq exwm-input-global-keys
         `(
-          ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
-          ([?\s-r] . exwm-reset)
-          ([?\s-k] . exwm-input-release-keyboard)
-          ([?\s-l] . exwm-reset)
-          ([?\M-i] . exwm-input-release-keyboard)
-          ([?\M-k] . exwm-reset)
-
           ;; Move between windows
           ;; ([?\s-h] . windmove-left)
           ;; ([?\s-l] . windmove-right)
@@ -320,8 +321,9 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (when (display-graphic-p)
   ;;         (start-process-shell-command "xrandr-setup" nil "~/.screenlayout/mysetup.sh"))
 
-  (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
-                                             1 "DP-1"))
+  ;; The workspaces follow the monitors plugged in, and unknown monitors
+  ;; extend the laptop screen (SPC k m m mirrors it), see anthe-monitors
+  (require 'anthe-monitors)
 
   ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
   ;;                                            1 "DP-1-2-2"
@@ -349,7 +351,6 @@ Only toggle floating for main windows, not their child dialogs."
   ;;                                            6 "eDP-1" 6 "HDMI-1"
   ;;                                            0 "eDP-1" 10 "eDP-1"))
 
-  (add-hook 'exwm-randr-screen-change-hook #'efs/update-displays)
 
   (efs/set-wallpaper)
   (set-frame-parameter nil 'alpha-background 85)
@@ -408,21 +409,13 @@ Only toggle floating for main windows, not their child dialogs."
   (exwm-input-set-key (kbd "s-b k") 'kill-current-buffer)
   (exwm-input-set-key (kbd "s-b R") 'rename-buffer)
   (exwm-input-set-key (kbd "s-f r") 'consult-recent-file)
-  (exwm-input-set-key (kbd "s--") (lambda () (interactive) (exwm-layout-shrink-window-horizontally 50)))
-  (exwm-input-set-key (kbd "s-=") (lambda () (interactive) (exwm-layout-enlarge-window-horizontally 50)))
-  (exwm-input-set-key (kbd "s-_") (lambda () (interactive) (exwm-layout-shrink-window 50)))
-  (exwm-input-set-key (kbd "s-+") (lambda () (interactive) (exwm-layout-enlarge-window 50)))
   (exwm-input-set-key (kbd "s-<right>") (lambda () (interactive) (exwm-floating-move 20 0)))
   (exwm-input-set-key (kbd "s-<left>") (lambda () (interactive) (exwm-floating-move -20 0)))
   (exwm-input-set-key (kbd "s-<down>") (lambda () (interactive) (exwm-floating-move 0 20)))
   (exwm-input-set-key (kbd "s-<up>") (lambda () (interactive) (exwm-floating-move 0 -20)))
   (exwm-input-set-key  (kbd "s-h") 'anthe/windmove-left-or-hide-floating)
   (exwm-input-set-key (kbd "s-t f") 'exwm-floating-toggle-floating)
-  (exwm-input-set-key (kbd "s-k") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "s-i") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "M-k") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "M-i") 'exwm-input-release-keyboard)
-  (exwm-input-set-key (kbd "s-l") 'exwm-reset)
+  ;; exwm-evil handles insert and normal states, this is a way back should a window get stuck in char mode
   (exwm-input-set-key (kbd "s-<escape>") 'exwm-reset)
 
   (exwm-input-set-key (kbd "s-`") '(lambda () (interactive) (exwm-workspace-switch-create 0)))
@@ -446,6 +439,12 @@ Only toggle floating for main windows, not their child dialogs."
   ;; (exwm-input-set-key (kbd "<f9>") #'exwm-input-toggle-keyboard)
 
   (efs/run-in-background "dunst")
+  ;; Mounts USB drives and SD cards as they are plugged in, on
+  ;; /run/media/anthe/LABEL, and says so; SPC k u ejects one (anthe-bar.el)
+  (efs/run-in-background "udiskie --automount --notify --no-tray --no-file-manager")
+  ;; Locks the screen before the laptop sleeps (lid closed) and after the
+  ;; screen saver's 10 minutes idle (bin/anthe-lock)
+  (efs/run-in-background "xss-lock -- anthe-lock")
 
   (exwm-wm-mode))
 
@@ -493,6 +492,23 @@ Only toggle floating for main windows, not their child dialogs."
         :desc "Send escape" "e e" (cmd! (exwm-evil-send-key 1 'escape))
         :desc "Toggle modeline" "m" #'exwm-layout-toggle-mode-line))
 
+;; Lock the screen: black until the password and Enter.  Everything goes on
+;; running behind it; the away lock also keeps the laptop from sleeping until
+;; unlocked, lid closed or not, so Claude can work while you're away
+(defun anthe-lock ()
+  "Lock the screen.  Closing the lid still suspends the laptop."
+  (interactive)
+  (start-process "anthe-lock" nil "anthe-lock"))
+
+(defun anthe-lock-away ()
+  "Lock the screen and keep the laptop awake until unlocked, lid closed or not."
+  (interactive)
+  (start-process "anthe-lock" nil "anthe-lock" "--away"))
+
+(map! :leader
+      :desc "Lock the screen" "k z" #'anthe-lock
+      :desc "Lock, keep working" "k Z" #'anthe-lock-away)
+
 ;; remap capslock to ctrl
 (shell-command "setxkbmap -layout us -variant altgr-intl")
 (shell-command "xmodmap ~/.dotfiles/.xmodmap")
@@ -517,6 +533,9 @@ Only toggle floating for main windows, not their child dialogs."
     (windmove-left)))
 
 (require 'anthe-qutebrowser)
+
+;; A top bar: workspaces, date and time, Bluetooth, network, battery (SPC t B)
+(require 'anthe-bar)
 
 ;; (add-to-list 'load-path "/home/anthe/.config/emacs/.local/other")
 

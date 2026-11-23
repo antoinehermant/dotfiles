@@ -1,0 +1,118 @@
+#!/usr/bin/python3 -I
+"""Print a fresh OAuth2 access token for a Microsoft 365 mailbox.
+
+Signs in the way Thunderbird does (its client id is the one the tenant
+allows), keeps the tokens in TOKEN_FILE, encrypted with gpg to GPG_KEY,
+and renews the access token from the refresh token when it expires, so
+mbsync and Emacs can call this as their password command.
+
+  ms365-token --login   sign in through the browser (once, or when expired)
+  ms365-token           print a valid access token
+"""
+import base64, fcntl, hashlib, http.server, json, os, secrets, subprocess, sys, time
+import urllib.error, urllib.parse, urllib.request
+
+CLIENT = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"  # Mozilla Thunderbird
+USER = "antoine.hermant@unibe.ch"
+TOKEN_FILE = os.path.expanduser("~/.secrets/unibe-oauth.json.gpg")
+GPG_KEY = "56573BF9A8B5318DA6D3495D3775D8ADB2DD06E6"
+BASE = "https://login.microsoftonline.com/organizations/oauth2/v2.0/"
+SCOPE = ("https://outlook.office.com/IMAP.AccessAsUser.All "
+         "https://outlook.office.com/SMTP.Send offline_access")
+PORT = 8765
+REDIRECT = f"http://localhost:{PORT}/"
+
+
+def post(data):
+    req = urllib.request.Request(BASE + "token", urllib.parse.urlencode(
+        {"client_id": CLIENT, "scope": SCOPE, **data}).encode())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            tok = json.load(r)
+    except urllib.error.HTTPError as e:
+        tok = json.load(e)
+    if "access_token" not in tok:
+        sys.exit(f"ms365-token: {tok.get('error')}: "
+                 f"{tok.get('error_description', '')[:200]}")
+    return tok
+
+
+def save(tok, old=None):
+    data = {"access_token": tok["access_token"],
+            "refresh_token": tok.get("refresh_token") or old["refresh_token"],
+            "expires_at": int(time.time()) + int(tok["expires_in"])}
+    tmp = TOKEN_FILE + ".tmp"
+    subprocess.run(["gpg", "--batch", "--yes", "--quiet", "--encrypt",
+                    "--recipient", GPG_KEY, "--output", tmp],
+                   input=json.dumps(data).encode(), check=True)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, TOKEN_FILE)
+    return data
+
+
+def load():
+    if not os.path.exists(TOKEN_FILE):
+        sys.exit("ms365-token: not signed in, run ms365-token --login")
+    # Asks for the passphrase (in a window) unless gpg-agent remembers it
+    gpg = subprocess.run(["gpg", "--quiet", "--decrypt", TOKEN_FILE],
+                         capture_output=True)
+    if gpg.returncode:
+        sys.exit("ms365-token: could not decrypt " + TOKEN_FILE)
+    return json.loads(gpg.stdout)
+
+
+def login():
+    verifier = secrets.token_urlsafe(64)
+    challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    print("Open this address and sign in:\n\n" + BASE + "authorize?" +
+          urllib.parse.urlencode({
+              "client_id": CLIENT, "response_type": "code",
+              "redirect_uri": REDIRECT, "scope": SCOPE, "login_hint": USER,
+              "code_challenge": challenge, "code_challenge_method": "S256"}),
+          flush=True)
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        query = None
+
+        def do_GET(self):
+            Handler.query = urllib.parse.parse_qs(
+                urllib.parse.urlparse(self.path).query)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Signed in, you can close this tab.")
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", PORT), Handler)
+    server.timeout = 600
+    while not Handler.query or not ({"code", "error"} & Handler.query.keys()):
+        Handler.query = None
+        server.handle_request()
+        if Handler.query is None:
+            sys.exit("ms365-token: timed out waiting for the sign-in")
+    if "error" in Handler.query:
+        sys.exit("ms365-token: " +
+                 Handler.query.get("error_description", ["sign-in failed"])[0][:200])
+    save(post({"grant_type": "authorization_code",
+               "code": Handler.query["code"][0], "redirect_uri": REDIRECT,
+               "code_verifier": verifier}))
+    print("Signed in, tokens saved to", TOKEN_FILE)
+
+
+def token():
+    # mbsync and Emacs may ask at the same time, and the refresh token
+    # changes on every renewal, so renew under a lock
+    with open(TOKEN_FILE + ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        data = load()
+        if data.get("expires_at", 0) < time.time() + 300:
+            data = save(post({"grant_type": "refresh_token",
+                              "refresh_token": data["refresh_token"]}), data)
+    print(data["access_token"])
+
+
+if __name__ == "__main__":
+    login() if sys.argv[1:] == ["--login"] else token()

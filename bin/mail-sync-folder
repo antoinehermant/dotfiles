@@ -1,0 +1,58 @@
+#!/usr/bin/python3 -I
+"""Sync some mail folders now, as mail-idle does for the inboxes.
+
+  mail-sync-folder MAILDIR...     e.g. /Infomaniak/Drafts "/Gmail/[Gmail]/Sent Mail"
+
+Each MAILDIR (as mu4e names it, under ~/documents/mail) is synced alone
+with mbsync CHANNEL:BOX, the channel found in ~/.mbsyncrc from the
+maildir store of the account. Takes the lock of mail-idle and of the full
+sync, so that two mbsync never work on the same mailbox. Emacs runs this
+when a draft is saved or a message sent (see anthe-mu4e.el), then
+reindexes.
+"""
+import os
+import subprocess
+import sys
+
+MBSYNCRC = os.path.expanduser("~/.mbsyncrc")
+LOCK_FILE = os.path.expanduser("~/.cache/mail-sync.lock")
+
+
+def channels():
+    """Map each account folder name (Infomaniak, Gmail...) to its channel."""
+    stores, near, section = {}, {}, None
+    for line in open(MBSYNCRC):
+        key, _, value = line.strip().partition(" ")
+        value = value.strip()
+        if key in ("IMAPAccount", "IMAPStore", "MaildirStore", "Channel", "Group"):
+            section = (key, value)
+        elif section and section[0] == "MaildirStore" and key == "Path":
+            stores[section[1]] = os.path.basename(os.path.normpath(os.path.expanduser(value)))
+        elif section and section[0] == "Channel" and key == "Near":
+            near[section[1]] = value.strip(":")
+    return {stores[store]: channel for channel, store in near.items() if store in stores}
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__.strip())
+    found = channels()
+    status = 0
+    for maildir in sys.argv[1:]:
+        account, _, box = maildir.strip("/").partition("/")
+        if account not in found or not box:
+            print(f"error {maildir}: no channel for it in {MBSYNCRC}", flush=True)
+            status = 1
+            continue
+        out = subprocess.run(["flock", LOCK_FILE, "mbsync", "-q", f"{found[account]}:{box}"],
+                             capture_output=True, text=True)
+        if out.returncode:
+            print(f"error {maildir}: {out.stderr.strip()[:300]}", flush=True)
+            status = 1
+        else:
+            print(f"synced {maildir}", flush=True)
+    sys.exit(status)
+
+
+if __name__ == "__main__":
+    main()

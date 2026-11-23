@@ -22,9 +22,7 @@
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/popper/")
 (use-package! popper
   :bind (("M-`"   . popper-cycle)
-         ("C-M-`" . popper-toggle-type)
-         ("C-<down>" . 'shrink-window)
-         ("C-<up>" . 'enlarge-window))
+         ("C-M-`" . popper-toggle-type))
   :init
   (setq popper-reference-buffers
         '("^\\*Messages\\*"

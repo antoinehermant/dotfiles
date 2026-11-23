@@ -42,7 +42,6 @@
 (require 'anthe-vterm)
 
 (setq doom-theme 'doom-ayu-dark)
-(set-face-attribute 'default nil :height 126)
 ;;(add-to-list 'load-path "~/software/emacs-libvterm")
 
 (setq exec-path (append exec-path '("/software.9/software/CMake/3.26.3-GCCcore-12.3.0/bin")))
@@ -102,8 +101,8 @@
 
 ;; (setq conda-anaconda-home "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda")
 (setq pyvenv-default-virtual-env-name "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/")
-(setq pyvenv-virtual-env-name "processing")
-(pyvenv-activate "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/processing")
+(setq pyvenv-virtual-env-name "fast")
+(pyvenv-activate "/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda/envs/fast")
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
@@ -135,21 +134,32 @@
   (local-set-key (kbd "q") 'quit-window)
   (local-set-key (kbd "r") 'slurm-queue-toggle-reload)
   (evil-local-set-key 'normal (kbd "r") 'slurm-queue-toggle-reload)
-  ;; Cancel existing timer if any before creating new one
+  (add-hook 'kill-buffer-hook #'slurm-queue-stop-timer nil t)
+  (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick)))
+
+(defun slurm-queue-stop-timer ()
+  "Stop the auto-reload timer of the current buffer."
   (when slurm-queue-timer
-    (cancel-timer slurm-queue-timer))
-  (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload)))
+    (cancel-timer slurm-queue-timer)
+    (setq slurm-queue-timer nil)))
+
+(defun slurm-queue-tick ()
+  "Reload the queue, or stop the timer if no window displays it anymore."
+  (when-let ((buf (get-buffer "*slurm-squeue*")))
+    (if (get-buffer-window buf t)
+        (squeue-reload)
+      (with-current-buffer buf
+        (slurm-queue-stop-timer)))))
 
 (defun slurm-queue-toggle-reload ()
   "Toggle auto-reload of slurm queue."
   (interactive)
   (if slurm-queue-timer
       (progn
-        (cancel-timer slurm-queue-timer)
-        (setq slurm-queue-timer nil)
+        (slurm-queue-stop-timer)
         (message "Slurm queue auto-reload disabled"))
     (progn
-      (setq slurm-queue-timer (run-at-time nil 1 'squeue-reload))
+      (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick))
       (message "Slurm queue auto-reload enabled (1s)"))))
 
 (defun squeue-reload ()
@@ -164,24 +174,35 @@
         (insert (shell-command-to-string command))
         (goto-char (point-min))))))
 
+
 (defun squeue (command)
   (interactive)
   (let ((buf-name "*slurm-squeue*"))
-    ;; Always kill existing buffer first (if any) to clean up timers
-    (when-let ((existing-buf (get-buffer buf-name)))
-      (with-current-buffer existing-buf
-        (when slurm-queue-timer
-          (cancel-timer slurm-queue-timer)))
-      (when-let ((window (get-buffer-window buf-name)))
-        (quit-window nil window))
-      (kill-buffer existing-buf))
-    ;; Create fresh buffer with new timer
-    (let ((new-buf (get-buffer-create buf-name)))
-      (with-current-buffer new-buf
-        (slurm-queue-mode)
-        (setq-local my-squeue-command command)
-        (squeue-reload))
-      (display-buffer new-buf))))
+    (if-let ((window (get-buffer-window buf-name)))
+        ;; Window exists: close it and stop timer
+        (progn
+          (with-current-buffer buf-name
+            (slurm-queue-stop-timer))
+          (quit-window nil window))
+      ;; Window doesn't exist: open it
+      (let ((existing-buf (get-buffer buf-name)))
+        (if existing-buf
+            ;; Buffer exists but window closed: update it, display and restart timer
+            (progn
+              (with-current-buffer existing-buf
+                (setq-local my-squeue-command command)
+                (setq slurm-queue-last-update 0)
+                (squeue-reload)
+                (unless slurm-queue-timer
+                  (setq slurm-queue-timer (run-at-time nil 1 'slurm-queue-tick))))
+              (display-buffer existing-buf))
+          ;; Buffer doesn't exist: create fresh
+          (let ((new-buf (get-buffer-create buf-name)))
+            (with-current-buffer new-buf
+              (slurm-queue-mode)
+              (setq-local my-squeue-command command)
+              (squeue-reload))
+            (display-buffer new-buf)))))))
 
 (defvar my-squeue-commands nil
   "A list of squeue commands")
@@ -205,23 +226,13 @@
   "Return window height for slurm-squeue buffer, capped at 1/3 of frame."
   (with-current-buffer buffer
     (min (1+ (count-lines (point-min) (point-max)))
-         (floor (* (frame-height) 0.25)))))
+         (floor (* (frame-height) 0.33)))))
 
-(add-to-list 'popper-reference-buffers "*slurm-squeue*")
 (add-to-list 'display-buffer-alist
              '("\\*slurm-squeue\\*"
                (display-buffer-below-selected)
                (window-height . slurm-squeue-window-height)))
 
-(use-package dirvish
-  :ensure t
-  :init
-  (dirvish-override-dired-mode)
-  :custom
-  (dirvish-quick-access-entries 
-   '(("h" "~/"                          "Home")
-     ("d" "/storage/workspaces/climate_charibdis/climate_ism/hermant/"  "hermant/")
-     )))
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
 ;; (add-to-list 'eglot-server-programs

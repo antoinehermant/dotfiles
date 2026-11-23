@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Snapshots of ~ in a restic repository on the pi's storage drive.
+#
+#   backup                 take a snapshot now, then thin out the old ones
+#   backup snapshots       any other arguments go to restic, on this repository:
+#   backup ls latest ~/org      backup restore latest --include ~/org/x.org --target /tmp/r
+#   backup mount ~/mnt/backup   browse every snapshot as folders (Ctrl-C to leave)
+#
+# The systemd timer rcfiles/systemd/backup.timer runs it every evening.
+# The password is in ~/.secrets/restic-password: without it, the snapshots
+# cannot be read, so keep a copy of it outside this laptop.
+set -euo pipefail
+
+export RESTIC_REPOSITORY=sftp:pi:/mnt/storage1/anthe/restic
+export RESTIC_PASSWORD_FILE=$HOME/.secrets/restic-password
+RESTIC=$HOME/.local/bin/restic
+EXCLUDES=$HOME/.dotfiles/rcfiles/restic/excludes
+
+if [ $# -gt 0 ]; then exec "$RESTIC" "$@"; fi
+
+fail() {
+    notify-send -u critical "Backup failed" "$1" 2>/dev/null || true
+    echo "backup: $1" >&2
+    exit 1
+}
+
+ssh -o BatchMode=yes -o ConnectTimeout=20 pi true 2>/dev/null \
+    || fail "the pi is unreachable"
+
+"$RESTIC" backup "$HOME" --exclude-file "$EXCLUDES" --exclude-caches \
+          --one-file-system --tag auto --compression auto \
+    || fail "restic backup returned $?; see journalctl --user -u backup"
+
+# Keep 7 daily, 8 weekly and 12 monthly snapshots. Pruning (freeing the
+# space of the forgotten ones) is slower, so only on Sundays.
+prune=()
+[ "$(date +%u)" = 7 ] && prune=(--prune)
+"$RESTIC" forget --tag auto --keep-daily 7 --keep-weekly 8 --keep-monthly 12 \
+          "${prune[@]}" \
+    || fail "restic forget returned $?"

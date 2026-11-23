@@ -20,5 +20,5 @@ export PATH="$PATH:/home/anthe/software/elsa/bin"
 export PATH="/home/anthe/software/nvim-linux-x86_64/bin:$PATH"
 
 if [ -f ~/.secrets/.my_apis.json ]; then
-    export $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' ~/.secrets/.my_apis.json)
+	export $(jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' ~/.secrets/.my_apis.json)
 fi

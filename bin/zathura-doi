@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# From zathura, add a DOI of the PDF read to my library, in Emacs
+# (anthe-bib-add-from-pdf, anthe-bib.el). Mapped in rcfiles/zathura/zathurarc:
+#   b   zathura-doi FILE PAGE              one of the page's references, chosen
+#   B   zathura-doi FILE PAGE --selection  the selected reference (zathura copies
+#                                          it to the clipboard), looked up if no DOI
+set -euo pipefail
+file=$1 page=$2 text=nil
+quote() { python3 -c 'import json, sys; print(json.dumps(sys.argv[1]))' "$1"; }
+if [ "${3:-}" = --selection ]; then
+    selection=$(xclip -o -selection clipboard 2>/dev/null || true)
+    [ -n "$selection" ] && text=$(quote "$selection")
+fi
+exec emacsclient -n -e "(anthe-bib-add-from-pdf $(quote "$file") $page $text)"

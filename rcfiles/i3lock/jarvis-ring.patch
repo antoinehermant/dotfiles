@@ -1,0 +1,521 @@
+The ring of J.A.R.V.I.S's HUD (~/jarvis/bin/jarvis-hud-overlay) as
+i3lock-color's unlock indicator, with --jarvis (bin/anthe-lock).
+
+Built on i3lock-color e6c0caf (https://github.com/Raymo111/i3lock-color),
+in ~/software/i3lock-color, installed as ~/.local/bin/i3lock-color:
+
+    git apply ~/.dotfiles/rcfiles/i3lock/jarvis-ring.patch
+    autoreconf -fi && mkdir -p build && cd build
+    ../configure --prefix=$HOME/.local --disable-sanitizers && make
+    cp i3lock ~/.local/bin/i3lock-color
+
+It needs /etc/pam.d/i3lock, from Ubuntu's i3lock package (apt install i3lock),
+with only, so that a wrong password is refused at once:
+
+    auth required pam_unix.so nodelay
+
+diff --git a/i3lock.c b/i3lock.c
+index ebc3216..4154c55 100644
+--- a/i3lock.c
++++ b/i3lock.c
+@@ -115,6 +115,7 @@ bool show_clock = false;
+ bool slideshow_enabled = false;
+ bool always_show_clock = false;
+ bool show_indicator = false;
++extern bool jarvis;
+ bool show_modkey_text = true;
+ 
+ /* there's some issues with compositing - upstream removed support for this, but we'll allow people to supply an arg to enable it */
+@@ -1814,6 +1815,7 @@ int main(int argc, char *argv[]) {
+         {"clock", no_argument, NULL, 'k'},
+         {"force-clock", no_argument, NULL, 400},
+         {"indicator", no_argument, NULL, 401},
++        {"jarvis", no_argument, NULL, 406},
+         {"radius", required_argument, NULL, 402},
+         {"ring-width", required_argument, NULL, 403},
+ 
+@@ -2135,6 +2137,10 @@ int main(int argc, char *argv[]) {
+                 show_clock = true;
+                 always_show_clock = true;
+                 break;
++            case 406:
++                jarvis = true;
++                show_indicator = true;
++                break;
+             case 401:
+                 show_indicator = true;
+                 break;
+@@ -2869,6 +2875,10 @@ int main(int argc, char *argv[]) {
+     }
+     ev_loop(main_loop, 0);
+ 
++    /* The password was right */
++    if (jarvis)
++        jarvis_unlocked();
++
+ #ifndef __OpenBSD__
+     if (pam_cleanup) {
+         pam_end(pam_handle, PAM_SUCCESS);
+diff --git a/unlock_indicator.c b/unlock_indicator.c
+index 9978a89..375e38e 100644
+--- a/unlock_indicator.c
++++ b/unlock_indicator.c
+@@ -29,6 +29,7 @@
+ 
+ /* clock stuff */
+ #include <time.h>
++#include <unistd.h>
+ 
+ extern double circle_radius;
+ extern double ring_width;
+@@ -520,7 +521,250 @@ static void draw_bar(cairo_t *ctx, double bar_x, double bar_y, double bar_width,
+     cairo_restore(ctx);
+ }
+ 
++/*
++ * The ring of J.A.R.V.I.S's HUD (~/jarvis/bin/jarvis-hud-overlay), as the
++ * unlock indicator (--jarvis): bars around a circle that pulse with each key,
++ * ticks turning slowly, a gauge filling once the password is right. Cyan; amber while typing, red when wrong.
++ * Animated by --refresh-rate.
++ */
++bool jarvis = false;
++#define JARVIS_BARS 48          /* on each side, mirrored */
++static double jarvis_levels[JARVIS_BARS];
++static double jarvis_last = 0;
++static double jarvis_unlocked_at = 0;
++/* The last key, change of state or bar up: 30 frames a second after it */
++static double jarvis_active = 0;
++static cairo_surface_t *jarvis_bg = NULL;
++/* Each frame repaints only the rings' squares on screen (the clock and the
++ * state are inside), found as the last frame drew them */
++#define JARVIS_MAX_BOXES 16
++typedef struct { double x, y, size; } jarvis_box_t;
++static jarvis_box_t jarvis_boxes[JARVIS_MAX_BOXES], jarvis_drawn[JARVIS_MAX_BOXES];
++static int jarvis_box_count = 0, jarvis_drawn_count = 0;
++static bool jarvis_clip = false;
++static int jarvis_frame = 0;
++
++static double jarvis_now(void) {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return ts.tv_sec + ts.tv_nsec / 1e9;
++}
++
++/* Once a frame: the bars fall slowly, as on a hi-fi; a key raises a few */
++static void jarvis_update(void) {
++    double now = jarvis_now();
++    double dt = jarvis_last ? fmin(0.2, now - jarvis_last) : 0;
++    jarvis_last = now;
++    jarvis_frame++;
++    double fall = pow(0.86, dt * 60);
++    double highest = 0;
++    for (int i = 0; i < JARVIS_BARS; i++)
++        highest = fmax(highest, jarvis_levels[i]);
++    if (!jarvis_active || unlock_state == STATE_KEY_ACTIVE || unlock_state == STATE_BACKSPACE_ACTIVE ||
++        auth_state != STATE_AUTH_IDLE || jarvis_unlocked_at || highest > 0.04)
++        jarvis_active = now;
++    for (int i = 0; i < JARVIS_BARS; i++)
++        jarvis_levels[i] *= fall;
++    if (unlock_state == STATE_KEY_ACTIVE || unlock_state == STATE_BACKSPACE_ACTIVE) {
++        double centre = rand() % JARVIS_BARS;
++        double height = unlock_state == STATE_KEY_ACTIVE ? 0.55 + (rand() % 45) / 100.0 : 0.3;
++        for (int i = 0; i < JARVIS_BARS; i++) {
++            double level = 0.08 + height * exp(-pow((i - centre) / 2.5, 2));
++            if (level > jarvis_levels[i])
++                jarvis_levels[i] = level;
++        }
++    }
++    if (auth_state == STATE_AUTH_WRONG && jarvis_levels[0] < 0.02)
++        /* Wrong: all the bars at once, falling */
++        for (int i = 0; i < JARVIS_BARS; i++)
++            jarvis_levels[i] = 0.25 + (rand() % 30) / 100.0;
++}
++
++static void jarvis_label(cairo_t *ctx, const char *text, double cx, double y, double size,
++                         double r, double g, double b, double a) {
++    cairo_text_extents_t extents;
++    cairo_select_font_face(ctx, "DejaVu Sans Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
++    cairo_set_font_size(ctx, size);
++    cairo_text_extents(ctx, text, &extents);
++    cairo_set_source_rgba(ctx, r, g, b, a);
++    cairo_move_to(ctx, cx - extents.width / 2 - extents.x_bearing, y);
++    cairo_show_text(ctx, text);
++}
++
++/* A dark disc behind, so the ring reads on any background */
++static void jarvis_glow(cairo_t *ctx, double cx, double cy) {
++    const double R = BUTTON_RADIUS, k = R / 120.0, bar_length = 110 * k;
++    cairo_pattern_t *glow = cairo_pattern_create_radial(cx, cy, R * 0.4, cx, cy, R + bar_length + 20 * k);
++    cairo_pattern_add_color_stop_rgba(glow, 0, 0.02, 0.05, 0.08, 0.80);
++    cairo_pattern_add_color_stop_rgba(glow, 0.55, 0.02, 0.05, 0.08, 0.55);
++    cairo_pattern_add_color_stop_rgba(glow, 1, 0.02, 0.05, 0.08, 0.0);
++    cairo_set_source(ctx, glow);
++    cairo_arc(ctx, cx, cy, R + bar_length + 20 * k, 0, 2 * M_PI);
++    cairo_fill(ctx);
++    cairo_pattern_destroy(glow);
++}
++
++static void jarvis_ring(cairo_t *ctx, double cx, double cy) {
++    const double R = BUTTON_RADIUS;
++    const double k = R / 120.0;   /* the HUD's sizes are for a radius of 120 */
++    const double bar_length = 110 * k;
++    const double now = jarvis_now();
++    double c[3] = {0.22, 0.85, 1.0};                        /* cyan */
++    const char *label = "LOCKED";
++    double progress = -1;
++
++    if (jarvis_unlocked_at) {
++        label = "ACCESS GRANTED";
++        double t = fmin(1.0, (now - jarvis_unlocked_at) / 0.45);
++        progress = 1 - pow(1 - t, 3);
++    } else if (auth_state == STATE_AUTH_LOCK) {
++        label = "LOCKING";
++    } else if (auth_state == STATE_AUTH_WRONG || auth_state == STATE_I3LOCK_LOCK_FAILED) {
++        c[0] = 0.94; c[1] = 0.33; c[2] = 0.31;              /* red */
++        label = auth_state == STATE_AUTH_WRONG ? "ACCESS DENIED" : "LOCK FAILED";
++    } else if (input_position > 0 || auth_state == STATE_AUTH_VERIFY) {
++        /* Typing, and while the password is checked (i3lock waits for the
++         * answer, so nothing moves): the answer is quick, with no delay in
++         * /etc/pam.d/i3lock */
++        c[0] = 1.0; c[1] = 0.69; c[2] = 0.18;               /* amber */
++        label = "LISTENING";
++    }
++
++    cairo_save(ctx);
++
++
++    /* Bars, from the circle outwards, three strokes for the glow; at rest
++     * they breathe a little */
++    const double widths[3] = {9, 5, 2.2}, alphas[3] = {0.10, 0.25, 0.95};
++    cairo_set_line_cap(ctx, CAIRO_LINE_CAP_ROUND);
++    for (int pass = 0; pass < 3; pass++) {
++        cairo_set_line_width(ctx, widths[pass] * k);
++        cairo_set_source_rgba(ctx, c[0], c[1], c[2], alphas[pass]);
++        for (int i = 0; i < JARVIS_BARS; i++) {
++            double breath = 0.03 * (1 + sin(now * 1.3 + i * 0.35));
++            double level = fmin(1.0, fmax(jarvis_levels[i], breath));
++            double length = 3 * k + bar_length * level;
++            for (int side = 1; side >= -1; side -= 2) {
++                double angle = M_PI / 2 + side * M_PI * (i + 0.5) / JARVIS_BARS;
++                double dx = cos(angle), dy = sin(angle);
++                cairo_move_to(ctx, cx + dx * (R + 6 * k), cy + dy * (R + 6 * k));
++                cairo_line_to(ctx, cx + dx * (R + 6 * k + length), cy + dy * (R + 6 * k + length));
++                /* One at a time: as one path, the strokes' overlaps are slow */
++                cairo_stroke(ctx);
++            }
++        }
++    }
++
++    /* The inner circle, and a ring of ticks turning slowly */
++    cairo_set_line_width(ctx, 1.5 * k);
++    cairo_set_source_rgba(ctx, c[0], c[1], c[2], 0.8);
++    cairo_arc(ctx, cx, cy, R, 0, 2 * M_PI);
++    cairo_stroke(ctx);
++    cairo_set_line_width(ctx, 1 * k);
++    cairo_set_source_rgba(ctx, c[0], c[1], c[2], 0.45);
++    for (int i = 0; i < 60; i++) {
++        double angle = now * 0.15 + 2 * M_PI * i / 60;
++        double inner = R - (i % 5 == 0 ? 10 : 6) * k;
++        cairo_move_to(ctx, cx + cos(angle) * inner, cy + sin(angle) * inner);
++        cairo_line_to(ctx, cx + cos(angle) * (R - 2 * k), cy + sin(angle) * (R - 2 * k));
++    }
++    cairo_stroke(ctx);
++
++    /* Unlocked: the core's gauge filling clockwise from the top, a bright head */
++    if (progress >= 0) {
++        double r = R - 22 * k, top = -M_PI / 2;
++        int segments = 48;
++        cairo_set_line_width(ctx, 6 * k);
++        cairo_set_line_cap(ctx, CAIRO_LINE_CAP_BUTT);
++        cairo_set_source_rgba(ctx, c[0], c[1], c[2], 0.12);
++        cairo_arc(ctx, cx, cy, r, 0, 2 * M_PI);
++        cairo_stroke(ctx);
++        double lit = progress * segments;
++        cairo_set_source_rgba(ctx, c[0], c[1], c[2], 0.9);
++        for (int i = 0; i < ceil(lit); i++) {
++            cairo_arc(ctx, cx, cy, r, top + 2 * M_PI * i / segments,
++                      top + 2 * M_PI * fmin(i + 0.8, lit) / segments);
++            cairo_stroke(ctx);
++        }
++        double head = top + 2 * M_PI * progress;
++        cairo_set_source_rgba(ctx, 1, 1, 1, 0.9);
++        cairo_arc(ctx, cx + cos(head) * r, cy + sin(head) * r, 3.5 * k, 0, 2 * M_PI);
++        cairo_fill(ctx);
++    }
++
++    /* The state, under the clock */
++    jarvis_label(ctx, label, cx, cy + 38 * k, fmin(13.0, 180 / (0.8 * strlen(label))) * k * 1.15,
++                 c[0], c[1], c[2], 1.0);
++    cairo_restore(ctx);
++}
++
++/* The ring is drawn in memory, once a frame (cairo through X is slow with
++ * its hundreds of strokes), then copied to each screen */
++
++static void draw_jarvis(cairo_t *ctx, double cx, double cy) {
++    static cairo_surface_t *ring = NULL, *glow = NULL;
++    static int ring_frame = -1;
++    static double ring_scale = 0;
++    double extent = BUTTON_RADIUS * (1 + 110 / 120.0) + 24 * BUTTON_RADIUS / 120.0;
++    double x = cx, y = cy, device = extent, ignored = 0;
++    cairo_user_to_device(ctx, &x, &y);
++    cairo_user_to_device_distance(ctx, &device, &ignored);
++    double scale = device / extent;
++    int size = ceil(2 * device);
++
++    if (!ring || ring_scale != scale || ring_frame != jarvis_frame) {
++        if (ring && ring_scale != scale) {
++            cairo_surface_destroy(ring);
++            ring = NULL;
++        }
++        if (!ring) {
++            ring = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size, size);
++            if (glow)
++                cairo_surface_destroy(glow);
++            glow = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, size, size);
++            cairo_t *glow_ctx = cairo_create(glow);
++            cairo_scale(glow_ctx, scale, scale);
++            jarvis_glow(glow_ctx, extent, extent);
++            cairo_destroy(glow_ctx);
++        }
++        cairo_t *ring_ctx = cairo_create(ring);
++        cairo_set_operator(ring_ctx, CAIRO_OPERATOR_SOURCE);
++        cairo_set_source_surface(ring_ctx, glow, 0, 0);
++        cairo_paint(ring_ctx);
++        cairo_set_operator(ring_ctx, CAIRO_OPERATOR_OVER);
++        cairo_scale(ring_ctx, scale, scale);
++        jarvis_ring(ring_ctx, extent, extent);
++        cairo_destroy(ring_ctx);
++        cairo_surface_flush(ring);
++        ring_scale = scale;
++        ring_frame = jarvis_frame;
++    }
++
++    cairo_save(ctx);
++    cairo_identity_matrix(ctx);
++    double left = round(x - size / 2.0), top = round(y - size / 2.0);
++    cairo_set_source_surface(ctx, ring, left, top);
++    cairo_paint(ctx);
++    cairo_restore(ctx);
++
++    if (jarvis_drawn_count < JARVIS_MAX_BOXES)
++        jarvis_drawn[jarvis_drawn_count++] = (jarvis_box_t){left, top, size};
++}
++
++/* Called once the password is right: the gauge fills, then i3lock exits */
++void jarvis_unlocked(void) {
++    jarvis_unlocked_at = jarvis_now();
++    while (jarvis_now() - jarvis_unlocked_at < 0.75) {
++        redraw_screen();
++        usleep(1000000 / 60);
++    }
++}
++
+ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
++    if (jarvis) {
++        draw_jarvis(ctx, ind_x, ind_y);
++        return;
++    }
+     if (unlock_indicator &&
+         (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE || show_indicator)) {
+         /* Draw a (centered) circle with transparent background. */
+@@ -763,6 +1007,37 @@ static void draw_elements(cairo_t *const ctx, DrawData const *const draw_data) {
+     draw_text(ctx, draw_data->greeter_text);
+ }
+ 
++/* The background colour, the blurred screen or the image */
++static void draw_background(uint32_t *resolution, cairo_t *xcb_ctx) {
++    if (blur_bg_img) {
++        cairo_set_source_surface(xcb_ctx, blur_bg_img, 0, 0);
++        cairo_paint(xcb_ctx);
++    } else {
++        cairo_set_source_rgba(xcb_ctx, background.red, background.green, background.blue, background.alpha);
++        cairo_rectangle(xcb_ctx, 0, 0, resolution[0], resolution[1]);
++        cairo_fill(xcb_ctx);
++    }
++
++    if (img) {
++        draw_image(resolution, img, xcb_ctx);
++    }
++}
++
++/* The background for --jarvis, drawn again only if the screens change */
++static void jarvis_background(uint32_t *resolution, cairo_surface_t *like) {
++    static uint32_t width = 0, height = 0;
++    if (jarvis_bg && width == resolution[0] && height == resolution[1])
++        return;
++    if (jarvis_bg)
++        cairo_surface_destroy(jarvis_bg);
++    width = resolution[0];
++    height = resolution[1];
++    jarvis_bg = cairo_surface_create_similar(like, CAIRO_CONTENT_COLOR_ALPHA, width, height);
++    cairo_t *bg_ctx = cairo_create(jarvis_bg);
++    draw_background(resolution, bg_ctx);
++    cairo_destroy(bg_ctx);
++}
++
+ /*
+  * Renders the lock screen on the provided drawable with the given resolution.
+  */
+@@ -779,15 +1054,33 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
+      * depending on the amount of screens) unlock indicators on.
+      * create two more surfaces for time and date display
+      */
+-    cairo_surface_t *output = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, resolution[0], resolution[1]);
+-    cairo_t *ctx = cairo_create(output);
+-    cairo_scale(ctx, scaling_factor, scaling_factor);
+-
+-    //    cairo_set_font_face(ctx, get_font_face(0));
+-
+     cairo_surface_t *xcb_output = cairo_xcb_surface_create(conn, drawable, vistype, resolution[0], resolution[1]);
+     cairo_t *xcb_ctx = cairo_create(xcb_output);
+ 
++    /* --jarvis redraws 30 times a second: the background is drawn once, kept
++     * on the X server, and the ring and the text straight over it */
++    cairo_surface_t *output = NULL;
++    cairo_t *ctx;
++    if (jarvis) {
++        jarvis_background(resolution, xcb_output);
++        ctx = cairo_create(xcb_output);
++        if (jarvis_clip) {
++            for (int i = 0; i < jarvis_box_count; i++) {
++                cairo_rectangle(xcb_ctx, jarvis_boxes[i].x, jarvis_boxes[i].y, jarvis_boxes[i].size, jarvis_boxes[i].size);
++                cairo_rectangle(ctx, jarvis_boxes[i].x, jarvis_boxes[i].y, jarvis_boxes[i].size, jarvis_boxes[i].size);
++            }
++            cairo_clip(xcb_ctx);
++            cairo_clip(ctx);
++        }
++        jarvis_drawn_count = 0;
++        cairo_set_source_surface(xcb_ctx, jarvis_bg, 0, 0);
++        cairo_paint(xcb_ctx);
++    } else {
++        output = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, resolution[0], resolution[1]);
++        ctx = cairo_create(output);
++    }
++    cairo_scale(ctx, scaling_factor, scaling_factor);
++
+     /*update image according to the slideshow_interval*/
+     if (slideshow_image_count > 0) {
+         unsigned long now = (unsigned long)time(NULL);
+@@ -806,17 +1099,8 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
+         }
+     }
+ 
+-    if (blur_bg_img) {
+-        cairo_set_source_surface(xcb_ctx, blur_bg_img, 0, 0);
+-        cairo_paint(xcb_ctx);
+-    } else {
+-        cairo_set_source_rgba(xcb_ctx, background.red, background.green, background.blue, background.alpha);
+-        cairo_rectangle(xcb_ctx, 0, 0, resolution[0], resolution[1]);
+-        cairo_fill(xcb_ctx);
+-    }
+-
+-    if (img) {
+-        draw_image(resolution, img, xcb_ctx);
++    if (!jarvis) {
++        draw_background(resolution, xcb_ctx);
+     }
+ 
+     /*
+@@ -826,6 +1110,8 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
+      * draw indicator
+      * draw text
+      */
++    if (jarvis)
++        jarvis_update();
+     DrawData draw_data = create_draw_data();
+ 
+     if (unlock_indicator &&
+@@ -1201,12 +1487,14 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
+     te_free(te_greeter_x_expr);
+     te_free(te_greeter_y_expr);
+ 
+-    cairo_set_source_surface(xcb_ctx, output, 0, 0);
+-    cairo_rectangle(xcb_ctx, 0, 0, resolution[0], resolution[1]);
+-    cairo_fill(xcb_ctx);
++    if (output) {
++        cairo_set_source_surface(xcb_ctx, output, 0, 0);
++        cairo_rectangle(xcb_ctx, 0, 0, resolution[0], resolution[1]);
++        cairo_fill(xcb_ctx);
++        cairo_surface_destroy(output);
++    }
+ 
+     cairo_surface_destroy(xcb_output);
+-    cairo_surface_destroy(output);
+     cairo_destroy(ctx);
+     cairo_destroy(xcb_ctx);
+ }
+@@ -1275,8 +1563,45 @@ void draw_image(uint32_t* root_resolution, cairo_surface_t *img, cairo_t* xcb_ct
+  * Calls render_lock on a new pixmap and swaps that with the current pixmap
+  *
+  */
++/* --jarvis: one pixmap kept, drawn whole at first, when the screens change and
++ * every 30 seconds (the date), else only the rings' squares */
++static void jarvis_redraw(void) {
++    static xcb_pixmap_t pixmap = XCB_NONE;
++    static uint32_t width = 0, height = 0;
++    static double last_full = 0;
++    double now = jarvis_now();
++    bool full = pixmap == XCB_NONE || width != last_resolution[0] || height != last_resolution[1] ||
++                jarvis_box_count == 0 || now - last_full > 30;
++    if (full) {
++        if (pixmap != XCB_NONE)
++            xcb_free_pixmap(conn, pixmap);
++        pixmap = create_bg_pixmap(conn, win, last_resolution, color);
++        width = last_resolution[0];
++        height = last_resolution[1];
++        last_full = now;
++    }
++    jarvis_clip = !full;
++    render_lock(last_resolution, pixmap);
++    if (full) {
++        xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXMAP, (uint32_t[1]){pixmap});
++        xcb_clear_area(conn, 0, win, 0, 0, width, height);
++    } else {
++        for (int i = 0; i < jarvis_box_count; i++)
++            xcb_clear_area(conn, 0, win, fmax(0, jarvis_boxes[i].x), fmax(0, jarvis_boxes[i].y),
++                           ceil(jarvis_boxes[i].size) + 1, ceil(jarvis_boxes[i].size) + 1);
++    }
++    /* The boxes for the next frame */
++    memcpy(jarvis_boxes, jarvis_drawn, sizeof jarvis_drawn);
++    jarvis_box_count = jarvis_drawn_count;
++    xcb_flush(conn);
++}
++
+ void redraw_screen(void) {
+     DEBUG("redraw_screen(unlock_state = %d, auth_state = %d) @ [%lu]\n", unlock_state, auth_state, (unsigned long)time(NULL));
++    if (jarvis) {
++        jarvis_redraw();
++        return;
++    }
+     xcb_pixmap_t pixmap = create_bg_pixmap(conn, win, last_resolution, color);
+     render_lock(last_resolution, pixmap);
+     xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXMAP, (uint32_t[1]){pixmap});
+@@ -1308,6 +1633,15 @@ void *start_time_redraw_tick_pthread(void *arg) {
+ }
+ 
+ static void time_redraw_cb(struct ev_loop *loop, ev_periodic *w, int revents) {
++    if (jarvis) {
++        /* --jarvis: the frame rate asked (30 a second) for 2 seconds after
++         * something happens, then 10, then 1 after a minute (the screen is
++         * off by then): the ring costs */
++        double now = jarvis_now(), still = now - jarvis_active;
++        double every = still < 2 ? 0 : still < 60 ? 0.1 : 1.0;
++        if (now - jarvis_last < every - 0.01)
++            return;
++    }
+     redraw_screen();
+ }
+ 
+diff --git a/unlock_indicator.h b/unlock_indicator.h
+index 8a16ec1..6c4cc3c 100644
+--- a/unlock_indicator.h
++++ b/unlock_indicator.h
+@@ -68,6 +68,7 @@ void draw_image(uint32_t* resolution, cairo_surface_t* img, cairo_t* xcb_ctx);
+ void init_colors_once(void);
+ void redraw_screen(void);
+ void clear_indicator(void);
++void jarvis_unlocked(void);
+ void start_time_redraw_timeout(void);
+ void* start_time_redraw_tick_pthread(void* arg);
+ void start_time_redraw_tick(struct ev_loop* main_loop);

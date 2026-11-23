@@ -1,0 +1,85 @@
+[general]
+status_path = "/home/anthe/.vdirsyncer/status/"
+
+# ========== CONTACTS (CardDAV) ==========
+# The local address book is synced with two servers: the Radicale server on
+# the Pi (the main one, also used by the phone) and Infomaniak (kept for a
+# while, as a backup). A change on either side goes through the local copy
+# to the other. On a conflict, the Pi wins.
+
+[storage local_contacts]
+type = "filesystem"
+path = "/home/anthe/documents/contacts/"
+fileext = ".vcf"
+
+[pair radicale_contacts]
+a = "radicale_contacts_remote"
+b = "local_contacts"
+# [name, collection on the Pi, local folder]
+collections = [["contacts", "contacts", "66d789c6-a165-408a-a658-5ed3d7170583"]]
+conflict_resolution = "a wins"
+
+[storage radicale_contacts_remote]
+type = "carddav"
+url = "http://10.158.145.1:5232/anthe/"
+username = "anthe"
+password.fetch = ["command", "gpg", "-q", "--no-tty", "-d", "/home/anthe/.secrets/dav-radicale.gpg"]
+
+[pair infomaniak_contacts]
+a = "infomaniak_contacts_remote"
+b = "local_contacts"
+collections = ["66d789c6-a165-408a-a658-5ed3d7170583"]
+conflict_resolution = "b wins"
+
+[storage infomaniak_contacts_remote]
+type = "carddav"
+url.fetch = ["command", "sed", "-n", "s|^infomaniak_contacts=||p", "/home/anthe/.secrets/dav"]
+username.fetch = ["command", "sed", "-n", "s|^infomaniak_user=||p", "/home/anthe/.secrets/dav"]
+password.fetch = ["command", "gpg", "-q", "--no-tty", "-d", "/home/anthe/.secrets/dav-infomaniak.gpg"]
+
+# ========== CALENDAR (CalDAV) ==========
+[pair infomaniak_calendar]
+a = "infomaniak_calendar_remote"
+b = "local_calendar"
+collections = ["from a"]
+conflict_resolution = "a wins"
+
+[storage infomaniak_calendar_remote]
+type = "caldav"
+url.fetch = ["command", "sed", "-n", "s|^infomaniak_calendar=||p", "/home/anthe/.secrets/dav"]
+username.fetch = ["command", "sed", "-n", "s|^infomaniak_user=||p", "/home/anthe/.secrets/dav"]
+password.fetch = ["command", "gpg", "-q", "--no-tty", "-d", "/home/anthe/.secrets/dav-infomaniak.gpg"]
+# verify = false  ; Désactive SSL si nécessaire
+
+# ========== BIRTHDAYS (CalDAV) ==========
+# BIRTHDAYS cannot be synced with CaldDAV on infomaniak!!
+# [pair infomaniak_birthdays]
+# a = "infomaniak_birthdays_remote"
+# b = "local_calendar"
+# collections = ["from a"]
+# conflict_resolution = "a wins"
+
+# [storage infomaniak_birthdays_remote]
+# type = "caldav"
+# url.fetch = ["command", "sed", "-n", "s|^infomaniak_birthdays=||p", "/home/anthe/.secrets/dav"]
+# username.fetch = ["command", "sed", "-n", "s|^infomaniak_user=||p", "/home/anthe/.secrets/dav"]
+# verify = false  ; Désactive SSL si nécessaire
+
+# ============ Outlook through infomaniak =========
+[pair outlook_infomaniak_calendar]
+a = "outlook_infomaniak_calendar_remote"
+b = "local_calendar"
+collections = ["from a"]
+conflict_resolution = "a wins"
+
+[storage outlook_infomaniak_calendar_remote]
+type = "caldav"
+url.fetch = ["command", "sed", "-n", "s|^outlook_infomaniak_calendar=||p", "/home/anthe/.secrets/dav"]
+username.fetch = ["command", "sed", "-n", "s|^infomaniak_user=||p", "/home/anthe/.secrets/dav"]
+password.fetch = ["command", "gpg", "-q", "--no-tty", "-d", "/home/anthe/.secrets/dav-infomaniak.gpg"]
+
+# ============ LOCAL ==========
+[storage local_calendar]
+type = "filesystem"
+path = "~/documents/calendars/infomaniak/"
+fileext = ".ics"
