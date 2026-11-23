@@ -1,0 +1,18 @@
+[Unit]
+Description=~/nas: the pi's archive (/mnt/storage1/anthe/archive), mounted on demand
+After=network-online.target
+
+[Service]
+Type=notify
+ExecStartPre=/usr/bin/mkdir -p %h/nas
+# Files read are cached in ~/.cache/rclone, up to 20 GB, so a second read is local
+ExecStart=%h/.local/bin/rclone mount :sftp:/mnt/storage1/anthe/archive %h/nas \
+    --sftp-ssh "ssh -o ForwardX11=no -o BatchMode=yes pi" \
+    --vfs-cache-mode full --vfs-cache-max-size 20G --vfs-cache-max-age 720h \
+    --dir-cache-time 5s
+ExecStop=/usr/bin/fusermount3 -u %h/nas
+Restart=on-failure
+RestartSec=1min
+
+[Install]
+WantedBy=default.target

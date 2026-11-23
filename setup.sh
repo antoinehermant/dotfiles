@@ -68,3 +68,28 @@ ln -sf ~/.dotfiles/qutebrowser/config.py ~/.config/qutebrowser/config.py
 mkdir -p ~/.config/qutebrowser/greasemonkey
 ln -sf ~/.dotfiles/qutebrowser/greasemonkey/notifications.js ~/.config/qutebrowser/greasemonkey/
 ln -sf ~/.dotfiles/qutebrowser/themes/* ~/.config/qutebrowser/qutebrowser-themes/themes/
+mkdir -p ~/.config/qutebrowser/userscripts
+ln -sf ~/.dotfiles/qutebrowser/userscripts/add-doi ~/.config/qutebrowser/userscripts/add-doi
+
+# Research feed (python-utils' research/feed.py): its config, and a daily timer
+ln -sf ~/.dotfiles/rcfiles/research-feed.toml ~/.config/research-feed.toml
+mkdir -p ~/.config/systemd/user
+ln -sf ~/.dotfiles/rcfiles/systemd/research-feed.service ~/.config/systemd/user/research-feed.service
+ln -sf ~/.dotfiles/rcfiles/systemd/research-feed.timer ~/.config/systemd/user/research-feed.timer
+systemctl --user daemon-reload && systemctl --user enable --now research-feed.timer
+
+# Backup: restic snapshots of ~ on the pi, every evening
+# (restic itself: the release binary in ~/.local/bin, `restic self-update`)
+ln -sf ~/.dotfiles/bin/backup ~/.local/bin/backup
+ln -sf ~/.dotfiles/rcfiles/systemd/backup.service ~/.config/systemd/user/backup.service
+ln -sf ~/.dotfiles/rcfiles/systemd/backup.timer ~/.config/systemd/user/backup.timer
+systemctl --user daemon-reload && systemctl --user enable --now backup.timer
+
+# The pi's archive, mounted on demand in ~/nas (rclone: the release binary in
+# ~/.local/bin, `rclone selfupdate`), and `archive put|get|ls` to move folders there
+ln -sf ~/.dotfiles/bin/archive ~/.local/bin/archive
+ln -sf ~/.dotfiles/rcfiles/systemd/nas.service ~/.config/systemd/user/nas.service
+systemctl --user daemon-reload && systemctl --user enable --now nas.service
+
+# Adding a DOI from zathura (rcfiles/zathura/zathurarc: b and B)
+ln -sf ~/.dotfiles/bin/zathura-doi ~/.local/bin/zathura-doi
