@@ -1,0 +1,14 @@
+#!/bin/bash
+# agent-shell's Claude adapter on UBELIX (emacs/config-hpc.el). It needs
+# Node 22: run by its path, not as a module, which would swap the session's
+# GCC 12. Nothing may print here: stdout is the adapter's protocol.
+#   claude-agent-acp-hpc --install   installs or updates it
+NODE=/software.9/software/nodejs/22.16.0-GCCcore-14.2.0
+export PATH=$NODE/bin:$HOME/.local/bin:$PATH
+export LD_LIBRARY_PATH=/software.9/software/GCCcore/14.2.0/lib64:$NODE/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+PREFIX=$HOME/.local/lib/claude-agent-acp
+
+if [ "$1" = --install ]; then
+    exec npm install --prefix "$PREFIX" @agentclientprotocol/claude-agent-acp@latest
+fi
+exec node "$PREFIX/node_modules/@agentclientprotocol/claude-agent-acp/dist/index.js" "$@"

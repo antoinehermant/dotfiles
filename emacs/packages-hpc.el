@@ -5,9 +5,8 @@
 ;; here: those of the laptop's packages.el that its modules use there. Left
 ;; out: the desktop (exwm, xelb, desktop-environment), calendars and contacts
 ;; (org-caldav, khalel, khardel, org-vcard, org-wild-notifier, alert), the
-;; dashboard, the agents (agent-shell, acp, shell-maker: no Claude there
-;; yet), tldr, night-owl-theme (anthe-night-owl is in the dotfiles). Run
-;; `doomc sync' after a change.
+;; dashboard, tldr, night-owl-theme (anthe-night-owl is in the dotfiles).
+;; Run `doomc sync' after a change.
 
 (package! ws-butler)
 (package! solaire-mode :disable t)
@@ -17,3 +16,8 @@
 (package! pkg-info)
 (package! exec-path-from-shell)
 (package! cape)
+
+;; Claude in agent-shell (anthe-agents.el), as on the laptop
+(package! shell-maker)
+(package! acp)
+(package! agent-shell)

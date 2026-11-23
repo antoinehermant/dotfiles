@@ -113,6 +113,11 @@
 
 (require 'anthe-slurm)
 
+;; Claude in agent-shell (SPC o c), its adapter run with Node 22
+(require 'anthe-agents)
+(setq agent-shell-anthropic-claude-acp-command
+      (list (expand-file-name "~/.dotfiles/bin/claude-agent-acp-hpc")))
+
 ;; (remove-hook 'python-mode-hook 'eglot-ensure)
 
 ;; (add-to-list 'eglot-server-programs
