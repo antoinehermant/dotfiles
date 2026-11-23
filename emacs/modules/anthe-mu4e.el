@@ -848,9 +848,19 @@ The first index only takes note of those already there."
     (anthe/mail-idle-stop)
     (mu4e-quit)))
 
+;; With nothing else in the workspace, `quit-window' left it in place: the
+;; dashboard then
+(defun anthe/mu4e-main-quit ()
+  "Close mu4e's main view, for the dashboard if nothing else is left."
+  (interactive)
+  (let ((buffer (current-buffer)))
+    (quit-window)
+    (when (eq (window-buffer) buffer)
+      (dashboard-open))))
+
 (with-eval-after-load 'mu4e
   (evil-define-key* 'normal mu4e-main-mode-map
-    "q" #'quit-window
+    "q" #'anthe/mu4e-main-quit
     "Q" #'anthe/mu4e-quit)
   ;; mu4e may start again after Q: so does mail-idle
   (add-hook 'mu4e-main-mode-hook #'anthe/mail-idle-start))
