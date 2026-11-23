@@ -16,6 +16,11 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     exec tmux attach -t "$SESSION"
 fi
 
+# The group's modules (nctools), which only interactive shells get
+for dir in /storage/workspaces/climate_charibdis/climate_ism/Software/epyc2.9/modulefiles/all \
+           /storage/workspaces/climate_charibdis/climate_ism/modulefiles; do
+    [ -d "$dir" ] && module use "$dir"
+done
 module load $HPC_MODULES >/dev/null 2>&1 || echo "hpc-session: not all of $HPC_MODULES loaded"
 export NVIM_LOCAL=/tmp/$USER/nvim COLORTERM=truecolor
 "$HOME/.dotfiles/bin/nvim-plugins" unpack || echo "hpc-session: Neovim's plugins not unpacked"
