@@ -80,8 +80,24 @@
 ;; key, Escape too, goes to the terminal. C-z gives the keys back to evil
 ;; (to scroll or copy, say), `i' then types in Neovim again; M-SPC is the
 ;; leader meanwhile.
+;; Every key, also those vterm keeps for Emacs (`vterm-keymap-exceptions':
+;; C-u, C-g, C-h, C-l, C-y, C-c, C-x, M-x...): the other side wants them
+;; (evil's scroll, Neovim's windows, its Emacs's C-x and C-g). M-SPC : is
+;; this Emacs's M-x meanwhile.
+(defvar anthe/vterm-raw-mode-map
+  (let ((map (make-sparse-keymap)))
+    (dolist (key vterm-keymap-exceptions)
+      (define-key map (kbd key) #'vterm--self-insert))
+    map)
+  "The keys `anthe/vterm-raw-mode' sends to the terminal.")
+
+(define-minor-mode anthe/vterm-raw-mode
+  "Send to the terminal the keys vterm keeps for Emacs."
+  :keymap anthe/vterm-raw-mode-map)
+
 (defun anthe/vterm-raw (on)
   "Send every key to the terminal when ON is \"on\", give them back to evil else."
+  (anthe/vterm-raw-mode (if (equal on "on") 1 -1))
   (when (bound-and-true-p evil-local-mode)
     (if (equal on "on")
         (evil-emacs-state)
