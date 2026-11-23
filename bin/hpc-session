@@ -12,6 +12,10 @@
 SESSION=hpc
 HPC_MODULES="nctools CMake/3.26.3 GCC/12.3.0 nodejs/18.17.1-GCCcore-12.3.0"
 
+if [ -n "${TMUX:-}" ]; then
+    echo "hpc-session: already in tmux (C-b d to detach)"
+    exit 0
+fi
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     exec tmux attach -t "$SESSION"
 fi

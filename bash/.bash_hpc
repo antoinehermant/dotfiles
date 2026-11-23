@@ -22,9 +22,19 @@ doomc() { _emc_run "$HOME/.config/emacs/bin/doom" "$@"; }
 et() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -t -a "" "$@"; }
 eg() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -c -n -a "" "$@"; }
 
-# Neovim, 0.11 (the system's is 0.8)
-alias v='~/software/nvim-linux-x86_64/bin/nvim'
-alias nvim='~/software/nvim-linux-x86_64/bin/nvim'
+# Neovim, 0.11 (the system's is 0.8), in any shell from the login node's
+# local disk (bin/nvim-plugins): unpacked first if it isn't yet
+export NVIM_LOCAL=/tmp/$USER/nvim
+unalias v nvim 2>/dev/null
+nvim() {
+    [ -d "$NVIM_LOCAL/lazy" ] || ~/.dotfiles/bin/nvim-plugins unpack
+    ~/software/nvim-linux-x86_64/bin/nvim "$@"
+}
+v() { nvim "$@"; }
+
+# My tmux session (bin/hpc-session): back to it after a plain ssh ubelix3,
+# or started if it doesn't run
+hpc() { ~/.dotfiles/bin/hpc-session; }
 
 # In tmux, a shell started before the last connection keeps its X display:
 # read the session's again at each prompt, for ncview
