@@ -244,5 +244,11 @@
 (remove-hook 'python-mode-hook #'lsp-deferred)
 (remove-hook 'python-mode-local-vars-hook #'lsp!)
 
+;; The conda Emacs starts without the modules' libraries, which clash with
+;; conda's (emc in ~/.bashrc): the programs it starts get them back, as
+;; ncview needs netCDF's (HDF5, udunits...), and vterm's shells their modules'
+(when-let ((libraries (getenv "MODULES_LD_LIBRARY_PATH")))
+  (setenv "LD_LIBRARY_PATH" libraries))
+
 (provide 'config-ubelix)
 ;;; config-ubelix.el ends here
