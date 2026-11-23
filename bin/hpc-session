@@ -1,0 +1,28 @@
+#!/bin/bash -l
+# On UBELIX: my work session, in tmux (rcfiles/tmux-hpc.conf), which stays
+# when I disconnect. `hpc` on the laptop runs this. Attaches to the session
+# if it runs; else starts it, with:
+# - the modules loaded once (HPC_MODULES), so all its shells have them;
+# - Neovim's plugins, parsers and servers unpacked to the login node's
+#   local disk (bin/nvim-plugins, $NVIM_LOCAL);
+# - Emacs's server started in the background (`et` and `eg`, bash/.bash_hpc):
+#   the slow first start (up to a minute, the home's storage cold) happens
+#   while I do something else, and every client after opens at once.
+# The session lives on this login node: ~/.ssh/config pins ubelix3 to submit03.
+SESSION=hpc
+HPC_MODULES="nctools CMake/3.26.3 GCC/12.3.0 nodejs/18.17.1-GCCcore-12.3.0"
+
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    exec tmux attach -t "$SESSION"
+fi
+
+module load $HPC_MODULES >/dev/null 2>&1 || echo "hpc-session: not all of $HPC_MODULES loaded"
+export NVIM_LOCAL=/tmp/$USER/nvim COLORTERM=truecolor
+"$HOME/.dotfiles/bin/nvim-plugins" unpack || echo "hpc-session: Neovim's plugins not unpacked"
+cd /storage/workspaces/climate_charibdis/climate_ism/hermant 2>/dev/null || cd
+
+tmux -f "$HOME/.dotfiles/rcfiles/tmux-hpc.conf" new-session -d -s "$SESSION" -n main
+# Emacs's server, in the background (bash/.bash_hpc's emc)
+tmux new-window -d -t "$SESSION" -n emacs-server \
+    "bash -ic 'emc --fg-daemon=hpc'"
+exec tmux attach -t "$SESSION"

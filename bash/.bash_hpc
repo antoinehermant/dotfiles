@@ -1,0 +1,37 @@
+# shellcheck shell=bash
+# UBELIX only, sourced by its ~/.bashrc: Emacs (the conda one, Doom),
+# Neovim, and the tmux session's X display.
+
+# Conda's base, written out: `conda info --base` takes 20 s here
+CONDA_BASE=/storage/workspaces/climate_charibdis/climate_ism/Software/miniconda
+
+# Emacs runs without the modules' libraries (they clash with conda's); the
+# programs it starts (ncview, vterm's shells) get them back from
+# MODULES_LD_LIBRARY_PATH (emacs/config-hpc.el)
+_emc_run() {
+    ml poppler/23.09.0 SQLite/3.42.0 ImageMagick/7.1.1-15 nctools >/dev/null 2>&1
+    local env="$CONDA_BASE/envs/emacs"
+    env -u LD_LIBRARY_PATH MODULES_LD_LIBRARY_PATH="$LD_LIBRARY_PATH" PATH="$env/bin:$PATH" \
+        DOOMLOCALDIR="$HOME/.local/share/doom-emacs31/" "$@"
+}
+emc()   { _emc_run "$CONDA_BASE/envs/emacs/bin/emacs" "$@"; }
+doomc() { _emc_run "$HOME/.config/emacs/bin/doom" "$@"; }
+
+# Emacs's server "hpc" (bin/hpc-session starts it): et in this terminal, eg
+# in a window (X forwarding). If it doesn't run, the first starts it.
+et() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -t -a "" "$@"; }
+eg() { _emc_run "$CONDA_BASE/envs/emacs/bin/emacsclient" -s hpc -c -n -a "" "$@"; }
+
+# Neovim, 0.11 (the system's is 0.8)
+alias v='~/software/nvim-linux-x86_64/bin/nvim'
+alias nvim='~/software/nvim-linux-x86_64/bin/nvim'
+
+# In tmux, a shell started before the last connection keeps its X display:
+# read the session's again at each prompt, for ncview
+if [ -n "$TMUX" ]; then
+    _hpc_display() {
+        local line
+        line=$(tmux show-environment DISPLAY 2>/dev/null) && [ "${line#DISPLAY=}" != "$line" ] && export "$line"
+    }
+    PROMPT_COMMAND="_hpc_display${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi
