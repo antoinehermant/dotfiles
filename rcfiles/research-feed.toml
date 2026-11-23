@@ -1,0 +1,135 @@
+# The research feed (python -m python_utils.research.feed), linked to
+# ~/.config/research-feed.toml by setup.sh. What is new in my field, from
+# OpenAlex, scored by these keywords and by how much it cites my bibliography.
+
+feed = "~/org/roam/digest/feed.org"
+# Where LATER downloads the open PDFs, to read
+inbox = "~/library/inbox"
+# ADD adds to this topic of ~/library/science (python-utils' research/library.py):
+# its bib, papers/ and preprints/; and "cites mine" counts its works
+topic = "glaciology"
+
+# The first run looks back this far; the next from the last run, minus the
+# overlap (OpenAlex adds some works days after they are published)
+first_run_days = 14
+overlap_days = 7
+
+# A work is kept from this score: a keyword counts its weight in the
+# abstract, twice in the title; each work of my bibliography it cites
+# `citation_weight`, up to `citation_max`; a field journal `field_bonus`
+min_score = 6.0
+dataset_min_score = 8.0
+citation_weight = 1.0
+citation_max = 6.0
+field_bonus = 1.0
+
+# A work is kept only with one of these in its title or abstract (at the
+# start of a word: "glacial" is not "interglacial"), against other fields'
+# isochrones and inversions
+context = ["ice", "glacier", "glacial", "glaciolog", "antarc", "greenland",
+           "cryospher", "subglacial", "englacial", "firn", "nunatak"]
+
+# Every new article of these is scored: [name, ISSN]
+field_journals = [
+  ["The Cryosphere", "1994-0424"],
+  ["Journal of Glaciology", "0022-1430"],
+  ["Annals of Glaciology", "0260-3055"],
+  ["Geophysical Research Letters", "0094-8276"],
+  ["JGR Earth Surface", "2169-9011"],
+  ["JGR Solid Earth", "2169-9356"],
+  ["Climate of the Past", "1814-9324"],
+  ["Geoscientific Model Development", "1991-959X"],
+  ["Earth System Science Data", "1866-3516"],
+  ["Earth System Dynamics", "2190-4987"],
+  ["Quaternary Science Reviews", "0277-3791"],
+  ["Earth and Planetary Science Letters", "0012-821X"],
+  ["Nature Geoscience", "1752-0908"],
+  ["Reviews of Geophysics", "1944-9208"],
+  ["Global and Planetary Change", "0921-8181"],
+  ["Earth-Science Reviews", "0012-8252"],
+  ["Antarctic Science", "0954-1020"],
+  ["Cold Regions Science and Technology", "0165-232X"],
+]
+
+# Other journals (Nature, Science, Nature Communications, Remote Sensing...)
+# are searched with these, in the title or the abstract
+search_phrases = [
+  "ice sheet", "ice-sheet", "isochrone", "internal reflecting horizon",
+  "radiostratigraphy", "englacial", "ice core", "ice shelf", "subglacial",
+  "geothermal heat flux", "Antarctic ice", "Greenland ice",
+]
+
+# Every new preprint of these is scored: name = DOI prefix
+[preprint_servers]
+EGUsphere = "10.5194/egusphere"
+"ESS Open Archive" = "10.22541/essoar"
+
+# Datasets, of these repositories only: name = OpenAlex source id
+[data_repositories]
+PANGAEA = "S4377196879"
+USAP-DC = "S7407051035"
+
+# phrase = weight
+[keywords]
+"isochrone" = 4
+"isochronal" = 4
+"internal reflecting horizon" = 4
+"internal reflection horizon" = 4
+"internal layer" = 3
+"englacial stratigraphy" = 4
+"radiostratigraphy" = 4
+"radar stratigraphy" = 4
+"ice-penetrating radar" = 3
+"radio-echo sounding" = 3
+"airborne radar" = 2
+"age-depth" = 3
+"age–depth" = 3
+"PISM" = 4
+"ice sheet model" = 3
+"ice-sheet model" = 3
+"ice flow model" = 2
+"Antarctic ice sheet" = 3
+"West Antarctic" = 2
+"East Antarctic" = 2
+"Antarctica" = 1.5
+"Greenland ice sheet" = 2
+"ice divide" = 2
+"ice dome" = 2
+"Dome C" = 2
+"Dome Fuji" = 2
+"ice core" = 2
+"oldest ice" = 3
+"accumulation rate" = 2
+"surface mass balance" = 1.5
+"basal melt" = 2
+"basal sliding" = 2
+"basal friction" = 2
+"geothermal heat flux" = 3
+"geothermal heat flow" = 3
+"ice rheology" = 3
+"flow law" = 2
+"enhancement factor" = 2
+"ice fabric" = 2
+"bed topography" = 2
+"BedMachine" = 3
+"subglacial" = 1.5
+"grounding line" = 1.5
+"ice shelf" = 1
+"ice stream" = 1.5
+"glacial isostatic adjustment" = 1.5
+"paleo" = 1.5
+"palaeo" = 1.5
+"Last Glacial Maximum" = 2
+"deglaciation" = 1.5
+"Holocene" = 1
+"Pleistocene" = 1
+"Mid-Pleistocene Transition" = 2
+"sea level" = 1.5
+"sea-level" = 1.5
+"data assimilation" = 1.5
+"inversion" = 1
+"Bayesian" = 1.5
+"uncertainty quantification" = 1.5
+"emulator" = 1.5
+"machine learning" = 1.5
+"deep learning" = 1

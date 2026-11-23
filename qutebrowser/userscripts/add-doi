@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Add the article of the page to my library, in Emacs (add-doi-to-my-bib,
+anthe-bib.el): the DOI selected, else of the URL, else of the page's meta
+tags (citation_doi...), else its first doi.org link. Bound to ,a."""
+import html
+import json
+import os
+import re
+import subprocess
+import urllib.parse
+
+DOI = re.compile(r"10\.\d{4,9}/[^\s\"<>&?#]+", re.I)
+
+
+def message(kind, text):
+    with open(os.environ["QUTE_FIFO"], "w") as fifo:
+        fifo.write(f"message-{kind} {json.dumps(text)}\n")
+
+
+def clean(doi):
+    return doi.rstrip(".,;:)]}'\"").lower()
+
+
+def find():
+    selected = os.environ.get("QUTE_SELECTED_TEXT", "")
+    url = urllib.parse.unquote(os.environ.get("QUTE_URL", ""))
+    for text in (selected, url):
+        if (m := DOI.search(text)):
+            return clean(m.group(0))
+    if (m := re.search(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5})", url)):
+        return f"10.48550/arxiv.{m.group(1)}"
+    page = ""
+    if os.environ.get("QUTE_HTML") and os.path.exists(os.environ["QUTE_HTML"]):
+        page = open(os.environ["QUTE_HTML"], errors="replace").read()
+    for name in ("citation_doi", "dc.identifier", "prism.doi", "bepress_citation_doi"):
+        m = re.search(r'<meta[^>]+name=["\']' + re.escape(name) + r'["\'][^>]*content=["\']([^"\']+)', page, re.I) \
+            or re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]*name=["\']' + re.escape(name), page, re.I)
+        if m and (d := DOI.search(html.unescape(m.group(1)))):
+            return clean(d.group(0))
+    if (m := re.search(r"doi\.org/(10\.\d{4,9}/[^\s\"<>&?#]+)", page)):
+        return clean(m.group(1))
+    return None
+
+
+doi = find()
+if not doi:
+    message("error", "No DOI on this page: select it, then ,a")
+else:
+    subprocess.run(["emacsclient", "-n", "-e", f"(add-doi-to-my-bib {json.dumps(doi)})"], check=False)
+    message("info", f"Adding {doi} in Emacs")

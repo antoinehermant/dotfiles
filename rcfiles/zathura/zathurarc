@@ -31,3 +31,8 @@ set hint-fg "#FFFFFF"
 set hint-font "monospace bold 12"
 
 include emacs-colours
+
+# Add a DOI of the PDF to my library, in Emacs (bin/zathura-doi): b one of the
+# page's references, B the selected reference (looked up if it has no DOI)
+map b exec "zathura-doi $FILE $PAGE"
+map B exec "zathura-doi $FILE $PAGE --selection"

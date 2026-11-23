@@ -30,6 +30,8 @@ config.bind(",d", "config-cycle colors.webpage.darkmode.enabled")
 # config.unbind("d")
 
 config.bind(",ff", "spawn firefox {url}")
+# The article of the page to my library, in Emacs (userscripts/add-doi)
+config.bind(",a", "spawn --userscript add-doi")
 
 c.bindings.key_mappings = {"<Ctrl-G>": "<Escape>"}
 

@@ -74,15 +74,17 @@
                      '(2))))))
 
 (defun anthe/pdf-theme-colours (&rest _)
-  "Give the PDF and image viewers the colours of the theme."
+  "Give the PDF and image viewers the colours of the theme.
+Not without colours yet, in a batch Emacs (doom doctor)."
   (let ((ink (face-foreground 'default nil t))
         (paper (anthe/seen-background (face-background 'default nil t))))
-    (setq pdf-view-midnight-colors (cons ink paper))
-    (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (when (bound-and-true-p pdf-view-midnight-minor-mode)
-          (pdf-view-midnight-minor-mode 1))))
-    (anthe/viewers-theme-colours ink paper)))
+    (when (and (color-name-to-rgb ink) (color-name-to-rgb paper))
+      (setq pdf-view-midnight-colors (cons ink paper))
+      (dolist (buffer (buffer-list))
+        (with-current-buffer buffer
+          (when (bound-and-true-p pdf-view-midnight-minor-mode)
+            (pdf-view-midnight-minor-mode 1))))
+      (anthe/viewers-theme-colours ink paper))))
 
 (add-hook 'doom-load-theme-hook #'anthe/pdf-theme-colours)
 (dolist (toggle '(toggle-frame-transparency toggle-frame-transparency-100))
@@ -175,7 +177,8 @@ already showing the file (`anthe-viewers-open')."
                 :command (list "zathura" "-P" (number-to-string (pdf-view-current-page))
                                (expand-file-name buffer-file-name))))
 
-(map! :map pdf-view-mode-map :localleader :desc "Open in zathura" "z" #'anthe/pdf-open-in-zathura)
+(map! :map pdf-view-mode-map :localleader :desc "Open in zathura" "z" #'anthe/pdf-open-in-zathura
+      :desc "Add a reference's DOI to my library" "a" #'anthe-bib-add-from-pdf)
 
 ;; The viewers' colours, the theme's: zathura includes ~/.config/zathura/emacs-colours
 ;; (rcfiles/zathura/zathurarc); nsxiv reads X resources

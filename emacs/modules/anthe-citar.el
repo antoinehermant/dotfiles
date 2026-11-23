@@ -26,18 +26,36 @@
 (require 'citar)
 (require 'citar-org)
 (require 'citar-capf)
-(require 'citar-capf)
 (require 'citar-cache)
 (require 'citar-citeproc)
 (require 'citar-embark)
 (require 'citar-file)
 (require 'citar-format)
 
-(setq bibtex-completion-bibliography '("~/library/research/research.bib",
-                                       "~/library/textbooks/textbooks.bib"))
-(setq citar-bibliography '("~/library/research/research.bib"
-                           "~/library/textbooks/textbooks.bib"
-                           "~/library/cheatsheets/cheatsheets.bib"))
+;; Each topic of ~/library/science has its bib, of its name (python-utils'
+;; research/library.py, `SPC k c a'); its keywords have the topic, so that
+;; "astronomy" finds the topic. Then the other bibs of ~/library, and the
+;; index of the documents without an entry (library.py index)
+(defvar anthe/citar-other-bibs '("~/library/textbooks/textbooks.bib"
+                                 "~/library/cheatsheets/cheatsheets.bib"
+                                 "~/library/library.bib"))
+
+(defun anthe/citar-bibliographies ()
+  "The bibs of ~/library: those of the topics, then the others."
+  (append (seq-filter (lambda (bib)
+                        (equal (file-name-base bib)
+                               (file-name-nondirectory
+                                (directory-file-name (file-name-directory bib)))))
+                      (file-expand-wildcards "~/library/science/*/*.bib"))
+          (seq-filter #'file-exists-p anthe/citar-other-bibs)))
+
+(defun anthe/citar-update-bibliography ()
+  "Read the bibs of ~/library again: a new topic."
+  (interactive)
+  (setq citar-bibliography (anthe/citar-bibliographies)
+        bibtex-completion-bibliography citar-bibliography))
+
+(anthe/citar-update-bibliography)
 
 (defvar citar-indicator-notes-icons
   (citar-indicator-create
@@ -92,10 +110,15 @@
        :desc "insert citation" "i" #'citar-insert-citation
        :desc "open" "o" #'citar-open
        :desc "dwim" "d" #'citar-dwim
-       :desc "open at point" "O" #'citar-open-entry))
+       :desc "open at point" "O" #'citar-open-entry
+       :desc "note" "n" #'anthe-bib-note
+       :desc "add a DOI" "a" #'add-doi-to-my-bib
+       :desc "add a queued DOI" "q" #'anthe-bib-add-queued
+       :desc "related articles" "r" #'anthe-bib-related
+       :desc "citation map" "v" #'anthe-bib-map))
 
 (with-eval-after-load 'oc
-  (define-key org-mode-map (kbd "RET") #'citar-dwin))
+  (define-key org-mode-map (kbd "RET") #'citar-dwim))
 
 (provide 'anthe-citar)
 ;;; anthe-citar.el ends here

@@ -1,0 +1,7 @@
+[Unit]
+Description=Research feed: new articles of my field from OpenAlex (python-utils)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/anthe/software/miniconda3/envs/processing/bin/python3 -m python_utils.research.feed run
