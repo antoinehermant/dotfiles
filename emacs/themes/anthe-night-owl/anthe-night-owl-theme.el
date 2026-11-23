@@ -3440,29 +3440,31 @@ Also affects 'linum-mode' background."
    ;; }}}
 
    ;; outline {{{
+   ;; Not inheriting org-level-N: org's own org-level-N inherits outline-N,
+   ;; a loop a terminal's Emacs stops on
    `(outline-1
-     ((t (:inherit org-level-1))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-2
-     ((t (:inherit org-level-2))))
+     ((t (:foreground ,anthe-night-owl-magenta-hc))))
 
    `(outline-3
-     ((t (:inherit org-level-3))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-4
-     ((t (:inherit org-level-4))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-5
-     ((t (:inherit org-level-5))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-6
-     ((t (:inherit org-level-6))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-7
-     ((t (:inherit org-level-7))))
+     ((t (:foreground ,anthe-night-owl-heading))))
 
    `(outline-8
-     ((t (:inherit org-level-8))))
+     ((t (:foreground ,anthe-night-owl-heading))))
    ;; }}}
 
    ;; parenface {{{
