@@ -11,7 +11,8 @@
 # - Emacs, always on in the second tab (`ehpc`, bash/.bash_hpc): an ordinary
 #   Emacs in the terminal, not a daemon, which UBELIX kills on its login
 #   nodes. Its slow first start (up to a minute, the home's storage cold)
-#   happens while I do something else; `et` and `eg` open it at once.
+#   happens while I do something else; `et` and `eg` open it at once;
+# - Neovim in the third tab.
 # The session lives on this login node: ~/.ssh/config pins ubelix3 to submit03.
 SESSION=hpc
 HPC_MODULES="nctools CMake/3.26.3 GCC/12.3.0 nodejs/18.17.1-GCCcore-12.3.0"
@@ -37,8 +38,18 @@ if [ -n "${TMUX:-}" ]; then
     echo "hpc-session: already in tmux (C-b d to detach)"
     exit 0
 fi
+# Attached, in a vterm of my laptop's Emacs (emacs/modules/anthe-vterm.el):
+# the buffer is UBELIX and every key comes here; detached, evil again.
+# Other terminals ignore the sequence.
+attach() {
+    printf '\e]51;Eanthe/vterm-hpc "on"\e\\'
+    tmux attach -t "$SESSION"
+    printf '\e]51;Eanthe/vterm-hpc "off"\e\\'
+}
+
 if tmux has-session -t "$SESSION" 2>/dev/null; then
-    exec tmux attach -t "$SESSION"
+    attach
+    exit
 fi
 
 # The group's modules (nctools), which only interactive shells get
@@ -55,4 +66,7 @@ tmux -f "$HOME/.dotfiles/rcfiles/tmux-hpc.conf" new-session -d -s "$SESSION" -n 
 # Emacs in the second tab, in a shell that stays when I quit it (ehpc again)
 tmux new-window -d -t "$SESSION" -n emacs
 tmux send-keys -t "$SESSION:emacs" ehpc Enter
-exec tmux attach -t "$SESSION"
+# Neovim in the third, quicker to start
+tmux new-window -d -t "$SESSION" -n nvim
+tmux send-keys -t "$SESSION:nvim" nvim Enter
+attach
