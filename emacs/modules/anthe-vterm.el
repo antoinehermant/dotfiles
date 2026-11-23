@@ -89,6 +89,44 @@
 
 (add-to-list 'vterm-eval-cmds '("anthe/vterm-raw" anthe/vterm-raw))
 
+;; UBELIX's tmux session (bin/hpc-session, on the hpc branch) in a vterm:
+;; when it attaches, it tells us as Neovim does. The buffer is then UBELIX,
+;; in Emacs state: every key goes there, to its Emacs or Neovim. M-SPC is
+;; the leader meanwhile, C-z gives the keys back to evil. Detached, or the
+;; connection lost (`hpc' on the laptop says so), evil has them again.
+(defvar-local anthe/vterm-hpc-attached nil
+  "Non-nil while this vterm shows UBELIX's tmux session.")
+
+(defun anthe/vterm-hpc (on)
+  "UBELIX's session attached in this vterm when ON is \"on\", left else."
+  (setq anthe/vterm-hpc-attached (equal on "on"))
+  (if anthe/vterm-hpc-attached
+      (unless (equal (buffer-name) "UBELIX")
+        (rename-buffer "UBELIX" t))
+    (when (equal (buffer-name) "UBELIX")
+      (rename-buffer "UBELIX (left)" t)))
+  (anthe/vterm-raw on))
+
+(add-to-list 'vterm-eval-cmds '("anthe/vterm-hpc" anthe/vterm-hpc))
+
+(defun anthe/ubelix ()
+  "Show the UBELIX vterm, attached to my tmux session there: made if missing,
+attached again if left (`hpc', bash/.bash_functions)."
+  (interactive)
+  (let ((buffer (or (get-buffer "UBELIX") (get-buffer "UBELIX (left)"))))
+    (if (and buffer (buffer-live-p buffer)
+             (process-live-p (get-buffer-process buffer)))
+        (progn
+          (pop-to-buffer-same-window buffer)
+          (unless anthe/vterm-hpc-attached
+            (vterm-send-string "hpc")
+            (vterm-send-return)))
+      (with-current-buffer (vterm "UBELIX")
+        (vterm-send-string "hpc")
+        (vterm-send-return)))))
+
+(map! :leader :desc "UBELIX (the hpc session)" "k h" #'anthe/ubelix)
+
 ;; tmux in a vterm (UBELIX's session): C-b, its prefix, goes to it in normal
 ;; state too, with the key after it (C-b d would else be evil's delete)
 (defun anthe/vterm-tmux-prefix ()

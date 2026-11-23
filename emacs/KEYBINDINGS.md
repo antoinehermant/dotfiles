@@ -113,7 +113,7 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 - **Remaining duplicates** to remove: `SPC k x` (= `SPC X`), `SPC k a`
   (= `SPC o A`), `SPC k g` (= `SPC o l`), the `SPC s p` and `SPC /` overrides,
   and the two next/previous shell pairs `SPC t n/p` and `SPC v n/p`.
-- **HPC.** `SPC k s` (sbatch) replaces the `SPC k s f` prefix from
+- **HPC.** sbatch moved to `SPC k q b`: `SPC k s` clashed with the `SPC k s f` prefix from
   `config-core.el` there.
 - mu4e: `gb` opens the message in qutebrowser (message list and message).
 - mu4e: saved searches `b i` (all the inboxes) and `b T` (To do, flagged messages).
@@ -210,3 +210,4 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 - Backup (`bin/backup`, restic, `rcfiles/systemd/backup.timer` at 21:00 or the next boot): a snapshot of `~` in `pi:/mnt/storage1/anthe/restic`, without caches, reinstallable toolchains and `~/data/isochrones` (`rcfiles/restic/excludes`); 7 daily, 8 weekly, 12 monthly kept, pruned on Sundays. `backup snapshots`, `backup restore latest --include PATH --target DIR`, `backup mount DIR` to browse them; the password in `~/.secrets/restic-password` (keep a copy off the laptop). A notification if it fails.
 - Archive (`bin/archive`): `archive put DIR` moves a folder rarely needed to the pi (`/mnt/storage1/anthe/archive`, same path under `~`), checked byte for byte, and leaves a link to `~/nas/DIR`, the archive mounted on demand (`nas.service`, rclone, files read cached up to 20 GB); `archive get DIR` brings it back; `archive ls`. Not in the snapshots: on the pi only, until it has a second disk.
 - doom doctor: `anthe-pdf.el` no longer fails in a batch Emacs, which has no colours.
+- UBELIX (`anthe-vterm.el`, `bin/hpc-session` on the hpc branch): `SPC k h` shows the `UBELIX` vterm, attached to the tmux session there (made and attached if missing, attached again if left). While attached, the buffer is in Emacs state: every key goes to UBELIX's Emacs or Neovim (`M-SPC` is the leader, `C-z` gives the keys back to evil); detached or disconnected, it is `UBELIX (left)`, evil again. In a vterm, `C-b` and the next key go to tmux in normal state too. Neovim in a vterm gets every key while it runs (it tells Emacs).
