@@ -338,6 +338,9 @@ command while point is on it, but not over what a command said."
           (when (anthe-week-event-calendar event)
             (concat "\nCalendar: " (anthe-week-event-calendar event)))))
 
+(defvar anthe-week-compact-margin 1
+  "Hours shown before the first event and after the last, when compact.")
+
 (defun anthe-week--insert (monday width &optional compact)
   "Insert the week from MONDAY, an absolute day, at most WIDTH columns wide.
 COMPACT: a row an hour instead of two, and only the hours with events.
@@ -355,10 +358,13 @@ Each cell has its day and time, as `anthe-week-slot', for adding an event."
                         :key (lambda (e) (list (anthe-week-event-first e) (- (anthe-week-event-last e))))))
          (timed (seq-remove #'anthe-week-event-banner events))
          (hours (unless (and compact timed) (list anthe-week-hours)))
-         (first-hour (apply #'min (append (mapcar #'car hours)
-                                          (mapcar (lambda (e) (/ (anthe-week-event-from e) 60)) timed))))
-         (last-hour (apply #'max (append (mapcar #'cdr hours)
-                                         (mapcar (lambda (e) (ceiling (anthe-week-event-to e) 60.0)) timed))))
+         (margin (if (and compact timed) anthe-week-compact-margin 0))
+         (first-hour (max 0 (- (apply #'min (append (mapcar #'car hours)
+                                                    (mapcar (lambda (e) (/ (anthe-week-event-from e) 60)) timed)))
+                               margin)))
+         (last-hour (min 24 (+ (apply #'max (append (mapcar #'cdr hours)
+                                                    (mapcar (lambda (e) (ceiling (anthe-week-event-to e) 60.0)) timed)))
+                               margin)))
          (rows (* per-hour (- last-hour first-hour)))
          (grid (anthe-week--blend (face-foreground 'default nil t) 0.12))
          (today-background (anthe-week--blend (face-foreground 'default nil t) 0.04))
@@ -930,26 +936,6 @@ over (after a sleep)."
                                     (anthe-week--check-reminders)))))))
 
 (anthe-week-reminders-mode 1)
-
-;;; On the dashboard
-
-(defun anthe-week-dashboard-insert (_)
-  "Insert this week in the dashboard, or the next one at the weekend, compact:
-a row an hour, only the hours with events."
-  (let* ((today (org-today))
-         (weekend (memq (calendar-day-of-week (calendar-gregorian-from-absolute today)) '(0 6)))
-         (monday (anthe-week--monday (if weekend (+ today 7) today)))
-         (window (get-buffer-window (bound-and-true-p dashboard-buffer-name) t))
-         (width (min (+ 6 (* 7 21)) (- (if window (window-max-chars-per-line window) (frame-width)) 4))))
-    (dashboard-insert-heading
-     (format "Week %s, %s to %s:" (anthe-week--date monday "%V") (anthe-week--date monday "%-d %b")
-             (anthe-week--date (+ 6 monday) "%-d %b"))
-     nil (and (fboundp 'nerd-icons-octicon)
-              (nerd-icons-octicon "nf-oct-calendar" :face 'dashboard-heading)))
-    (insert "\n")
-    (add-hook 'post-command-hook #'anthe-week--echo-event nil t)
-    (anthe-week--insert monday width t)
-    (delete-char -1)))
 
 (provide 'anthe-week)
 ;;; anthe-week.el ends here

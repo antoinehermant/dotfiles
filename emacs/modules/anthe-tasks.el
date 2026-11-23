@@ -12,6 +12,7 @@
 ;; - The open TODOs of the last daily note move to today's, under "Carried
 ;;   over", with :SINCE: (the day they were written) and :CARRIED: (how many
 ;;   times they moved). The last "Stopped" note is copied there too.
+;; - `SPC k n d' shows today's daily where I was writing, no template asked.
 ;; - `SPC k n s' writes the "Stopped" note of the hard stop in today's daily.
 ;; - `SPC m r i' (`SPC m i' in the agenda) sends a TODO to the Inbox.
 ;; - "#" in a heading offers the tags in use; the choice becomes a tag.
@@ -196,6 +197,22 @@ error only shows a message: it runs from the agenda and a timer."
 (when anthe-tasks--idle-timer (cancel-timer anthe-tasks--idle-timer))
 (setq anthe-tasks--idle-timer (run-with-idle-timer 60 t #'anthe-tasks--carry-over-once))
 
+;;; Today's daily
+
+(defun anthe-tasks-today ()
+  "Show today's daily note where I was writing in it, without a template.
+Carries over first.  A note opened afresh shows its end."
+  (interactive)
+  (anthe-tasks-carry-over)
+  (let* ((file (anthe-tasks--daily-file))
+         (buffer (progn (anthe-tasks--ensure-daily file) (find-buffer-visiting file))))
+    (cond
+     ((and buffer (get-buffer-window buffer))
+      (select-window (get-buffer-window buffer)))
+     (buffer (switch-to-buffer buffer))
+     (t (find-file file)
+        (goto-char (point-max))))))
+
 ;;; The Stopped note
 
 (add-to-list 'org-roam-dailies-capture-templates
@@ -372,7 +389,11 @@ nothing is logged, so the habit's graph keeps the day empty."
 
 ;;; Keys
 
+;; Doom's `SPC n r d t' too: no template to choose
+(global-set-key [remap org-roam-dailies-goto-today] #'anthe-tasks-today)
+
 (map! :leader
+      :desc "Today's daily" "k n d" #'anthe-tasks-today
       :desc "Stopped note" "k n s" #'anthe-tasks-stopped-note
       :desc "Archive all DONE to the Log" "k o A" #'anthe-tasks-archive-done)
 
