@@ -112,6 +112,58 @@ Sending kills the compose buffer, but its window would show the shell."
 (with-eval-after-load 'agent-shell-viewport
   (advice-add 'agent-shell-viewport--clean-up :around #'anthe/agent-shell--killing-asked))
 
+;;; A project's agent, in one step
+;; `SPC o c': choose a project, the ones with a shell first; its shell shows
+;; in the project's workspace, made if missing. With no shell yet, Claude
+;; starts there and resumes the project's last session. `C-u': in the
+;; current workspace.
+
+(defun anthe/agent-shell--project-shell (root)
+  "The most recent agent shell working in ROOT, or nil."
+  (seq-find (lambda (buffer)
+              (equal (file-name-as-directory (expand-file-name root))
+                     (file-name-as-directory
+                      (expand-file-name (buffer-local-value 'default-directory buffer)))))
+            (agent-shell-buffers)))
+
+(defun anthe/agent-shell-project (root &optional here)
+  "Show the agent of the project ROOT in its workspace, HERE in the current one.
+An existing shell of the project, or Claude resuming the last session."
+  (interactive
+   (let* ((projects (projectile-relevant-known-projects))
+          (running (seq-filter #'anthe/agent-shell--project-shell projects))
+          (completion-extra-properties
+           `(:annotation-function
+             ,(lambda (root)
+                (when (member root running)
+                  (propertize "  ● agent" 'face 'success))))))
+     (list (completing-read "Agent of project: "
+                            (lambda (string predicate action)
+                              (if (eq action 'metadata)
+                                  '(metadata (display-sort-function . identity))
+                                (complete-with-action
+                                 action (append running (seq-difference projects running))
+                                 string predicate)))
+                            nil t)
+           current-prefix-arg)))
+  (let ((root (file-name-as-directory (expand-file-name root))))
+    ;; As `projectile-switch-project' does, without asking for a file
+    (unless here
+      (let ((+workspaces-switch-project-function #'ignore)
+            (current-prefix-arg nil))
+        (+workspaces-switch-to-project-h root)))
+    (if-let* ((shell (anthe/agent-shell--project-shell root)))
+        (switch-to-buffer shell)
+      (let ((default-directory root))
+        (agent-shell--start :config (agent-shell-anthropic-make-claude-code-config)
+                            :session-strategy 'latest
+                            :new-session t)))
+    ;; Doom's workspaces keep their own buffers
+    (when (bound-and-true-p persp-mode)
+      (persp-add-buffer (current-buffer)))))
+
+(map! :leader :desc "Agent of a project" "o c" #'anthe/agent-shell-project)
+
 ;;; Claude's plan limits: the 5-hour session and the week, as /usage
 ;; Each reply brings them: in agent-shell, with the usage the ACP adapter
 ;; sends (its `_claude/rateLimit'); in a terminal, to the status line

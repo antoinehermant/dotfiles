@@ -330,16 +330,70 @@ window, the days before hidden above it, where scrolling up shows them.")
 ;; (setq org-icalendar-timezone "Europe/Berlin")
 
 (map! :leader
-      :desc "Add doi to my bib" "k c a" #'add-doi-to-my-bib
-      :desc "View citation network" "k c v" #'view-citation-network
-      :desc "Batch process bib entries" "k c b" #'batch-process-bib-entries
-      :desc "Goto today's notes" "k n d" (lambda () (interactive) (org-roam-dailies-goto-today "d"))
       :desc "Goto today's journal" "k n j" #'anthe-roam-journal-goto-today
       :desc "Org capture" "k x" #'org-capture
       :desc "Org Agenda" "k a" #'org-agenda
       :desc "Workspace swap left" "TAB h" #'+workspace/swap-left
       :desc "Workspace swap right" "TAB l" #'+workspace/swap-right
       )
+
+;; A project opens in its own workspace, never in the main one, even empty:
+;; main stays the first workspace
+(setq +workspaces-on-switch-project-behavior t)
+
+(defun anthe/workspace-keep-main (&rest _)
+  "Make the main workspace if it is gone, and keep it first."
+  (when (bound-and-true-p persp-mode)
+    (unless (+workspace-exists-p +workspaces-main)
+      (save-window-excursion (+workspace-new +workspaces-main)))
+    (let ((first (list persp-nil-name +workspaces-main)))
+      (setq persp-names-cache
+            (append first (seq-difference persp-names-cache first))))))
+
+(add-hook 'persp-mode-hook #'anthe/workspace-keep-main)
+(add-hook 'persp-created-functions #'anthe/workspace-keep-main)
+(add-hook 'projectile-after-switch-project-hook #'anthe/workspace-keep-main)
+
+;; Doom finds a project's workspace by its `+workspace-project' parameter
+;; only, which a recycled or restored workspace lacks: it then made a second
+;; one, "python/anta_database" beside "anta_database"
+(defun anthe/workspace-of-project (root)
+  "The workspace of the project ROOT: by its parameter, else its name or buffers."
+  (let* ((root (file-truename (file-name-as-directory root)))
+         (name (let ((default-directory root)) (doom-project-name)))
+         (persps (delq nil (persp-persps)))
+         (unmarked (seq-remove (lambda (ws)
+                                 (or (persp-parameter '+workspace-project ws)
+                                     (+workspace--protected-p (persp-name ws))))
+                               persps)))
+    (or (seq-find (lambda (ws)
+                    (ignore-errors
+                      (file-equal-p (persp-parameter '+workspace-project ws) root)))
+                  persps)
+        (seq-find (lambda (ws) (equal (persp-name ws) name)) unmarked)
+        (seq-find (lambda (ws)
+                    (seq-some (lambda (buffer)
+                                (and (buffer-file-name buffer)
+                                     (file-in-directory-p
+                                      (buffer-file-name buffer) root)))
+                              (persp-buffers ws)))
+                  unmarked))))
+
+(defun anthe/workspace-switch-to-project (&optional dir)
+  "Switch to the workspace of the project DIR if there is one.
+Before `+workspaces-switch-to-project-h', which then does nothing."
+  (when-let* (((bound-and-true-p persp-mode))
+              (root (file-truename (or dir default-directory)))
+              (ws (anthe/workspace-of-project root)))
+    (set-persp-parameter '+workspace-project root ws)
+    (+workspace-switch (persp-name ws))
+    (unless current-prefix-arg
+      (funcall +workspaces-switch-project-function root))
+    (+workspace-message (format "Switched to '%s'" (persp-name ws)) 'success)
+    t))
+
+(advice-add '+workspaces-switch-to-project-h :before-until
+            #'anthe/workspace-switch-to-project)
 
 (provide 'anthe-workflow)
 ;;; anthe-workflow.el ends here
