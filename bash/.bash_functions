@@ -24,6 +24,11 @@ function ubelix() {
 # hpc restart: a fresh one; hpc stop: end it
 function hpc() {
     ssh -t -X ubelix3 "~/.dotfiles/bin/hpc-session $*"
+    # Left, the connection lost too: Emacs's vterm gives the keys back to
+    # evil (emacs/modules/anthe-vterm.el)
+    if [[ "$INSIDE_EMACS" == *vterm* ]]; then
+        printf '\e]51;Eanthe/vterm-hpc "off"\e\\'
+    fi
 }
 
 function hermant() {
