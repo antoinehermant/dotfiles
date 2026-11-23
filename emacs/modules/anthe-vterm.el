@@ -74,6 +74,21 @@
 
 (add-hook 'vterm-mode-hook 'my-vterm-mode-hook)
 
+;; Neovim in a vterm: its keys go to it, not to evil. Neovim tells us when
+;; it starts and exits (nvim/lua/config/autocmds.lua, through vterm's
+;; \e]51;E sequence); meanwhile the buffer is in Emacs state, where every
+;; key, Escape too, goes to the terminal. C-z gives the keys back to evil
+;; (to scroll or copy, say), `i' then types in Neovim again; M-SPC is the
+;; leader meanwhile.
+(defun anthe/vterm-raw (on)
+  "Send every key to the terminal when ON is \"on\", give them back to evil else."
+  (when (bound-and-true-p evil-local-mode)
+    (if (equal on "on")
+        (evil-emacs-state)
+      (evil-insert-state))))
+
+(add-to-list 'vterm-eval-cmds '("anthe/vterm-raw" anthe/vterm-raw))
+
 (defun multi-vterm-execute-region-or-current-line ()
   "Insert text of current line in multi-vterm and execute."
   (interactive)
