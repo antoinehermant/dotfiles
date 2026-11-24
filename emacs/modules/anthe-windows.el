@@ -205,6 +205,10 @@ nil: `anthe/window-margin'.")
 (defvar anthe/window-echo-margin 0
   "Pixels under the echo area, by the frame's bottom edge.")
 
+(defvar anthe/window-radius 10
+  "Pixels of the windows' rounded corners, 0 for square ones.
+The corners are cut in steps of a pixel, not smoothed as picom's.")
+
 (defun anthe/window-gaps--bar-gap ()
   (or anthe/window-bar-gap anthe/window-margin))
 
@@ -234,6 +238,10 @@ nil: `anthe/window-margin'.")
   "The frames shaped: EXWM's workspaces."
   (and (bound-and-true-p exwm--connection) (bound-and-true-p exwm-workspace--list)
        (seq-filter #'frame-live-p exwm-workspace--list)))
+
+;; The mode line's right end before the right fringe, off the margin cut
+;; there (doom-modeline follows it too)
+(setq mode-line-right-align-edge 'right-fringe)
 
 (defun anthe/window-gaps--margins (window)
   "The margins beside WINDOW, (LEFT . RIGHT): by the frame's edges."
@@ -265,19 +273,29 @@ the child frames."
         (width (frame-native-width frame))
         (bar (tab-bar-height frame t))
         (mini (minibuffer-window frame)))
-    (cl-flet ((add (left top right bottom)
-                (when (and (> right left) (> bottom top))
-                  (push (make-instance 'xcb:RECTANGLE :x left :y top
-                                       :width (- right left) :height (- bottom top))
-                        rects))))
+    (cl-labels ((add (left top right bottom)
+                  (when (and (> right left) (> bottom top))
+                    (push (make-instance 'xcb:RECTANGLE :x left :y top
+                                         :width (- right left) :height (- bottom top))
+                          rects)))
+                (add-rounded (left top right bottom)
+                  ;; The middle, then a row of a pixel a step of the corners
+                  (let ((radius (min anthe/window-radius
+                                     (/ (- right left) 2) (/ (- bottom top) 2))))
+                    (add left (+ top radius) right (- bottom radius))
+                    (dotimes (row radius)
+                      (let* ((dy (- radius row 0.5))
+                             (inset (round (- radius (sqrt (- (* radius radius) (* dy dy)))))))
+                        (add (+ left inset) (+ top row) (- right inset) (+ top row 1))
+                        (add (+ left inset) (- bottom row 1) (- right inset) (- bottom row)))))))
       (when (> bar 0)
         (add 0 0 width (- bar (anthe/window-gaps--bar-gap))))
       (dolist (window (window-list frame 'never))
         (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window))
                     (`(,margin-left . ,margin-right) (anthe/window-gaps--margins window)))
-          (add (+ left margin-left) top
-               (- right (window-right-divider-width window) margin-right)
-               (- bottom (window-bottom-divider-width window)))
+          (add-rounded (+ left margin-left) top
+                       (- right (window-right-divider-width window) margin-right)
+                       (- bottom (window-bottom-divider-width window)))
           ;; Above the echo area, the divider under the gap is kept
           (when (and (eq (window-frame mini) frame) (window-at-side-p window 'bottom))
             (add left (+ (- bottom (window-bottom-divider-width window))
