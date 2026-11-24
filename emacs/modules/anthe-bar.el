@@ -60,7 +60,7 @@ its own would take the default one, not the bar's."
 ;;; Left: the workspaces
 
 (defun anthe-bar--workspaces ()
-  "The Doom workspaces of this frame, the current one highlighted."
+  "The Doom workspaces of this frame's monitor, the current one highlighted."
   (when (fboundp '+workspace-list-names)
     (let ((current (+workspace-current-name)))
       (seq-map-indexed
@@ -78,7 +78,9 @@ its own would take the default one, not the bar's."
                                 'anthe-bar-workspace))
            ,(lambda () (interactive) (+workspace/switch-to name))
            :help ,(format "Switch to %s" name)))
-       (+workspace-list-names)))))
+       (if (fboundp 'anthe-workspaces-names)
+           (anthe-workspaces-names)
+         (+workspace-list-names))))))
 
 ;;; Middle: the date and time
 

@@ -335,6 +335,8 @@ instance's, is in `anthe/exwm-floating-classes'."
   ;; The workspaces follow the monitors plugged in, and unknown monitors
   ;; extend the laptop screen (SPC k m m mirrors it), see anthe-monitors
   (require 'anthe-monitors)
+  ;; And each monitor has its own list of Doom workspaces
+  (require 'anthe-workspaces)
 
   ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
   ;;                                            1 "DP-1-2-2"
