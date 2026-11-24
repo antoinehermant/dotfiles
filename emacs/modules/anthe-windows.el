@@ -186,10 +186,10 @@ otherwise the left or top one, so the border follows the key."
 ;; fringes the margins beside them, the room under the top bar's text the
 ;; margin under it; the margin above the echo area is taken from the
 ;; dividers under the bottom windows.
-(defvar anthe/window-gap 6
+(defvar anthe/window-gap 8
   "Pixels between two windows.")
 
-(defvar anthe/window-margin 6
+(defvar anthe/window-margin 8
   "Pixels left and right of the windows, by the frame's edges.")
 
 (defvar anthe/window-bar-gap nil
@@ -205,7 +205,7 @@ nil: `anthe/window-margin'.")
 (defvar anthe/window-echo-margin 0
   "Pixels under the echo area, by the frame's bottom edge.")
 
-(defvar anthe/window-radius 10
+(defvar anthe/window-radius 7
   "Pixels of the windows' rounded corners, 0 for square ones.
 The corners are cut in steps of a pixel, not smoothed as picom's.")
 
@@ -302,7 +302,7 @@ changed: measuring lays out the window from its top for each line."
                       (anthe/window-gaps--bar-gap))))
       `((anthe-window-gaps menu-item
          ,(propertize " " 'display `(space :width (0) :height (,height)
-                                          :ascent ,(round (* 100.0 ascent) height)))
+                                     :ascent ,(round (* 100.0 ascent) height)))
          ignore)))))
 
 (defun anthe/window-gaps--frames ()

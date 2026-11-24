@@ -177,7 +177,7 @@ connect the mouse, the two being used together."
                               :path-namespace "/org/bluez")))
 
 (custom-set-faces!
-  '(anthe-bar-current-workspace :background "#C792EA" :foreground "#011627" :weight bold) ; #7e57c2
+  '(anthe-bar-current-workspace :background "#C792EA" :foreground "#D6DEEB" :weight bold) ; #7e57c2
   '(anthe-bar-workspace :foreground "#8a9ba8")
   '(anthe-bar-clock :weight bold :foreground "#D6DEEB"))
 
