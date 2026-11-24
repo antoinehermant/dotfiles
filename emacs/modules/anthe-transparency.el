@@ -1,72 +1,87 @@
-;;; anthe-transparency.el --- Description -*- lexical-binding: t; -*-
-;;
-;; Copyright (C) 2026 anthe
-;;
-;; Author: anthe <anthe@inspiron>
-;; Maintainer: anthe <anthe@inspiron>
-;; Created: February 15, 2026
-;; Modified: February 15, 2026
-;; Version: 0.0.1
-;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
-;; Homepage: https://github.com/anthe/anthe-transparency
-;; Package-Requires: ((emacs "24.3"))
+;;; anthe-transparency.el --- How see-through Emacs is -*- lexical-binding: t; -*-
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;;  The frames' background is see-through (alpha-background): the text stays
+;;  opaque, and under EXWM picom blurs the wallpaper behind
+;;  (rcfiles/picom/picom.conf), the top bar kept less see-through by a shader
+;;  there (emacs-bar.frag).
+;;
+;;  SPC t t, then + and - without the prefix: more or less see-through, 10 %
+;;  a step; 0 opaque, or back.  Any other key leaves.
 ;;
 ;;; Code:
 
+(defvar anthe/transparency 15
+  "How see-through the frames' background is, in percent (0: opaque).")
 
-(defvar frame-transparency-toggle-state nil
-  "State of frame transparency toggle.")
+(defvar anthe/transparency-step 10
+  "Percent a step of `anthe/transparency-adjust'.")
 
-;; Defining a variable for transparency so it can depend on certain conditions such as which theme loaded or which system we are on
-;; (defvar my-transparency-value 90
-;;   "Defines a variable for transparency")
+(defvar anthe/transparency--before nil
+  "The transparency before 0 made the frames opaque.")
 
-(defun toggle-frame-transparency ()
-  "Toggle frame transparency between 100% and 95%."
+(defun anthe/transparency--frames ()
+  (if (bound-and-true-p exwm-workspace--list)
+      (seq-filter #'frame-live-p exwm-workspace--list)
+    (frame-list)))
+
+(defun anthe/transparency-set (percent)
+  "Make the frames' background PERCENT see-through, 0 to 90."
+  (setq anthe/transparency (max 0 (min 90 percent)))
+  (let ((alpha (- 100 anthe/transparency)))
+    (setf (alist-get 'alpha-background default-frame-alist) alpha)
+    (dolist (frame (anthe/transparency--frames))
+      (set-frame-parameter frame 'alpha-background alpha))))
+
+(defun anthe/transparency--show ()
+  (message "Transparency %d %%   + more, - less, 0 %s"
+           anthe/transparency (if anthe/transparency--before "back" "opaque")))
+
+(defun anthe/transparency-more ()
+  "More see-through, by `anthe/transparency-step'."
   (interactive)
-  (if frame-transparency-toggle-state
-      (progn
-        (set-frame-parameter nil 'alpha-background 100)
-        (add-to-list 'default-frame-alist '(alpha-background . 100))
-        (setq frame-transparency-toggle-state nil))
-    (progn
-      (set-frame-parameter nil 'alpha-background 90)
-      (add-to-list 'default-frame-alist '(alpha-background . 90))
-      (setq frame-transparency-toggle-state t)))
-  (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state 90 100)))
+  (setq anthe/transparency--before nil)
+  (anthe/transparency-set (+ anthe/transparency anthe/transparency-step))
+  (anthe/transparency--show))
 
-
-(set-frame-parameter nil 'alpha-background 85)
-
-(defvar frame-transparency-toggle-state-100 nil
-  "State of frame transparency toggle.")
-
-(defun toggle-frame-transparency-100 ()
-  "Toggle frame transparency between 100% and 95%."
+(defun anthe/transparency-less ()
+  "Less see-through, by `anthe/transparency-step'."
   (interactive)
-  (if frame-transparency-toggle-state-100
-      (progn
-        (set-frame-parameter nil 'alpha-background 100)
-        (add-to-list 'default-frame-alist '(alpha-background . 100))
-        (setq frame-transparency-toggle-state-100 nil))
-    (progn
-      (set-frame-parameter nil 'alpha-background 10)
-      (add-to-list 'default-frame-alist '(alpha-background . 10))
-      (setq frame-transparency-toggle-state-100 t)))
-  (message "Frame transparency toggled to %s%%"
-           (if frame-transparency-toggle-state-100 10 100)))
+  (setq anthe/transparency--before nil)
+  (anthe/transparency-set (- anthe/transparency anthe/transparency-step))
+  (anthe/transparency--show))
 
-(map! :leader
-      :desc "Toggle transparency" "t t" #'toggle-frame-transparency
-      :desc "Toggle 100% transparency" "t T" #'toggle-frame-transparency-100
-      )
+(defun anthe/transparency-opaque ()
+  "Opaque, or back to the transparency before."
+  (interactive)
+  (if anthe/transparency--before
+      (progn (anthe/transparency-set anthe/transparency--before)
+             (setq anthe/transparency--before nil))
+    (setq anthe/transparency--before (max anthe/transparency anthe/transparency-step))
+    (anthe/transparency-set 0))
+  (anthe/transparency--show))
+
+(defvar anthe/transparency-repeat-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "+" #'anthe/transparency-more)
+    (define-key map "=" #'anthe/transparency-more)
+    (define-key map "-" #'anthe/transparency-less)
+    (define-key map "0" #'anthe/transparency-opaque)
+    map)
+  "Keys after SPC t t, without the prefix.")
+
+(defun anthe/transparency-adjust ()
+  "Adjust the transparency: + and - then, 0 opaque or back."
+  (interactive)
+  (anthe/transparency--show)
+  (set-transient-map anthe/transparency-repeat-map t))
+
+(anthe/transparency-set anthe/transparency)
+
+(map! :leader :desc "Transparency (+ - 0)" "t t" #'anthe/transparency-adjust)
 
 (provide 'anthe-transparency)
 ;;; anthe-transparency.el ends here

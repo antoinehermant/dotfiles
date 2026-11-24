@@ -107,8 +107,7 @@ Not without colours yet, in a batch Emacs (doom doctor)."
       (anthe/viewers-theme-colours ink paper))))
 
 (add-hook 'doom-load-theme-hook #'anthe/pdf-theme-colours)
-(dolist (toggle '(toggle-frame-transparency toggle-frame-transparency-100))
-  (advice-add toggle :after #'anthe/pdf-theme-colours))
+(advice-add 'anthe/transparency-set :after #'anthe/pdf-theme-colours)
 
 ;;; Other viewers, as Emacs buffers: zathura and nsxiv are X windows, so EXWM
 ;;; buffers, with pdf-view's keys (anthe-viewers.el); emacs-reader (EMuReader,
