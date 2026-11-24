@@ -159,8 +159,9 @@ An existing shell of the project, or Claude resuming the last session."
         (agent-shell--start :config (agent-shell-anthropic-make-claude-code-config)
                             :session-strategy 'latest
                             :new-session t)))
-    ;; Doom's workspaces keep their own buffers
-    (when (bound-and-true-p persp-mode)
+    ;; Doom's workspaces keep their own buffers: the agent's, not the
+    ;; dashboard the agent was started from while it starts
+    (when (and (bound-and-true-p persp-mode) (derived-mode-p 'agent-shell-mode))
       (persp-add-buffer (current-buffer)))))
 
 (map! :leader :desc "Agent of a project" "o c" #'anthe/agent-shell-project)

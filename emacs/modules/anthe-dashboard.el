@@ -1124,13 +1124,17 @@ on, back if negative; past its last, the next card's first."
 
 ;; q (`quit-window') in a buffer alone in its workspace, ibuffer's or mu4e's,
 ;; left it in place: Doom finds no other buffer to show there.  The dashboard
-;; then, as when killing the last buffer
-(defun anthe-dashboard--quit-window-a (fn &rest args)
+;; then, as when killing the last buffer: only for q itself, in the window
+;; quit, not when a package quits some window of its own
+(defun anthe-dashboard--quit-window-a (fn &optional kill window)
   "Show the dashboard when FN leaves the window on the buffer it quit."
-  (let ((window (selected-window))
-        (buffer (current-buffer)))
-    (apply fn args)
-    (when (and (window-live-p window)
+  (let* ((window (window-normalize-window window t))
+         (buffer (window-buffer window))
+         (asked (and (or (called-interactively-p 'any) (eq this-command 'quit-window))
+                     (eq window (selected-window)))))
+    (funcall fn kill window)
+    (when (and asked
+               (window-live-p window)
                (eq (window-buffer window) buffer)
                (not (eq buffer (get-buffer doom-fallback-buffer-name))))
       (with-selected-window window
