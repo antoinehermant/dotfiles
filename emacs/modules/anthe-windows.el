@@ -174,5 +174,48 @@ otherwise the left or top one, so the border follows the key."
 
 (anthe/window-flash-mode 1)
 
+;;; Gaps between the windows
+
+;; The dividers widened into gaps, as see-through as the windows (the
+;; wallpaper blurred behind, picom), a faint line along each window's edge
+(defvar anthe/window-gap 12
+  "Pixels between two windows, with `anthe/window-gaps-mode'.")
+
+(defun anthe/window-gaps--colours (&rest _)
+  "Colour the gaps after the theme: its background, faint edges."
+  (when anthe/window-gaps-mode
+    (let* ((background (face-attribute 'default :background nil t))
+           (border (face-attribute 'vertical-border :foreground nil 'default))
+           (edge (if (and (color-defined-p background) (color-defined-p border))
+                     (apply #'color-rgb-to-hex
+                            (append (cl-mapcar (lambda (b f) (+ b (* 0.35 (- f b))))
+                                               (color-name-to-rgb background)
+                                               (color-name-to-rgb border))
+                                    '(2)))
+                   border)))
+      (set-face-attribute 'window-divider nil :foreground background)
+      (set-face-attribute 'window-divider-first-pixel nil :foreground edge)
+      (set-face-attribute 'window-divider-last-pixel nil :foreground edge))))
+
+(define-minor-mode anthe/window-gaps-mode
+  "Gaps between the windows, the wallpaper showing through."
+  :global t
+  (let ((width (if anthe/window-gaps-mode anthe/window-gap 1)))
+    (setq window-divider-default-right-width width
+          window-divider-default-bottom-width width)
+    (when window-divider-mode
+      (window-divider-mode 1)))
+  (if anthe/window-gaps-mode
+      (progn (add-hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
+             (anthe/window-gaps--colours))
+    (remove-hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
+    (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel))
+      (custom-theme-recalc-face face))))
+
+(when (display-graphic-p)
+  (anthe/window-gaps-mode 1))
+
+(map! :leader :desc "Gaps between windows" "t G" #'anthe/window-gaps-mode)
+
 (provide 'anthe-windows)
 ;;; anthe-windows.el ends here
