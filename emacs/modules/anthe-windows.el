@@ -176,41 +176,134 @@ otherwise the left or top one, so the border follows the key."
 
 ;;; Gaps between the windows
 
-;; The dividers widened into gaps, as see-through as the windows (the
-;; wallpaper blurred behind, picom), a faint line along each window's edge
+;; The dividers widened into gaps, and a thin margin around the frame and
+;; under the top bar.  Under EXWM they are holes cut in the frame (its X
+;; shape): the wallpaper shows there as it is, neither tinted nor blurred,
+;; and the applications' rounded corners round into it.  The child frames
+;; (completion popups) are kept whole across them.  Elsewhere, the gaps are
+;; the frame's background.
 (defvar anthe/window-gap 12
   "Pixels between two windows, with `anthe/window-gaps-mode'.")
 
+(defvar anthe/window-margin 5
+  "Pixels around the frame and under the top bar, with `anthe/window-gaps-mode'.")
+
 (defun anthe/window-gaps--colours (&rest _)
-  "Colour the gaps after the theme: its background, faint edges."
+  "Colour the gaps after the theme: its background, the top bar padded."
   (when anthe/window-gaps-mode
-    (let* ((background (face-attribute 'default :background nil t))
-           (border (face-attribute 'vertical-border :foreground nil 'default))
-           (edge (if (and (color-defined-p background) (color-defined-p border))
-                     (apply #'color-rgb-to-hex
-                            (append (cl-mapcar (lambda (b f) (+ b (* 0.35 (- f b))))
-                                               (color-name-to-rgb background)
-                                               (color-name-to-rgb border))
-                                    '(2)))
-                   border)))
-      (set-face-attribute 'window-divider nil :foreground background)
-      (set-face-attribute 'window-divider-first-pixel nil :foreground edge)
-      (set-face-attribute 'window-divider-last-pixel nil :foreground edge))))
+    (let ((background (face-attribute 'default :background nil t)))
+      (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel))
+        (set-face-attribute face nil :foreground background))
+      (set-face-background 'internal-border background)
+      ;; Room under the top bar's text, for the margin cut in it
+      (set-face-attribute 'tab-bar nil
+                          :box `(:line-width (1 . ,anthe/window-margin)
+                                 :color ,(face-attribute 'tab-bar :background nil t))))))
+
+(defun anthe/window-gaps--frames ()
+  "The frames shaped: EXWM's workspaces."
+  (and (bound-and-true-p exwm--connection) (bound-and-true-p exwm-workspace--list)
+       (seq-filter #'frame-live-p exwm-workspace--list)))
+
+(defun anthe/window-gaps--rectangles (frame)
+  "The rectangles of FRAME to keep: its windows without their dividers, the
+minibuffer, the top bar without the margin under it, and its child frames."
+  (let ((rects nil)
+        (border (frame-internal-border-width frame))
+        (bar (tab-bar-height frame t)))
+    (cl-flet ((add (left top right bottom)
+                (when (and (> right left) (> bottom top))
+                  (push (make-instance 'xcb:RECTANGLE :x left :y top
+                                       :width (- right left) :height (- bottom top))
+                        rects))))
+      (when (> bar 0)
+        (add border border (- (frame-native-width frame) border)
+             (+ border bar (- anthe/window-margin))))
+      (dolist (window (window-list frame 'never))
+        (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window)))
+          (add left top (- right (window-right-divider-width window))
+               (- bottom (window-bottom-divider-width window)))))
+      (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges (minibuffer-window frame))))
+        (when (eq (window-frame (minibuffer-window frame)) frame)
+          (add left top right bottom)))
+      (dolist (child (frame-list))
+        (when (and (eq (frame-parameter child 'parent-frame) frame)
+                   (frame-visible-p child))
+          (pcase-let ((`(,x . ,y) (frame-position child))
+                      (`(,left ,top ,right ,bottom) (frame-edges child 'outer-edges)))
+            (add x y (+ x (- right left)) (+ y (- bottom top)))))))
+    rects))
+
+(defvar anthe/window-gaps--shape-ready nil)
+
+(defun anthe/window-gaps--shape (frame)
+  "Cut the gaps out of FRAME's EXWM container, or fill them back."
+  (unless anthe/window-gaps--shape-ready
+    (require 'xcb-shape)
+    (xcb:get-extension-data exwm--connection 'xcb:shape)
+    (setq anthe/window-gaps--shape-ready t))
+  (when-let* ((container (frame-parameter frame 'exwm-container)))
+    (xcb:+request exwm--connection
+        (if anthe/window-gaps-mode
+            (make-instance 'xcb:shape:Rectangles
+                           :operation xcb:shape:SO:Set
+                           :destination-kind xcb:shape:SK:Bounding
+                           :ordering xcb:ClipOrdering:Unsorted
+                           :destination-window container
+                           :x-offset 0 :y-offset 0
+                           :rectangles (anthe/window-gaps--rectangles frame))
+          (make-instance 'xcb:shape:Mask
+                         :operation xcb:shape:SO:Set
+                         :destination-kind xcb:shape:SK:Bounding
+                         :destination-window container
+                         :x-offset 0 :y-offset 0
+                         :source-bitmap xcb:Pixmap:None)))))
+
+(defvar anthe/window-gaps--timer nil)
+
+(defun anthe/window-gaps--update (&rest _)
+  "Shape the frames again, once the changes of this command are done."
+  (unless (timerp anthe/window-gaps--timer)
+    (setq anthe/window-gaps--timer
+          (run-at-time 0 nil (lambda ()
+                               (setq anthe/window-gaps--timer nil)
+                               (when-let* ((frames (anthe/window-gaps--frames)))
+                                 (mapc #'anthe/window-gaps--shape frames)
+                                 (xcb:flush exwm--connection)))))))
+
+(defun anthe/window-gaps--child-a (frame &rest _)
+  "Shape again when FRAME, a child frame, shows, hides or moves."
+  (when (and (framep frame) (frame-parameter frame 'parent-frame))
+    (anthe/window-gaps--update)))
 
 (define-minor-mode anthe/window-gaps-mode
-  "Gaps between the windows, the wallpaper showing through."
+  "Gaps between the windows and around them, the wallpaper showing through."
   :global t
-  (let ((width (if anthe/window-gaps-mode anthe/window-gap 1)))
+  (let ((width (if anthe/window-gaps-mode anthe/window-gap 1))
+        (margin (if anthe/window-gaps-mode anthe/window-margin 0)))
     (setq window-divider-default-right-width width
           window-divider-default-bottom-width width)
     (when window-divider-mode
-      (window-divider-mode 1)))
+      (window-divider-mode 1))
+    (setf (alist-get 'internal-border-width default-frame-alist) margin)
+    (dolist (frame (or (anthe/window-gaps--frames) (list (selected-frame))))
+      (set-frame-parameter frame 'internal-border-width margin)))
+  (let ((hook (if anthe/window-gaps-mode #'add-hook #'remove-hook)))
+    (funcall hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
+    (funcall hook 'window-size-change-functions #'anthe/window-gaps--update)
+    (funcall hook 'window-configuration-change-hook #'anthe/window-gaps--update))
+  (dolist (fn '(make-frame-visible make-frame-invisible set-frame-position set-frame-size))
+    (if anthe/window-gaps-mode
+        (advice-add fn :after #'anthe/window-gaps--child-a)
+      (advice-remove fn #'anthe/window-gaps--child-a)))
   (if anthe/window-gaps-mode
-      (progn (add-hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
-             (anthe/window-gaps--colours))
-    (remove-hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
-    (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel))
-      (custom-theme-recalc-face face))))
+      (anthe/window-gaps--colours)
+    (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel
+                    internal-border tab-bar))
+      (custom-theme-recalc-face face)))
+  (when (anthe/window-gaps--frames)
+    (mapc #'anthe/window-gaps--shape (anthe/window-gaps--frames))
+    (xcb:flush exwm--connection)))
 
 (when (display-graphic-p)
   (anthe/window-gaps-mode 1))
