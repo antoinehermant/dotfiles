@@ -217,7 +217,23 @@ the window is cut out, the wallpaper showing there.")
 (defun anthe/window-cards (window property)
   "The cards in WINDOW: the text of each value of PROPERTY, from the first
 to the last character of its lines, bar the space aligning them, as many of
-its lines as show.  For `anthe/window-cards-function'."
+its lines as show.  For `anthe/window-cards-function'.
+Measured again only when the text, the scrolling, the size or the font
+changed: measuring lays out the window from its top for each line."
+  (with-current-buffer (window-buffer window)
+    (let ((key (list (current-buffer) property (buffer-modified-tick)
+                     (window-start window) (window-end window)
+                     (window-hscroll window) (window-body-pixel-edges window)
+                     (default-font-width) (default-font-height)))
+          (cache (window-parameter window 'anthe/window-cards)))
+      (if (equal key (car cache))
+          (cdr cache)
+        (let ((cards (anthe/window-cards--measure window property)))
+          (set-window-parameter window 'anthe/window-cards (cons key cards))
+          cards)))))
+
+(defun anthe/window-cards--measure (window property)
+  "The cards in WINDOW, measured: see `anthe/window-cards'."
   (with-current-buffer (window-buffer window)
     (pcase-let ((`(,body-left ,body-top ,body-right ,body-bottom) (window-body-pixel-edges window))
                 (cards nil)
