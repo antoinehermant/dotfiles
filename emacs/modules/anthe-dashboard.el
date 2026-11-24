@@ -1161,11 +1161,13 @@ on, back if negative; past its last, the next card's first."
             (when (fboundp 'evil-snipe-override-local-mode) (evil-snipe-override-local-mode -1))))
 
 ;; The calendars synced in the background once Emacs is up (the dashboard
-;; shows the events imported last), and the dashboard drawn again if they
-;; changed.  It was an agenda built at startup, then hidden: 1.6 s.  What it
-;; was for, the agenda's files (custom.el's old list replaces those
-;; anthe-workflow.el reads from roam, as org loads) are read again before the
-;; dashboard first shows
+;; shows the events imported last), then every few minutes: CalDAV can't
+;; tell of a change as IMAP's IDLE does (neither can Radicale on the Pi), and
+;; a sync with nothing new costs a few requests.  The events are imported,
+;; and the dashboard drawn again, only when vdirsyncer brought changes.
+;; At startup, it was an agenda built, then hidden: 1.6 s.  What it was for,
+;; the agenda's files (custom.el's old list replaces those anthe-workflow.el
+;; reads from roam, as org loads) are read again before the dashboard shows
 (add-hook 'after-init-hook
           (lambda ()
             (when (fboundp 'anthe-org-roam-refresh-agenda-list)
@@ -1174,16 +1176,35 @@ on, back if negative; past its last, the next card's first."
 (defvar anthe-dashboard-sync-delay 3
   "Seconds after startup to sync the calendars.")
 
-(defun anthe-dashboard--sync-calendars ()
+(defvar anthe-dashboard-sync-interval (* 5 60)
+  "Seconds between the calendars' syncs.")
+
+(defun anthe-dashboard--sync-calendars (&optional import)
+  "Sync the calendars, and draw the dashboard again if their events changed;
+IMPORT them anyway."
   (let* ((file (expand-file-name "~/org/calendar.org"))
          (before (file-attribute-modification-time (file-attributes file))))
     (anthe-week-sync
-     (lambda (_ok)
+     (lambda (_imported)
        (unless (equal before (file-attribute-modification-time (file-attributes file)))
-         (anthe-dashboard-redraw))))))
+         (anthe-dashboard-redraw)))
+     import)))
+
+(defvar anthe-dashboard--sync-timer nil)
+
+(defun anthe-dashboard-start-calendar-sync ()
+  "Sync the calendars now, then every `anthe-dashboard-sync-interval'.
+The first sync imports whatever came meanwhile, the next ones only changes."
+  (when (timerp anthe-dashboard--sync-timer)
+    (cancel-timer anthe-dashboard--sync-timer))
+  (anthe-dashboard--sync-calendars t)
+  (setq anthe-dashboard--sync-timer
+        (run-with-timer anthe-dashboard-sync-interval anthe-dashboard-sync-interval
+                        #'anthe-dashboard--sync-calendars)))
 
 (add-hook 'window-setup-hook
-          (lambda () (run-with-timer anthe-dashboard-sync-delay nil #'anthe-dashboard--sync-calendars)))
+          (lambda ()
+            (run-with-timer anthe-dashboard-sync-delay nil #'anthe-dashboard-start-calendar-sync)))
 
 (setq initial-buffer-choice #'anthe-dashboard-open)
 (setq doom-fallback-buffer-name "*dashboard*")
