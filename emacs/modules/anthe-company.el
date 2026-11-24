@@ -15,9 +15,9 @@
 ;;    words of the buffer, from 4 letters, together; org's own too (links in
 ;;    [[, tags, #+ keywords);
 ;;  - in text: the words of the buffer.
-;;  The titles match where they start as typed ("git": "Git", "GitHub"), or
-;;  else where one of their words does ("overleaf": "Git Overleaf"), not
-;;  anywhere as in the minibuffer (orderless), which offered long lists.  Dropped: the
+;;  The titles match where one of their words starts as typed ("git": "Git",
+;;  "GitHub", "PISM git"; not "digital"), not anywhere as in the minibuffer
+;;  (orderless), which offered long lists.  Dropped: the
 ;;  dictionary's words (ispell), and jedi outside Python.
 ;;
 ;;  The popup takes the bar's colours, its corners rounded (anthe-windows.el).
@@ -66,14 +66,12 @@
   (rx-to-string `(seq word-start ,component)))
 
 (defun anthe/company-org-matching-h ()
-  "In org, completions match at the start of a word, the case ignored.
-Company tries the start of the whole title first, then orderless
-(`+vertico-company-completion-styles'): orderless matches here at a word's
-start, not anywhere; the minibuffer, its own buffer, keeps it as is."
-  (setq-local orderless-matching-styles '(anthe/company-word-start)
-              ;; org-roam's titles are offered only if one starts as typed
-              ;; (`completion--capf-wrapper'): "git" as "Git"
-              completion-ignore-case t))
+  "In org, company's completions match at the start of any word, the case
+ignored while typed in lower case: orderless only (Doom's
+`+vertico-company-completion-styles' tried the whole start first, then
+anywhere), at a word's start; the minibuffer, its own buffer, keeps it as is."
+  (setq-local +vertico-company-completion-styles '(orderless)
+              orderless-matching-styles '(anthe/company-word-start)))
 
 (add-hook 'org-mode-hook #'anthe/company-org-matching-h)
 
