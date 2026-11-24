@@ -46,7 +46,8 @@
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
 (use-package! company-jedi
   :commands company-jedi)
-(add-to-list 'company-backends 'company-jedi)
+;; In Python only, after the language's own completion
+(set-company-backend! '(python-mode python-ts-mode) 'company-capf 'company-jedi)
 
 (use-package! elpy
   :after python-mode

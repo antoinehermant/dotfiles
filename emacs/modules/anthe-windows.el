@@ -209,6 +209,10 @@ nil: `anthe/window-margin'.")
   "Pixels of the windows' rounded corners, 0 for square ones.
 The corners are cut in steps of a pixel, not smoothed as picom's.")
 
+(defvar anthe/window-child-radius 6
+  "Pixels of the child frames' rounded corners (completion popups), 0 for
+square ones.")
+
 (defvar-local anthe/window-cards-function nil
   "When non-nil, a function of a window showing this buffer giving the cards
 kept of it, each (LEFT TOP RIGHT BOTTOM) in its frame's pixels: the rest of
@@ -332,6 +336,19 @@ the buffer's, else the frame's, and the margin."
       (unless (equal (take 2 (window-fringes window)) (list left right))
         (set-window-fringes window left right nil t)))))
 
+(defun anthe/window-gaps--round (left top right bottom radius)
+  "The rectangle LEFT TOP RIGHT BOTTOM, its corners rounded by RADIUS pixels:
+the middle, then a row of a pixel a step of the corners, each (LEFT TOP
+RIGHT BOTTOM)."
+  (let ((radius (min radius (/ (- right left) 2) (/ (- bottom top) 2))))
+    (cons (list left (+ top radius) right (- bottom radius))
+          (mapcan (lambda (row)
+                    (let* ((dy (- radius row 0.5))
+                           (inset (round (- radius (sqrt (- (* radius radius) (* dy dy)))))))
+                      (list (list (+ left inset) (+ top row) (- right inset) (+ top row 1))
+                            (list (+ left inset) (- bottom row 1) (- right inset) (- bottom row)))))
+                  (number-sequence 0 (1- radius))))))
+
 (defun anthe/window-gaps--rectangles (frame)
   "The rectangles of FRAME to keep: the top bar but the gap under it, the
 windows but their dividers and margins, the echo area but its margin, and
@@ -346,15 +363,9 @@ the child frames."
                                          :width (- right left) :height (- bottom top))
                           rects)))
                 (add-rounded (left top right bottom)
-                  ;; The middle, then a row of a pixel a step of the corners
-                  (let ((radius (min anthe/window-radius
-                                     (/ (- right left) 2) (/ (- bottom top) 2))))
-                    (add left (+ top radius) right (- bottom radius))
-                    (dotimes (row radius)
-                      (let* ((dy (- radius row 0.5))
-                             (inset (round (- radius (sqrt (- (* radius radius) (* dy dy)))))))
-                        (add (+ left inset) (+ top row) (- right inset) (+ top row 1))
-                        (add (+ left inset) (- bottom row 1) (- right inset) (- bottom row)))))))
+                  (dolist (rect (anthe/window-gaps--round left top right bottom
+                                                          anthe/window-radius))
+                    (apply #'add rect))))
       (when (> bar 0)
         (add 0 0 width (- bar (anthe/window-gaps--bar-gap))))
       (dolist (window (window-list frame 'never))
@@ -411,6 +422,28 @@ the child frames."
                          :x-offset 0 :y-offset 0
                          :source-bitmap xcb:Pixmap:None)))))
 
+(defun anthe/window-gaps--round-children (frame)
+  "Round the corners of FRAME's visible child frames, the completion popups."
+  (dolist (child (frame-list))
+    (when (and (eq (frame-parameter child 'parent-frame) frame)
+               (frame-visible-p child))
+      (pcase-let ((`(,left ,top ,right ,bottom) (frame-edges child 'outer-edges)))
+        (xcb:+request exwm--connection
+            (make-instance 'xcb:shape:Rectangles
+                           :operation xcb:shape:SO:Set
+                           :destination-kind xcb:shape:SK:Bounding
+                           :ordering xcb:ClipOrdering:Unsorted
+                           :destination-window
+                           (string-to-number (frame-parameter child 'outer-window-id))
+                           :x-offset 0 :y-offset 0
+                           :rectangles
+                           (mapcar (pcase-lambda (`(,x1 ,y1 ,x2 ,y2))
+                                     (make-instance 'xcb:RECTANGLE :x x1 :y y1
+                                                    :width (- x2 x1) :height (- y2 y1)))
+                                   (anthe/window-gaps--round
+                                    0 0 (- right left) (- bottom top)
+                                    (if anthe/window-gaps-mode anthe/window-child-radius 0)))))))))
+
 (defvar anthe/window-gaps--timer nil)
 
 (defun anthe/window-gaps--refresh ()
@@ -419,6 +452,7 @@ the child frames."
   (when-let* ((frames (anthe/window-gaps--frames)))
     (mapc #'anthe/window-gaps--fringes frames)
     (mapc #'anthe/window-gaps--shape frames)
+    (mapc #'anthe/window-gaps--round-children frames)
     (xcb:flush exwm--connection)))
 
 (defun anthe/window-gaps--update (&rest _)
