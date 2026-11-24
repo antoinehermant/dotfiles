@@ -543,6 +543,28 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
 (defun anthe-bar--redraw (&rest _)
   (force-mode-line-update t))
 
+;;; The workspaces in the echo area: not while the bar shows them
+
+(defun anthe-bar--display-a (fn)
+  "Show the workspaces in the echo area only when the bar is hidden, or
+when asked (SPC TAB TAB)."
+  (when (or (not anthe-bar-shown) (eq this-command '+workspace/display))
+    (funcall fn)))
+
+(defun anthe-bar--message-body-a (fn message &optional type)
+  "Doom's workspace messages, without the workspaces when the bar shows them."
+  (if anthe-bar-shown
+      (propertize (format "%s" message)
+                  'face (pcase type
+                          ('error 'error)
+                          ('warn 'warning)
+                          ('success 'success)
+                          ('info 'font-lock-comment-face)))
+    (funcall fn message type)))
+
+(advice-add '+workspace/display :around #'anthe-bar--display-a)
+(advice-add '+workspace--message-body :around #'anthe-bar--message-body-a)
+
 (add-hook 'persp-activated-functions #'anthe-bar--redraw)
 (add-hook 'persp-renamed-functions #'anthe-bar--redraw)
 (add-hook 'exwm-workspace-list-change-hook #'anthe-bar--apply)
