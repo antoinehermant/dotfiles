@@ -11,11 +11,14 @@
 ;;    opens it, as on a single /;
 ;;  - in code: the language's completion (LSP or the mode's), then snippets,
 ;;    then the words of the buffer in code;
-;;  - in org and text: org's own (links in [[, tags, #+ keywords), then the
-;;    words of the buffer, from 4 letters.
-;;  Dropped, for they offered long lists of little use: org-roam's titles
-;;  after any word (still in [[), the dictionary's words (ispell), and jedi
-;;  outside Python.
+;;  - in org: org-roam's titles (a title chosen becomes a link) with the
+;;    words of the buffer, from 4 letters, together; org's own too (links in
+;;    [[, tags, #+ keywords);
+;;  - in text: the words of the buffer.
+;;  The titles match where they start as typed ("git": "Git", "GitHub"), or
+;;  else where one of their words does ("overleaf": "Git Overleaf"), not
+;;  anywhere as in the minibuffer (orderless), which offered long lists.  Dropped: the
+;;  dictionary's words (ispell), and jedi outside Python.
 ;;
 ;;  The popup takes the bar's colours, its corners rounded (anthe-windows.el).
 ;;
@@ -55,9 +58,38 @@
 (set-company-backend! 'text-mode 'company-dabbrev)
 (setq text-mode-ispell-word-completion nil)
 
-;; Org-roam's titles only in a link, [[, not after any word
+;; Org: org's and org-roam's completion with the buffer's words, together
+(set-company-backend! 'org-mode '(company-capf company-dabbrev))
+
+(defun anthe/company-word-start (component)
+  "An orderless matching style: COMPONENT at the start of a word."
+  (rx-to-string `(seq word-start ,component)))
+
+(defun anthe/company-org-matching-h ()
+  "In org, completions match at the start of a word, the case ignored.
+Company tries the start of the whole title first, then orderless
+(`+vertico-company-completion-styles'): orderless matches here at a word's
+start, not anywhere; the minibuffer, its own buffer, keeps it as is."
+  (setq-local orderless-matching-styles '(anthe/company-word-start)
+              ;; org-roam's titles are offered only if one starts as typed
+              ;; (`completion--capf-wrapper'): "git" as "Git"
+              completion-ignore-case t))
+
+(add-hook 'org-mode-hook #'anthe/company-org-matching-h)
+
+(defun anthe/company-roam-titles-a (fn)
+  "Org-roam's titles after a word: offered when one of their words starts
+as it, else not at all, the next completion answering."
+  (when-let* ((result (funcall fn))
+              (regexp (anthe/company-word-start
+                       (buffer-substring-no-properties (nth 0 result) (nth 1 result))))
+              ((let ((case-fold-search t))
+                 (seq-some (lambda (title) (string-match-p regexp title)) (nth 2 result)))))
+    ;; Not :exclusive no, which needs a title starting as the word
+    (append (take 3 result) (map-delete (copy-sequence (nthcdr 3 result)) :exclusive))))
+
 (after! org-roam
-  (setq org-roam-completion-everywhere nil))
+  (advice-add 'org-roam-complete-everywhere :around #'anthe/company-roam-titles-a))
 
 (defun anthe/company-files-first (&rest _)
   "Paths before anything else: company-files answers only on one."
