@@ -284,6 +284,13 @@ again on each save. Sort, rename and delete there."
 (global-qutebrowser-doom-modeline-mode)
 (qutebrowser-theme-export-mode)
 
+;; After the colours, qutebrowser's look made of them (qutebrowser/look.py:
+;; DuckDuckGo in the theme's colours, the bars see-through), so that it
+;; follows a change of theme too
+(defun anthe/qutebrowser-theme-look ()
+  (insert "\nimport os\nconfig.source(os.path.expanduser('~/.dotfiles/qutebrowser/look.py'))\n"))
+(add-hook 'qutebrowser-theme-export-functions #'anthe/qutebrowser-theme-look 90)
+
 ;; (map! :leader
 ;;       (:prefix ("k q" . "qutebrowser")
 ;;        :desc "Qutebrowser launcher" "l" #'qutebrowser-launcher
