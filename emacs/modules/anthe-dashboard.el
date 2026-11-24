@@ -968,13 +968,18 @@ with the keyword preprint)."
              (append
               (anthe-dashboard--row
                (list 'week 0 width (lambda () (anthe-dashboard--week (- width 4)))))
+              ;; A line apart, as the rows
+              (list "")
               (anthe-dashboard--row
                (list 'tasks 0 width (lambda () (anthe-dashboard--tasks-card (- width 4) tasks))))))
            (anthe-dashboard--row
             (list 'cryolist 0 half (lambda () (anthe-dashboard--cryolist-card (- half 4))))
             (list 'news (- width half) half (lambda () (anthe-dashboard--news-card (- half 4)))))
            (list (let ((anthe-dashboard--origin 1))
-                   (concat (anthe-dashboard--at 0) (anthe-dashboard--footer (- width 2))))))))
+                   (concat (anthe-dashboard--at 0)
+                           ;; A card of its own, once the cards are cut out
+                           (propertize (anthe-dashboard--footer (- width 2))
+                                       'anthe-dashboard-card 'footer)))))))
     (insert (mapconcat (lambda (row) (string-join row "\n")) rows "\n\n") "\n")))
 
 ;;; Moving around
@@ -1133,6 +1138,25 @@ on, back if negative; past its last, the next card's first."
       :n "C-k" #'anthe-dashboard-previous-item
       "C-j" #'anthe-dashboard-next-item
       "C-k" #'anthe-dashboard-previous-item)
+
+;; Under EXWM, the cards are cut out of the frame (anthe-windows.el): the
+;; wallpaper shows between them, as between windows
+(defvar anthe-dashboard-cut t
+  "When non-nil, the dashboard's cards are cut out, apart, as windows.")
+
+(defun anthe-dashboard--cards (window)
+  (anthe/window-cards window 'anthe-dashboard-card))
+
+(add-hook 'dashboard-mode-hook
+          (lambda ()
+            (when (and anthe-dashboard-cut (fboundp 'anthe/window-cards))
+              (setq-local anthe/window-cards-function #'anthe-dashboard--cards))))
+
+(advice-add 'dashboard-insert-startupify-lists :after
+            (lambda (&rest _)
+              (when (fboundp 'anthe/window-gaps--update)
+                (anthe/window-gaps--update)))
+            '((name . anthe-dashboard--cut)))
 
 ;; Drawn again when its window changes width, the cards taking it
 (defun anthe-dashboard--redraw-at-width (&rest _)

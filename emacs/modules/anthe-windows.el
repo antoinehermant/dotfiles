@@ -293,16 +293,18 @@ the child frames."
       (dolist (window (window-list frame 'never))
         (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window))
                     (`(,margin-left . ,margin-right) (anthe/window-gaps--margins window)))
-          (if (and (fboundp 'anthe-wallpaper-p) (anthe-wallpaper-p window))
-              ;; The wallpaper (anthe-wallpaper.el): only its card
-              (when-let* ((card (anthe-wallpaper--card window)))
+          (if-let* ((cards (buffer-local-value 'anthe/window-cards-function
+                                               (window-buffer window))))
+              ;; A buffer of cards (the dashboard, the wallpaper): only them
+              (dolist (card (funcall cards window))
                 (apply #'add-rounded card))
             (add-rounded (+ left margin-left) top
                          (- right (window-right-divider-width window) margin-right)
                          (- bottom (window-bottom-divider-width window))))
           ;; Above the echo area, the divider under the gap is kept
           (when (and (eq (window-frame mini) frame) (window-at-side-p window 'bottom)
-                     (not (and (fboundp 'anthe-wallpaper-p) (anthe-wallpaper-p window))))
+                     (not (buffer-local-value 'anthe/window-cards-function
+                                              (window-buffer window))))
             (add left (+ (- bottom (window-bottom-divider-width window))
                          (anthe/window-gaps--echo-gap))
                  right bottom))))
@@ -374,7 +376,9 @@ through.  After changing their sizes, call this again to apply them."
   (let ((hook (if anthe/window-gaps-mode #'add-hook #'remove-hook)))
     (funcall hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
     (funcall hook 'window-size-change-functions #'anthe/window-gaps--update)
-    (funcall hook 'window-configuration-change-hook #'anthe/window-gaps--update))
+    (funcall hook 'window-configuration-change-hook #'anthe/window-gaps--update)
+    ;; The cards move with a scroll
+    (funcall hook 'window-scroll-functions #'anthe/window-gaps--update))
   (dolist (fn '(make-frame-visible make-frame-invisible set-frame-position set-frame-size))
     (if anthe/window-gaps-mode
         (advice-add fn :after #'anthe/window-gaps--child-a)
