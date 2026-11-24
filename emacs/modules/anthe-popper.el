@@ -151,14 +151,16 @@ after a space (vterminal<2>: vterm 2)."
                                                          'shadow)
                                                        nil t)
                           :box nil :inherit 'unspecified)
-      ;; The tab shown, the window selected or not
-      (dolist (face '(tab-line-tab tab-line-tab-current))
-        ;; Their own grey, over what they inherit, cleared
-        (set-face-attribute face nil :box nil :weight 'bold
-                            :background 'unspecified :foreground 'unspecified
-                            :inherit (if (facep 'anthe-bar-current-workspace)
-                                         'anthe-bar-current-workspace
-                                       'highlight)))
+      ;; The tab shown: in the bar's colour while the popup is selected,
+      ;; grey otherwise (tab-line's own grey cleared from the first)
+      (set-face-attribute 'tab-line-tab-current nil :box nil :weight 'bold
+                          :background 'unspecified :foreground 'unspecified
+                          :inherit (if (facep 'anthe-bar-current-workspace)
+                                       'anthe-bar-current-workspace
+                                     'highlight))
+      (set-face-attribute 'tab-line-tab nil :box nil :weight 'bold :inherit 'unspecified
+                          :background (face-foreground 'shadow nil t)
+                          :foreground (face-foreground 'default nil t))
       (set-face-attribute 'tab-line-tab-special nil :slant 'normal)
       (set-face-attribute 'tab-line-highlight nil :box nil :inherit 'highlight))))
 
