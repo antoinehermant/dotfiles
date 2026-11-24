@@ -140,6 +140,7 @@ message, `S-TAB` all, `C-j`/`C-k` move, `RET` opens it in mu4e, `q` quits).
 
 ### 2026-11-13
 
+- Popups (`anthe-popper.el`): the popup window has a tab per popup of the current workspace (vterms, Python shells, *Messages*, help...), in a fixed order, an icon for their kind, the one shown highlighted as in the top bar; a click shows one. `M-`` shows the popup, then the next tab (`C-u -1 M-`` the previous); it no longer skips a vterm not yet closed once. Popups belong to the workspace they are made or shown in, not to the project of their directory; those of none (*Messages*) are in every workspace.
 - New terminal moved from `SPC V` (shift) to `SPC v v`, next to `v n`/`v p`/`v r`. It opens in the popper popup: `multi-vterm` used `switch-to-buffer`, which skips popper and took the current window.
 - Contacts under `SPC k p` (`anthe-contacts.el`): `p` find or edit a contact, `n` new, `a` add an address known from mail (the people of the message at point first) to a new contact or an existing one, as a home, work or other address, in chosen groups, `d` delete, `s` sync with the Pi and Infomaniak. A contact opens as a form, `C-c C-c` saves and syncs; its `Categories` field completes the existing groups. The address book also joins mu4e's address completion.
 
