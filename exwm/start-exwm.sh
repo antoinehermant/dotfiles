@@ -7,7 +7,13 @@ export ANTHE_SPLASH="${XDG_RUNTIME_DIR:-/tmp}/anthe-splash"
 rm -f "$ANTHE_SPLASH"
 ~/.dotfiles/bin/anthe-splash &
 
-compton &
+# The compositor: picom (rcfiles/picom/picom.conf), or compton if SPC k t o
+# chose it (anthe-compositor-switch in exwm/exwm-desktop.el)
+if [ "$(cat ~/.cache/anthe-compositor 2>/dev/null)" = compton ] || ! command -v picom >/dev/null; then
+  compton &
+else
+  picom &
+fi
 # Start the D-Bus session
 #exec dbus-launch --exit-with-session /usr/local/emacs29.3-x11/bin/emacs -mm
 # xss-lock -- slock &

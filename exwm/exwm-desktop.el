@@ -538,6 +538,25 @@ instance's, is in `anthe/exwm-floating-classes'."
 
 (map! :leader :desc "Caffeine (screen stays on)" "k t z" #'anthe-caffeine-mode)
 
+;; The compositor: picom (rounded applications gliding into place, the
+;; wallpaper blurred behind Emacs, rcfiles/picom/picom.conf), or the old
+;; compton, should picom misbehave (SPC k t o).  exwm/start-exwm.sh starts
+;; the one named in ~/.cache/anthe-compositor, picom by default.
+(defvar anthe-compositor-file (expand-file-name "~/.cache/anthe-compositor"))
+
+(defun anthe-compositor-switch ()
+  "Switch between picom and compton, from now on and at the next logins."
+  (interactive)
+  (let ((next (if (zerop (call-process "pgrep" nil nil nil "-x" "picom")) "compton" "picom")))
+    (call-process "pkill" nil nil nil "-x" "picom")
+    (call-process "pkill" nil nil nil "-x" "compton")
+    (with-temp-file anthe-compositor-file (insert next "\n"))
+    ;; Once the other one has let go of the screen
+    (run-at-time 0.5 nil #'make-process :name next :command (list next) :noquery t)
+    (message "Compositor: %s, at the next logins too" next)))
+
+(map! :leader :desc "Compositor picom/compton" "k t o" #'anthe-compositor-switch)
+
 ;; remap capslock to ctrl
 (shell-command "setxkbmap -layout us -variant altgr-intl")
 (shell-command "xmodmap ~/.dotfiles/.xmodmap")

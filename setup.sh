@@ -39,6 +39,8 @@ ln -sf ~/.dotfiles/bin/notify-bell ~/.local/bin/notify-bell
 ln -sf ~/.dotfiles/bin/anthe-lock ~/.local/bin/anthe-lock
 
 # Zathura, as an Emacs buffer in EXWM (its colours are written by Emacs)
+mkdir -p ~/.config/picom
+ln -sf ~/.dotfiles/rcfiles/picom/picom.conf ~/.config/picom/picom.conf
 mkdir -p ~/.config/zathura
 ln -sf ~/.dotfiles/rcfiles/zathura/zathurarc ~/.config/zathura/zathurarc
 mkdir -p ~/.config/nsxiv/exec
