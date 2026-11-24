@@ -57,6 +57,7 @@
 (require 'anthe-transparency)
 (require 'anthe-vterm)
 (require 'anthe-windows)
+(require 'anthe-wallpaper)
 (require 'anthe-workflow)
 (require 'anthe-tasks)
 

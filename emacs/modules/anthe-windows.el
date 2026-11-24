@@ -293,11 +293,16 @@ the child frames."
       (dolist (window (window-list frame 'never))
         (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window))
                     (`(,margin-left . ,margin-right) (anthe/window-gaps--margins window)))
-          (add-rounded (+ left margin-left) top
-                       (- right (window-right-divider-width window) margin-right)
-                       (- bottom (window-bottom-divider-width window)))
+          (if (and (fboundp 'anthe-wallpaper-p) (anthe-wallpaper-p window))
+              ;; The wallpaper (anthe-wallpaper.el): only its card
+              (when-let* ((card (anthe-wallpaper--card window)))
+                (apply #'add-rounded card))
+            (add-rounded (+ left margin-left) top
+                         (- right (window-right-divider-width window) margin-right)
+                         (- bottom (window-bottom-divider-width window))))
           ;; Above the echo area, the divider under the gap is kept
-          (when (and (eq (window-frame mini) frame) (window-at-side-p window 'bottom))
+          (when (and (eq (window-frame mini) frame) (window-at-side-p window 'bottom)
+                     (not (and (fboundp 'anthe-wallpaper-p) (anthe-wallpaper-p window))))
             (add left (+ (- bottom (window-bottom-divider-width window))
                          (anthe/window-gaps--echo-gap))
                  right bottom))))
