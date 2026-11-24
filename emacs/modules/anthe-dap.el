@@ -20,38 +20,38 @@
 ;;; Code:
 
 
-(require 'dape)
+;; dape loads with the first debugging session.  After it: `dape-cwd' replaces dape's own
+(with-eval-after-load 'dape
+  (defun dape-cwd-file ()
+    (or (buffer-file-name) default-directory))
 
-(defun dape-cwd-file ()
-  (or (buffer-file-name) default-directory))
+  (defun dape-file-name ()
+    (let ((file-path (buffer-file-name)))
+      (if file-path
+          (file-name-nondirectory file-path)
+        (message "No file is associated with the current buffer"))))
 
-(defun dape-file-name ()
-  (let ((file-path (buffer-file-name)))
-    (if file-path
-        (file-name-nondirectory file-path)
-      (message "No file is associated with the current buffer"))))
+  (defun dape-cwd ()
+    (let ((file-path (or (buffer-file-name) default-directory)))
+      (if (file-directory-p file-path)
+          file-path
+        (file-name-directory file-path))))
 
-(defun dape-cwd ()
-  (let ((file-path (or (buffer-file-name) default-directory)))
-    (if (file-directory-p file-path)
-        file-path
-      (file-name-directory file-path))))
-
-(add-to-list 'dape-configs
-             `(debugpy-my
-               modes (python-mode jinja2-mode)
-               command "python"
-               command-args ["-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport]
-               port :autoport
-               :type "python"
-               :request "launch"
-               :args ["--app" "src" "run" "--no-debugger" "--no-reload"]
-               :console "integratedTerminal"
-               :showReturnValue t
-               :justMyCode nil
-               :jinja t
-               :cwd (lambda () (dape-cwd))
-               :program (lambda () (dape-file-name))))
+  (add-to-list 'dape-configs
+               `(debugpy-my
+                 modes (python-mode jinja2-mode)
+                 command "python"
+                 command-args ["-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport]
+                 port :autoport
+                 :type "python"
+                 :request "launch"
+                 :args ["--app" "src" "run" "--no-debugger" "--no-reload"]
+                 :console "integratedTerminal"
+                 :showReturnValue t
+                 :justMyCode nil
+                 :jinja t
+                 :cwd (lambda () (dape-cwd))
+                 :program (lambda () (dape-file-name)))))
 
 ;; (use-package dap-mode
 ;;   :commands dap-mode)

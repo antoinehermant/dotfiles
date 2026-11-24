@@ -206,6 +206,17 @@ instance's, is in `anthe/exwm-floating-classes'."
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/exwm-0.35/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/xelb-0.23")
+;; Locked after 20 minutes idle (X's screen saver, which xss-lock waits for),
+;; the screen off a minute later; usually locked by hand before
+(defvar anthe-lock-idle (* 20 60)
+  "Seconds idle before the screen locks.")
+
+(defun anthe-lock--set-idle ()
+  "Lock after `anthe-lock-idle', and turn the screen off a minute later."
+  (let ((idle (number-to-string anthe-lock-idle)))
+    (call-process "xset" nil 0 nil "s" idle idle
+                  "+dpms" "dpms" "0" "0" (number-to-string (+ anthe-lock-idle 60)))))
+
 (use-package! exwm
   :config
 
@@ -324,6 +335,8 @@ instance's, is in `anthe/exwm-floating-classes'."
   ;; The workspaces follow the monitors plugged in, and unknown monitors
   ;; extend the laptop screen (SPC k m m mirrors it), see anthe-monitors
   (require 'anthe-monitors)
+  ;; And each monitor has its own list of Doom workspaces
+  (require 'anthe-workspaces)
 
   ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP-1"
   ;;                                            1 "DP-1-2-2"
@@ -443,7 +456,8 @@ instance's, is in `anthe/exwm-floating-classes'."
   ;; /run/media/anthe/LABEL, and says so; SPC k u ejects one (anthe-bar.el)
   (efs/run-in-background "udiskie --automount --notify --no-tray --no-file-manager")
   ;; Locks the screen before the laptop sleeps (lid closed) and after the
-  ;; screen saver's 10 minutes idle (bin/anthe-lock)
+  ;; screen saver's `anthe-lock-idle' (bin/anthe-lock); not with caffeine on
+  (anthe-lock--set-idle)
   (efs/run-in-background "xss-lock -- anthe-lock")
 
   (exwm-wm-mode))
@@ -508,6 +522,40 @@ instance's, is in `anthe/exwm-floating-classes'."
 (map! :leader
       :desc "Lock the screen" "k z" #'anthe-lock
       :desc "Lock, keep working" "k Z" #'anthe-lock-away)
+
+;; Caffeine: the screen neither locks nor goes off however long idle (a talk,
+;; a film, a long read); closing the lid still locks and sleeps.  The cup
+;; next to the battery in the bar shows it, and a click switches it
+(define-minor-mode anthe-caffeine-mode
+  "Keep the screen on and unlocked however long idle."
+  :global t
+  (if anthe-caffeine-mode
+      (call-process "xset" nil 0 nil "s" "off" "-dpms")
+    (anthe-lock--set-idle))
+  (when (fboundp 'anthe-bar--look) (anthe-bar--look))
+  (message "Caffeine %s" (if anthe-caffeine-mode "on: the screen stays on"
+                           (format "off: locked after %d minutes idle" (/ anthe-lock-idle 60)))))
+
+(map! :leader :desc "Caffeine (screen stays on)" "k t z" #'anthe-caffeine-mode)
+
+;; The compositor: picom (rounded applications gliding into place, the
+;; wallpaper blurred behind Emacs, rcfiles/picom/picom.conf), or the old
+;; compton, should picom misbehave (SPC k t o).  exwm/start-exwm.sh starts
+;; the one named in ~/.cache/anthe-compositor, picom by default.
+(defvar anthe-compositor-file (expand-file-name "~/.cache/anthe-compositor"))
+
+(defun anthe-compositor-switch ()
+  "Switch between picom and compton, from now on and at the next logins."
+  (interactive)
+  (let ((next (if (zerop (call-process "pgrep" nil nil nil "-x" "picom")) "compton" "picom")))
+    (call-process "pkill" nil nil nil "-x" "picom")
+    (call-process "pkill" nil nil nil "-x" "compton")
+    (with-temp-file anthe-compositor-file (insert next "\n"))
+    ;; Once the other one has let go of the screen
+    (run-at-time 0.5 nil #'make-process :name next :command (list next) :noquery t)
+    (message "Compositor: %s, at the next logins too" next)))
+
+(map! :leader :desc "Compositor picom/compton" "k t o" #'anthe-compositor-switch)
 
 ;; remap capslock to ctrl
 (shell-command "setxkbmap -layout us -variant altgr-intl")

@@ -78,6 +78,13 @@
 
 (package! cape)
 
+;; Were installed at startup with straight-use-package (anthe-python.el,
+;; anthe-consult.el), which cost a second.  Recipes in full, as for khardel
+(package! elpy :recipe (:host github :repo "jorgenschaefer/elpy"
+                        :files ("*.el" "NEWS.rst" "snippets" "elpy")))
+(package! consult-projectile
+  :recipe (:host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+
 
 (package! exwm)
 (package! xelb)

@@ -722,25 +722,55 @@ buffer; from the week, the month of the day at point."
   (setq anthe-week--cache nil)
   (anthe-week--render))
 
-(defun anthe-week-sync ()
+(defun anthe-week--sync-pairs ()
+  "The calendars' vdirsyncer pairs: those of its config named for a calendar
+(Infomaniak's today, the Pi's if they move there).  The address book has
+its own sync (anthe-contacts.el)."
+  (let ((config (expand-file-name "~/.config/vdirsyncer/config")) pairs)
+    (when (file-readable-p config)
+      (with-temp-buffer
+        (insert-file-contents config)
+        (while (re-search-forward "^\\[pair \\([^]]*calendar[^]]*\\)\\]" nil t)
+          (push (match-string 1) pairs))))
+    (nreverse pairs)))
+
+(defvar anthe-week--sync-process nil)
+
+(defun anthe-week-sync (&optional then import)
   "Sync the calendars with the server (vdirsyncer), then import them; the
-week shows the new events once the file changes."
+week shows the new events once the file changes.  From a program, quietly,
+importing only if vdirsyncer brought changes (or IMPORT), then THEN called
+with whether the events were imported."
   (interactive)
   (require 'khalel)
-  (message "Syncing the calendars...")
-  (let ((buffer (generate-new-buffer " *anthe-week-sync*")))
-    (make-process
-     :name "vdirsyncer" :buffer buffer :noquery t :connection-type 'pipe
-     :command `(,(or khalel-vdirsyncer-command "vdirsyncer") "sync")
-     :sentinel (lambda (process _event)
+  (let ((quiet (not (called-interactively-p 'any))))
+    (if (process-live-p anthe-week--sync-process)
+        (unless quiet (message "The calendars are syncing already"))
+      (let ((buffer (generate-new-buffer " *anthe-week-sync*")))
+        (unless quiet (message "Syncing the calendars..."))
+        (setq anthe-week--sync-process
+              (make-process
+               :name "vdirsyncer" :buffer buffer :noquery t :connection-type 'pipe
+               :command `(,(or khalel-vdirsyncer-command "vdirsyncer") "sync" ,@(anthe-week--sync-pairs))
+               :sentinel
+               (lambda (process _event)
                  (unless (process-live-p process)
-                   (if (zerop (process-exit-status process))
-                       (progn (save-window-excursion (khalel-import-events))
-                              (message "Calendars synced"))
-                     (message "Calendar sync failed: %s"
-                              (car (last (split-string (with-current-buffer buffer (buffer-string))
-                                                       "\n" t)))))
-                   (kill-buffer buffer))))))
+                   (let* ((output (with-current-buffer buffer (buffer-string)))
+                          ;; vdirsyncer says only "Syncing ..." when nothing changed
+                          (changed (string-match-p "^\\(Copying\\|Deleting\\)" output))
+                          (imported nil))
+                     (kill-buffer buffer)
+                     (if (zerop (process-exit-status process))
+                         (progn
+                           (when (or changed import (not quiet))
+                             (save-window-excursion
+                               (let ((inhibit-message quiet)) (khalel-import-events)))
+                             (setq imported t))
+                           (unless quiet (message "Calendars synced")))
+                       (unless quiet
+                         (message "Calendar sync failed: %s"
+                                  (car (last (split-string output "\n" t))))))
+                     (when then (funcall then imported)))))))))))
 
 (define-keymap :keymap anthe-week-mode-map
   "]" #'anthe-week-next "[" #'anthe-week-previous "." #'anthe-week-today

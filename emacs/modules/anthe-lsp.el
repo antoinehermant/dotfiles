@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 
-(require 'lsp-mode)
+;; lsp-mode loads with the first buffer that starts it (half a second)
 
 (defun anthe-lsp-mode-setup ()
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
@@ -55,27 +55,8 @@
 
 ;; (add-to-list 'warning-suppress-types '(emacs))
 
-(use-package! company
-  :init
-  (global-company-mode)
-  :hook (lsp-mode . company-mode)
-  :bind (:map company-active-map
-              ("<tab>" . 'company-complete-selection)
-              ("C-l" . 'company-complete-selection)
-              ("C-j" . 'company-select-next)
-              ("C-k" . 'company-select-previous)
-              ("C-h" . 'company-abort))
-  :custom
-  (company-minimum-prefix-length 1)
-  (company-tooltip-align-annotations t)
-  (company-require-match 'never)
-  (company-idle-delay 0.5)
-  (company-tooltip-idle-delay 2)
-  (company-show-numbers t))
-
-(add-to-list '+lsp-company-backends 'company-files t)
-
-(add-to-list 'company-backends '(company-files company-dabbrev))
+;; Company: anthe-company.el
+(require 'anthe-company)
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/other/cape/")
 (use-package cape
@@ -102,10 +83,6 @@
 
 ;; Désactive flycheck ou flymake si tu utilises le linting via eglot/ruff-lsp
 ;; (setq flycheck-disabled-checkers '(python-ruff python-flake8 python-pylint))
-(with-eval-after-load 'company
-  (define-key company-active-map (kbd "<return>") nil)
-  (define-key company-active-map (kbd "RET") nil))
-
 (with-eval-after-load 'company
   (add-hook 'inferior-python-mode-hook
             (lambda ()

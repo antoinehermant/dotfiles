@@ -838,7 +838,7 @@ The first index only takes note of those already there."
                 anthe/mu4e-conversation-mode-hook))
   (add-hook hook #'anthe/mu4e--add-to-workspace-h))
 
-;; q only closes the main view: mu4e goes on syncing and notifying, with its
+;; q only closes the main view (below): mu4e goes on syncing and notifying, with its
 ;; icon in the modeline.  Q quits mu4e, and mail-idle with it, where Q was
 ;; `mu4e-search-query' (the saved searches of b and the folders of J at once)
 (defun anthe/mu4e-quit ()
@@ -848,9 +848,23 @@ The first index only takes note of those already there."
     (anthe/mail-idle-stop)
     (mu4e-quit)))
 
+;; q kills the main view rather than bury it, where it stayed in the
+;; workspace and came back: the server and mail-idle go on all the same, and
+;; M-x mu4e draws it again.  The dashboard then, if nothing else is left
+(defun anthe/mu4e-main-quit ()
+  "Close mu4e's main view, for the dashboard if nothing else is left."
+  (interactive)
+  (quit-window t)
+  (let ((buffer (window-buffer)))
+    (unless (and (doom-real-buffer-p buffer)
+                 (not (string-prefix-p "*mu4e-" (buffer-name buffer)))
+                 (or (not (bound-and-true-p persp-mode))
+                     (+workspace-contains-buffer-p buffer)))
+      (anthe-dashboard-open))))
+
 (with-eval-after-load 'mu4e
   (evil-define-key* 'normal mu4e-main-mode-map
-    "q" #'quit-window
+    "q" #'anthe/mu4e-main-quit
     "Q" #'anthe/mu4e-quit)
   ;; mu4e may start again after Q: so does mail-idle
   (add-hook 'mu4e-main-mode-hook #'anthe/mail-idle-start))

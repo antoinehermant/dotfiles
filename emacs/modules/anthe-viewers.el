@@ -106,6 +106,37 @@ is killed."
     (when args
       (expand-file-name (car (last args)) (file-truename (format "/proc/%d/cwd" pid))))))
 
+;;; SPC f on the file shown: D deletes it (and closes the viewer), R moves it,
+;;; C copies it, y its path, as in pdf-view.  Doom's commands read
+;;; `buffer-file-name', which a viewer's buffer has not: it takes the file
+;;; for them.  R moves it itself: `set-visited-file-name' would make the
+;;; buffer a file's, out of EXWM's mode.
+
+(defun anthe-viewers--as-file-a (fn &rest args)
+  "Call FN with ARGS, the viewer's file as the buffer's."
+  (if anthe-viewers-file
+      (let ((buffer-file-name anthe-viewers-file))
+        (apply fn args))
+    (apply fn args)))
+
+(dolist (command '(doom/delete-this-file doom/copy-this-file
+                   +default/yank-buffer-path +default/yank-buffer-path-relative-to-project))
+  (advice-add command :around #'anthe-viewers--as-file-a))
+
+(defun anthe-viewers--move-a (fn new-path &optional force-p)
+  "Move the viewer's file to NEW-PATH; FN, `doom/move-this-file', elsewhere."
+  (if-let* ((old-path anthe-viewers-file))
+      (let ((new-path (expand-file-name new-path)))
+        (when (directory-name-p new-path)
+          (setq new-path (concat new-path (file-name-nondirectory old-path))))
+        (make-directory (file-name-directory new-path) t)
+        (rename-file old-path new-path (or force-p 1))
+        (setq anthe-viewers-file new-path)
+        (message "File moved to %S" (abbreviate-file-name new-path)))
+    (funcall fn new-path force-p)))
+
+(advice-add 'doom/move-this-file :around #'anthe-viewers--move-a)
+
 ;;; Keys
 
 (defun anthe-viewers--fake-key (event)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 from typing import Never
 
 config.load_autoconfig()
@@ -51,6 +52,10 @@ c.tabs.show = "multiple"
 c.statusbar.show = "always"
 c.new_instance_open_target = "tab-silent"
 config.source("emacs_theme.py")
+
+# DuckDuckGo and the bars in its colours, see-through (look.py); also sourced
+# at the end of emacs_theme.py, so that they follow a change of theme
+config.source(os.path.expanduser("~/.dotfiles/qutebrowser/look.py"))
 # config.source("emacs_rpc.py")
 # config.source("emacs_hooks.py")
 # config.bind("o", "emacs '(qutebrowser-launcher)'")

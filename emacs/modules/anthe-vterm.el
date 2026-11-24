@@ -83,11 +83,14 @@
 ;; Every key, also those vterm keeps for Emacs (`vterm-keymap-exceptions':
 ;; C-u, C-g, C-h, C-l, C-y, C-c, C-x, M-x...): the other side wants them
 ;; (evil's scroll, Neovim's windows, its Emacs's C-x and C-g). M-SPC : is
-;; this Emacs's M-x meanwhile.
+;; this Emacs's M-x meanwhile.  M-1...M-9 too, the workspaces on the other
+;; side: C-M-1...C-M-9 switch this Emacs's (below), or M-SPC TAB.
 (defvar anthe/vterm-raw-mode-map
   (let ((map (make-sparse-keymap)))
     (dolist (key vterm-keymap-exceptions)
       (define-key map (kbd key) #'vterm--self-insert))
+    (dotimes (i 9)
+      (define-key map (kbd (format "M-%d" (1+ i))) #'vterm--self-insert-meta))
     map)
   "The keys `anthe/vterm-raw-mode' sends to the terminal.")
 
@@ -263,6 +266,10 @@ DIRECTION should be 1 for next, -1 for previous."
 (define-key vterm-mode-map (kbd "M-3") '+workspace/switch-to-2)
 (define-key vterm-mode-map (kbd "M-4") '+workspace/switch-to-3)
 (define-key vterm-mode-map (kbd "M-5") '+workspace/switch-to-4)
+;; Also while UBELIX or Neovim takes M-1...M-9 (`anthe/vterm-raw-mode')
+(dotimes (i 9)
+  (define-key vterm-mode-map (kbd (format "C-M-%d" (1+ i)))
+              (intern (format "+workspace/switch-to-%d" i))))
 (define-key vterm-mode-map (kbd "M-`") 'popper-cycle)
 
 

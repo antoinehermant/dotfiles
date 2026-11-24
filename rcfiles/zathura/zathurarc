@@ -22,6 +22,8 @@ set vertical-center true
 # zathura it builds in ~/.local:
 #   git clone --branch VERSION https://github.com/pwmt/zathura ~/software/zathura
 #   cd ~/software/zathura && git apply ~/.dotfiles/rcfiles/zathura/link-hints.patch
+#   git apply ~/.dotfiles/rcfiles/zathura/thumbnail-refresh.patch   (light mode
+#     stayed dark while scrolling: the pages' thumbnails kept their first colours)
 #   meson setup build --prefix ~/.local -Dmanpages=disabled -Dtests=disabled
 #   ninja -C build install
 #   ln -s /usr/lib/x86_64-linux-gnu/zathura/libpdf-poppler.so ~/.local/lib/x86_64-linux-gnu/zathura/

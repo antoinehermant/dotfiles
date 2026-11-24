@@ -23,14 +23,8 @@
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/parsebib/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/citeproc-el/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/queue/")
-(require 'citar)
-(require 'citar-org)
-(require 'citar-capf)
-(require 'citar-cache)
-(require 'citar-citeproc)
-(require 'citar-embark)
-(require 'citar-file)
-(require 'citar-format)
+;; citar loads with its first command (autoloads), citar-org with org-cite,
+;; citar-embark with embark (Doom's biblio module)
 
 ;; Each topic of ~/library/science has its bib, of its name (python-utils'
 ;; research/library.py, `SPC k c a'); its keywords have the topic, so that
@@ -57,40 +51,42 @@
 
 (anthe/citar-update-bibliography)
 
-(defvar citar-indicator-notes-icons
-  (citar-indicator-create
-   :symbol (nerd-icons-mdicon
-            "nf-md-notebook"
-            :face 'nerd-icons-blue
-            :v-adjust -0.3)
-   :function #'citar-has-notes
-   :padding "  "
-   :tag "has:notes"))
+;; The icons need citar
+(with-eval-after-load 'citar
+  (defvar citar-indicator-notes-icons
+    (citar-indicator-create
+     :symbol (nerd-icons-mdicon
+              "nf-md-notebook"
+              :face 'nerd-icons-blue
+              :v-adjust -0.3)
+     :function #'citar-has-notes
+     :padding "  "
+     :tag "has:notes"))
 
-(defvar citar-indicator-links-icons
-  (citar-indicator-create
-   :symbol (nerd-icons-octicon
-            "nf-oct-link"
-            :face 'nerd-icons-orange
-            :v-adjust -0.1)
-   :function #'citar-has-links
-   :padding "  "
-   :tag "has:links"))
+  (defvar citar-indicator-links-icons
+    (citar-indicator-create
+     :symbol (nerd-icons-octicon
+              "nf-oct-link"
+              :face 'nerd-icons-orange
+              :v-adjust -0.1)
+     :function #'citar-has-links
+     :padding "  "
+     :tag "has:links"))
 
-(defvar citar-indicator-files-icons
-  (citar-indicator-create
-   :symbol (nerd-icons-faicon
-            "nf-fa-file"
-            :face 'nerd-icons-purple
-            :v-adjust -0.1)
-   :function #'citar-has-files
-   :padding "  "
-   :tag "has:files"))
+  (defvar citar-indicator-files-icons
+    (citar-indicator-create
+     :symbol (nerd-icons-faicon
+              "nf-fa-file"
+              :face 'nerd-icons-purple
+              :v-adjust -0.1)
+     :function #'citar-has-files
+     :padding "  "
+     :tag "has:files"))
 
-(setq citar-indicators
-      (list citar-indicator-files-icons
-            citar-indicator-notes-icons
-            citar-indicator-links-icons))
+  (setq citar-indicators
+        (list citar-indicator-files-icons
+              citar-indicator-notes-icons
+              citar-indicator-links-icons)))
 
 (setq citar-templates
       '((main . "${author editor:40%sn}  ${date year issued:4}  ${title:100}  ${journal:10} ")
@@ -117,7 +113,8 @@
        :desc "related articles" "r" #'anthe-bib-related
        :desc "citation map" "v" #'anthe-bib-map))
 
-(with-eval-after-load 'oc
+;; After org, not oc: org loads oc before it has its map
+(with-eval-after-load 'org
   (define-key org-mode-map (kbd "RET") #'citar-dwim))
 
 (provide 'anthe-citar)

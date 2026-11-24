@@ -1,0 +1,244 @@
+#!/usr/bin/python3 -I
+"""EXWM's loading screen: the lock screen's blurred wallpaper on every
+monitor, and the ring of J.A.R.V.I.S's HUD filling as Emacs loads.
+
+Started by exwm/start-exwm.sh before Emacs, so that the screen goes from the
+login straight to this, then to Emacs ready, without the blank frames and
+blinks in between.  Emacs writes its progress, 0 to 1, in the file
+$ANTHE_SPLASH (emacs/init.el: the features loaded, against the last start's
+count), then "done" once EXWM shows it: the ring fills, and the screen
+fades out.  It also goes after TIMEOUT seconds, should Emacs never say so,
+or at a click.
+
+  anthe-splash                 the loading screen
+  anthe-splash --preview PNG   a still of it at 60 %, into PNG
+"""
+import math
+import os
+import sys
+import time
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import GLib, Gdk, GdkPixbuf, Gtk, Pango, PangoCairo  # noqa: E402
+import cairo  # noqa: E402
+
+PROGRESS = os.environ.get("ANTHE_SPLASH") or os.path.join(
+    os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "anthe-splash")
+# bin/anthe-lock's: the wallpaper blurred and tinted Night Owl blue
+BACKGROUND = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+                          "anthe-lock.png")
+NIGHT_OWL = (0x01 / 255, 0x16 / 255, 0x27 / 255)
+CYAN = (0.22, 0.85, 1.0)
+FG = (0xd6 / 255, 0xde / 255, 0xeb / 255)
+
+RADIUS = 120                    # the inner circle, as the lock's
+FPS = 60
+EASE = 6.0                      # how fast the ring catches up the progress
+FILL = 0.25                     # seconds to fill up once done
+SHOWN = 0.15                    # then the full ring shows this long
+FADE = 0.3                      # and the screen fades out
+TIMEOUT = 45
+
+
+def read_progress():
+    """Emacs's progress, 0 to 1, or None once done."""
+    try:
+        with open(PROGRESS) as f:
+            text = f.read().strip()
+    except OSError:
+        return 0.0
+    if text == "done":
+        return None
+    try:
+        return min(1.0, max(0.0, float(text)))
+    except ValueError:
+        return 0.0
+
+
+class Splash:
+    def __init__(self):
+        self.start = time.monotonic()
+        self.target = 0.0
+        self.shown = 0.0        # the ring, easing towards target
+        self.done_at = None
+        self.last = self.start
+
+    def update(self):
+        now = time.monotonic()
+        dt, self.last = now - self.last, now
+        if self.done_at is None:
+            progress = read_progress()
+            if progress is None or now - self.start > TIMEOUT:
+                self.done_at = now
+                self.from_ = self.shown
+            else:
+                # Never back, and never quite full before Emacs says so
+                self.target = max(self.target, min(progress, 0.97))
+                self.shown += (self.target - self.shown) * min(1.0, EASE * dt)
+        if self.done_at is not None:
+            t = now - self.done_at
+            self.shown = self.from_ + (1 - self.from_) * min(1.0, t / FILL)
+            return 1 - max(0.0, (t - FILL - SHOWN) / FADE)
+        return 1.0
+
+    def draw(self, cr, width, height, pixbuf, ring, now):
+        # The background: the wallpaper, covering the monitor
+        cr.set_source_rgb(*NIGHT_OWL)
+        cr.paint()
+        if pixbuf is not None:
+            scale = max(width / pixbuf.get_width(), height / pixbuf.get_height())
+            cr.save()
+            cr.translate((width - pixbuf.get_width() * scale) / 2,
+                         (height - pixbuf.get_height() * scale) / 2)
+            cr.scale(scale, scale)
+            Gdk.cairo_set_source_pixbuf(cr, pixbuf, 0, 0)
+            cr.paint()
+            cr.restore()
+        if not ring:
+            return
+        cx, cy = width / 2, height / 2
+
+        # A dark disc behind the ring
+        glow = cairo.RadialGradient(cx, cy, RADIUS * 0.4, cx, cy, RADIUS + 110)
+        glow.add_color_stop_rgba(0, 0.02, 0.05, 0.08, 0.70)
+        glow.add_color_stop_rgba(0.55, 0.02, 0.05, 0.08, 0.45)
+        glow.add_color_stop_rgba(1, 0.02, 0.05, 0.08, 0.0)
+        cr.set_source(glow)
+        cr.paint()
+
+        # The inner circle, and a ring of ticks turning slowly
+        cr.set_line_width(1.5)
+        cr.set_source_rgba(*CYAN, 0.8)
+        cr.arc(cx, cy, RADIUS, 0, 2 * math.pi)
+        cr.stroke()
+        cr.set_line_width(1)
+        cr.set_source_rgba(*CYAN, 0.45)
+        turn = now * 0.15
+        for i in range(60):
+            angle = turn + 2 * math.pi * i / 60
+            inner = RADIUS - (10 if i % 5 == 0 else 6)
+            cr.move_to(cx + math.cos(angle) * inner, cy + math.sin(angle) * inner)
+            cr.line_to(cx + math.cos(angle) * (RADIUS - 2), cy + math.sin(angle) * (RADIUS - 2))
+        cr.stroke()
+
+        # Outside, a scanning arc, as the HUD's thinking
+        cr.set_line_width(2)
+        for k, (r, span, speed) in enumerate(((RADIUS + 14, 1.1, 1.4), (RADIUS + 22, 0.6, -1.9))):
+            start = now * speed
+            cr.set_source_rgba(*CYAN, 0.55 - 0.2 * k)
+            for offset in (0, math.pi):
+                cr.arc(cx, cy, r, start + offset, start + offset + span)
+                cr.stroke()
+
+        # The progress: a track, segments filling clockwise from the top,
+        # and a bright head
+        progress = self.shown
+        r = RADIUS - 22
+        cr.set_line_width(6)
+        cr.set_source_rgba(*CYAN, 0.12)
+        cr.arc(cx, cy, r, 0, 2 * math.pi)
+        cr.stroke()
+        segments = 48
+        lit = progress * segments
+        top = -math.pi / 2
+        cr.set_source_rgba(*CYAN, 0.9)
+        for i in range(math.ceil(lit)):
+            cr.arc(cx, cy, r, top + 2 * math.pi * i / segments,
+                   top + 2 * math.pi * min(i + 0.8, lit) / segments)
+            cr.stroke()
+        head = top + 2 * math.pi * progress
+        cr.set_source_rgba(1, 1, 1, 0.9)
+        cr.arc(cx + math.cos(head) * r, cy + math.sin(head) * r, 3.5, 0, 2 * math.pi)
+        cr.fill()
+
+        label = "EMACS ONLINE" if self.done_at is not None else f"EMACS {int(progress * 100)}%"
+        text(cr, label, cx, cy, 200, "DejaVu Sans Mono Bold 13", (*CYAN, 1), centre=True)
+        # The time and date under it, as on the lock screen
+        text(cr, time.strftime("%H:%M"), cx, cy + RADIUS + 50, 400, "Ubuntu Sans 40", (*FG, 1))
+        text(cr, time.strftime("%A %-d %B"), cx, cy + RADIUS + 115, 400, "Ubuntu Sans 15", (*FG, 0.8))
+
+
+def text(cr, string, cx, top, width, font, rgba, centre=False):
+    layout = PangoCairo.create_layout(cr)
+    layout.set_font_description(Pango.FontDescription(font))
+    layout.set_width(int(width * Pango.SCALE))
+    layout.set_alignment(Pango.Alignment.CENTER)
+    layout.set_text(string, -1)
+    _, h = layout.get_pixel_size()
+    cr.set_source_rgba(*rgba)
+    cr.move_to(cx - width / 2, top - h / 2 if centre else top)
+    PangoCairo.show_layout(cr, layout)
+
+
+def load_background():
+    try:
+        return GdkPixbuf.Pixbuf.new_from_file(BACKGROUND)
+    except GLib.Error:
+        return None
+
+
+def preview(path):
+    splash = Splash()
+    splash.shown = 0.6
+    width, height = 1920, 1200
+    surface = cairo.ImageSurface(cairo.FORMAT_RGB24, width, height)
+    splash.draw(cairo.Context(surface), width, height, load_background(), True, time.monotonic())
+    surface.write_to_png(path)
+
+
+def main():
+    splash = Splash()
+    pixbuf = load_background()
+    display = Gdk.Display.get_default()
+    primary = display.get_primary_monitor() or display.get_monitor(0)
+    windows = []
+    # One window a monitor, outside the window manager, above everything;
+    # the ring on the primary one
+    for n in range(display.get_n_monitors()):
+        monitor = display.get_monitor(n)
+        geometry = monitor.get_geometry()
+        window = Gtk.Window(type=Gtk.WindowType.POPUP)
+        window.move(geometry.x, geometry.y)
+        window.set_default_size(geometry.width, geometry.height)
+        window.set_app_paintable(True)
+        visual = window.get_screen().get_rgba_visual()
+        if visual is not None:
+            window.set_visual(visual)
+        ring = monitor == primary
+
+        def on_draw(widget, cr, ring=ring):
+            allocation = widget.get_allocation()
+            splash.draw(cr, allocation.width, allocation.height, pixbuf, ring, time.monotonic())
+
+        window.connect("draw", on_draw)
+        window.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        window.connect("button-press-event", lambda *_: Gtk.main_quit())
+        window.show_all()
+        windows.append(window)
+
+    def tick():
+        alpha = splash.update()
+        if alpha <= 0:
+            Gtk.main_quit()
+            return False
+        for window in windows:
+            window.set_opacity(alpha)
+            window.queue_draw()
+        return True
+
+    GLib.timeout_add(int(1000 / FPS), tick)
+    Gtk.main()
+    try:
+        os.remove(PROGRESS)
+    except OSError:
+        pass
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--preview":
+        preview(sys.argv[2])
+    else:
+        main()

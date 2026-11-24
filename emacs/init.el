@@ -14,6 +14,40 @@
 ;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
 ;;      directory (for easy access to its source code).
 
+;; EXWM's loading screen (bin/anthe-splash, started by exwm/start-exwm.sh)
+;; fills its ring with the features loaded, against the last start's count,
+;; and goes once EXWM shows Emacs
+(defvar anthe-splash-file (and (not noninteractive) (getenv "ANTHE_SPLASH"))
+  "Where to write the loading screen's progress, if it shows.")
+(when anthe-splash-file
+  ;; Not for the Emacs started from this one's shells
+  (setenv "ANTHE_SPLASH" nil)
+  (defvar anthe-splash--count-file
+    (expand-file-name "anthe-splash-features" (or (getenv "XDG_CACHE_HOME") "~/.cache")))
+  (defvar anthe-splash--expected
+    (or (ignore-errors (with-temp-buffer
+                         (insert-file-contents anthe-splash--count-file)
+                         (read (current-buffer))))
+        1100))
+  (defvar anthe-splash--last 0.0)
+  (defun anthe-splash--write (string)
+    (ignore-errors (write-region string nil anthe-splash-file nil 'silent)))
+  (defun anthe-splash--progress-h (&rest _)
+    (let ((now (float-time)))
+      (when (> (- now anthe-splash--last) 0.05)
+        (setq anthe-splash--last now)
+        (anthe-splash--write (format "%.3f" (/ (float (length features)) anthe-splash--expected))))))
+  (defun anthe-splash--done-h ()
+    (remove-hook 'after-load-functions #'anthe-splash--progress-h)
+    ;; After EXWM's first frames, the wallpaper and the transparency
+    (run-with-timer 0.3 nil
+                    (lambda ()
+                      (ignore-errors (write-region (format "%d" (length features)) nil
+                                                   anthe-splash--count-file nil 'silent))
+                      (anthe-splash--write "done"))))
+  (add-hook 'after-load-functions #'anthe-splash--progress-h)
+  (add-hook 'window-setup-hook #'anthe-splash--done-h 90))
+
 ;; j, k, 0 and $ move by screen lines where long lines wrap (visual-line-mode),
 ;; as the visual line numbers count.  Read when Evil loads, so before doom!
 (setq evil-respect-visual-line-mode t)

@@ -968,13 +968,18 @@ with the keyword preprint)."
              (append
               (anthe-dashboard--row
                (list 'week 0 width (lambda () (anthe-dashboard--week (- width 4)))))
+              ;; A line apart, as the rows
+              (list "")
               (anthe-dashboard--row
                (list 'tasks 0 width (lambda () (anthe-dashboard--tasks-card (- width 4) tasks))))))
            (anthe-dashboard--row
             (list 'cryolist 0 half (lambda () (anthe-dashboard--cryolist-card (- half 4))))
             (list 'news (- width half) half (lambda () (anthe-dashboard--news-card (- half 4)))))
            (list (let ((anthe-dashboard--origin 1))
-                   (concat (anthe-dashboard--at 0) (anthe-dashboard--footer (- width 2))))))))
+                   (concat (anthe-dashboard--at 0)
+                           ;; A card of its own, once the cards are cut out
+                           (propertize (anthe-dashboard--footer (- width 2))
+                                       'anthe-dashboard-card 'footer)))))))
     (insert (mapconcat (lambda (row) (string-join row "\n")) rows "\n\n") "\n")))
 
 ;;; Moving around
@@ -1059,11 +1064,52 @@ on, back if negative; past its last, the next card's first."
                                       'anthe-dashboard-card card)))
         (goto-char (min (+ (or start (line-beginning-position)) offset) (line-end-position)))))))
 
-(defun anthe-dashboard-redraw ()
-  "Draw the dashboard again, the point where it was."
+;;; A dashboard a monitor
+
+;; Each EXWM workspace (a monitor) has its own dashboard, drawn at its width:
+;; one buffer shown on the laptop's screen and the wide one took the layout of
+;; the last drawn.  The first workspace's is *dashboard*, the others
+;; *dashboard: 2*...  `dashboard-buffer-name' says which one is drawn.
+(defun anthe-dashboard--buffer-name (&optional frame)
+  "The name of the dashboard of FRAME, the selected one by default."
+  (let* ((frame (or frame (selected-frame)))
+         (frame (or (frame-parent frame) frame))
+         (index (and (fboundp 'exwm-workspace--position)
+                     (bound-and-true-p exwm-workspace--list)
+                     (exwm-workspace--position frame))))
+    (if (memq index '(nil 0)) "*dashboard*" (format "*dashboard: %d*" (1+ index)))))
+
+(defun anthe-dashboard--buffers ()
+  "The dashboards drawn."
+  (seq-filter (lambda (buffer) (eq (buffer-local-value 'major-mode buffer) 'dashboard-mode))
+              (buffer-list)))
+
+(defun anthe-dashboard-buffer (&optional frame)
+  "The dashboard of FRAME, drawn if it isn't yet."
+  (let* ((dashboard-buffer-name (anthe-dashboard--buffer-name frame))
+         (buffer (get-buffer dashboard-buffer-name)))
+    (if (and buffer (eq (buffer-local-value 'major-mode buffer) 'dashboard-mode))
+        buffer
+      (let (buffer-list-update-hook)
+        (dashboard-insert-startupify-lists t))
+      (get-buffer dashboard-buffer-name))))
+
+(defun anthe-dashboard-open ()
+  "Show this monitor's dashboard, drawn again."
   (interactive)
-  (when-let* ((buffer (get-buffer dashboard-buffer-name)))
-    (let ((window (get-buffer-window buffer t)))
+  (let ((dashboard-buffer-name (anthe-dashboard--buffer-name)))
+    (dashboard-open)))
+
+;; Doom's fallback, where a window goes when its last buffer is killed: this
+;; monitor's dashboard
+(advice-add 'doom-fallback-buffer :override #'anthe-dashboard-buffer)
+
+(defun anthe-dashboard-redraw ()
+  "Draw the dashboards again, the point where it was."
+  (interactive)
+  (dolist (buffer (anthe-dashboard--buffers))
+    (let ((dashboard-buffer-name (buffer-name buffer))
+          (window (get-buffer-window buffer t)))
       (if window
           (with-selected-window window
             (let ((position (anthe-dashboard--position)))
@@ -1093,14 +1139,37 @@ on, back if negative; past its last, the next card's first."
       "C-j" #'anthe-dashboard-next-item
       "C-k" #'anthe-dashboard-previous-item)
 
+;; Under EXWM, the cards are cut out of the frame (anthe-windows.el): the
+;; wallpaper shows between them, as between windows
+(defvar anthe-dashboard-cut t
+  "When non-nil, the dashboard's cards are cut out, apart, as windows.")
+
+(defun anthe-dashboard--cards (window)
+  (anthe/window-cards window 'anthe-dashboard-card))
+
+(add-hook 'dashboard-mode-hook
+          (lambda ()
+            (when (and anthe-dashboard-cut (fboundp 'anthe/window-cards))
+              (setq-local anthe/window-cards-function #'anthe-dashboard--cards))))
+
+(advice-add 'dashboard-insert-startupify-lists :after
+            (lambda (&rest _)
+              (when (fboundp 'anthe/window-gaps--update)
+                (anthe/window-gaps--update)))
+            '((name . anthe-dashboard--cut)))
+
 ;; Drawn again when its window changes width, the cards taking it
 (defun anthe-dashboard--redraw-at-width (&rest _)
-  (when-let* ((window (get-buffer-window dashboard-buffer-name))
-              ((not (window-minibuffer-p (frame-selected-window))))
-              ((not (equal (window-max-chars-per-line window)
-                           (buffer-local-value 'anthe-dashboard--rendered-width
-                                               (window-buffer window))))))
-    (anthe-dashboard-redraw)))
+  (unless (window-minibuffer-p (frame-selected-window))
+    (dolist (buffer (anthe-dashboard--buffers))
+      (when-let* ((window (get-buffer-window buffer t))
+                  ((not (equal (window-max-chars-per-line window)
+                               (buffer-local-value 'anthe-dashboard--rendered-width buffer)))))
+        (let ((dashboard-buffer-name (buffer-name buffer)))
+          (with-selected-window window
+            (let ((position (anthe-dashboard--position)))
+              (dashboard-insert-startupify-lists t)
+              (when position (anthe-dashboard--restore position)))))))))
 
 (add-hook 'dashboard-after-initialize-hook #'anthe-dashboard--redraw-at-width)
 (add-hook 'window-size-change-functions #'anthe-dashboard--redraw-at-width)
@@ -1115,17 +1184,79 @@ on, back if negative; past its last, the next card's first."
             (when (fboundp 'evil-snipe-local-mode) (evil-snipe-local-mode -1))
             (when (fboundp 'evil-snipe-override-local-mode) (evil-snipe-override-local-mode -1))))
 
-;; This is helpful as I cannot get dashboard to open agenda files otherwise
-;; One can use org-agenda-list, but here I directly display my dashboard
-(add-hook 'after-init-hook (lambda () (org-agenda nil "d")))
+;; The calendars synced in the background once Emacs is up (the dashboard
+;; shows the events imported last), then every few minutes: CalDAV can't
+;; tell of a change as IMAP's IDLE does (neither can Radicale on the Pi), and
+;; a sync with nothing new costs a few requests.  The events are imported,
+;; and the dashboard drawn again, only when vdirsyncer brought changes.
+;; At startup, it was an agenda built, then hidden: 1.6 s.  What it was for,
+;; the agenda's files (custom.el's old list replaces those anthe-workflow.el
+;; reads from roam, as org loads) are read again before the dashboard shows
+(add-hook 'after-init-hook
+          (lambda ()
+            (when (fboundp 'anthe-org-roam-refresh-agenda-list)
+              (anthe-org-roam-refresh-agenda-list))))
 
-(setq initial-buffer-choice #'dashboard-open)
+(defvar anthe-dashboard-sync-delay 3
+  "Seconds after startup to sync the calendars.")
+
+(defvar anthe-dashboard-sync-interval (* 5 60)
+  "Seconds between the calendars' syncs.")
+
+(defun anthe-dashboard--sync-calendars (&optional import)
+  "Sync the calendars, and draw the dashboard again if their events changed;
+IMPORT them anyway."
+  (let* ((file (expand-file-name "~/org/calendar.org"))
+         (before (file-attribute-modification-time (file-attributes file))))
+    (anthe-week-sync
+     (lambda (_imported)
+       (unless (equal before (file-attribute-modification-time (file-attributes file)))
+         (anthe-dashboard-redraw)))
+     import)))
+
+(defvar anthe-dashboard--sync-timer nil)
+
+(defun anthe-dashboard-start-calendar-sync ()
+  "Sync the calendars now, then every `anthe-dashboard-sync-interval'.
+The first sync imports whatever came meanwhile, the next ones only changes."
+  (when (timerp anthe-dashboard--sync-timer)
+    (cancel-timer anthe-dashboard--sync-timer))
+  (anthe-dashboard--sync-calendars t)
+  (setq anthe-dashboard--sync-timer
+        (run-with-timer anthe-dashboard-sync-interval anthe-dashboard-sync-interval
+                        #'anthe-dashboard--sync-calendars)))
+
+(add-hook 'window-setup-hook
+          (lambda ()
+            (run-with-timer anthe-dashboard-sync-delay nil #'anthe-dashboard-start-calendar-sync)))
+
+(setq initial-buffer-choice #'anthe-dashboard-open)
 (setq doom-fallback-buffer-name "*dashboard*")
+
+;; q (`quit-window') in a buffer alone in its workspace, ibuffer's or mu4e's,
+;; left it in place: Doom finds no other buffer to show there.  The dashboard
+;; then, as when killing the last buffer: only for q itself, in the window
+;; quit, not when a package quits some window of its own
+(defun anthe-dashboard--quit-window-a (fn &optional kill window)
+  "Show the dashboard when FN leaves the window on the buffer it quit."
+  (let* ((window (window-normalize-window window t))
+         (buffer (window-buffer window))
+         (asked (and (or (called-interactively-p 'any) (eq this-command 'quit-window))
+                     (eq window (selected-window)))))
+    (funcall fn kill window)
+    (when (and asked
+               (window-live-p window)
+               (eq (window-buffer window) buffer)
+               (not (eq (buffer-local-value 'major-mode buffer) 'dashboard-mode)))
+      (with-selected-window window
+        (anthe-dashboard-open)))))
+
+(advice-add 'quit-window :around #'anthe-dashboard--quit-window-a)
 
 (map! :leader
       (:prefix ("k d" . "dashboard")
        :desc "Draw the dashboard again" "r" #'anthe-dashboard-redraw
-       :desc "Open dashboard" "o" #'dashboard-open))
+       :desc "Open dashboard" "o" #'anthe-dashboard-open))
 
 (provide 'anthe-dashboard)
 ;;; anthe-dashboard.el ends here

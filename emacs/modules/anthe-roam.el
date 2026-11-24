@@ -28,7 +28,15 @@
   :config
   ;; Syncthing conflict copies duplicate :ID:s, keep them out of the db
   (add-to-list 'org-roam-file-exclude-regexp "\\.sync-conflict-")
-  (org-roam-db-autosync-enable))
+  ;; Enabling autosync syncs the whole db, and Doom syncs again at the first
+  ;; query, which comes at startup (the agenda's files): the db of the last
+  ;; session answers until one sync, once idle after startup
+  (advice-remove 'org-roam-db-query #'+org-roam-try-init-db-a)
+  (cl-letf (((symbol-function 'org-roam-db-sync) #'ignore))
+    (org-roam-db-autosync-enable))
+  (run-with-idle-timer 3 nil (lambda ()
+                               (let ((inhibit-message t))
+                                 (org-roam-db-sync)))))
 
 ;;; Syncthing (laptop <-> pi <-> phone/OrgNote)
 

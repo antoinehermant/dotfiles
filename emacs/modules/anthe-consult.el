@@ -70,8 +70,7 @@
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/consult-projectile/")
 ;; (require 'consult-projectile)
-(straight-use-package
- '(consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+;; consult-projectile is in packages.el
 
 ;; (setq read-file-name-function #'consult-find-file-with-preview)
 

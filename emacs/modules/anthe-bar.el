@@ -10,7 +10,8 @@
 ;;  the processors and memory used (a click opens proced),
 ;;  the USB drives plugged in (a click opens a menu to open or eject them),
 ;;  Bluetooth (a click opens a menu to turn it on or off and to connect the
-;;  paired devices), the network and the battery.
+;;  paired devices), the network, caffeine (a cup: a click keeps the
+;;  screen on, exwm-desktop.el) and the battery.
 ;;
 ;;  It is Emacs's own tab bar, shown on the EXWM workspaces only, not on
 ;;  floating windows.  While it shows, the time and the battery leave the
@@ -59,7 +60,7 @@ its own would take the default one, not the bar's."
 ;;; Left: the workspaces
 
 (defun anthe-bar--workspaces ()
-  "The Doom workspaces of this frame, the current one highlighted."
+  "The Doom workspaces of this frame's monitor, the current one highlighted."
   (when (fboundp '+workspace-list-names)
     (let ((current (+workspace-current-name)))
       (seq-map-indexed
@@ -77,7 +78,9 @@ its own would take the default one, not the bar's."
                                 'anthe-bar-workspace))
            ,(lambda () (interactive) (+workspace/switch-to name))
            :help ,(format "Switch to %s" name)))
-       (+workspace-list-names)))))
+       (if (fboundp 'anthe-workspaces-names)
+           (anthe-workspaces-names)
+         (+workspace-list-names))))))
 
 ;;; Middle: the date and time
 
@@ -461,13 +464,24 @@ the rest."
             (anthe/claude-limits-help)
             #'anthe-bar-claude-limits))))
 
+(defun anthe-bar--caffeine ()
+  "A cup, full with caffeine on (the screen stays on), empty without; a
+click switches it (exwm-desktop.el)."
+  (when (fboundp 'anthe-caffeine-mode)
+    (let ((on (bound-and-true-p anthe-caffeine-mode)))
+      (list (anthe-bar--icon (if on "nf-md-coffee" "nf-md-coffee_outline") (if on 'warning 'shadow))
+            (if on "Caffeine on: the screen stays on and unlocked\nClick: lock again when idle"
+              "The screen locks when idle\nClick: caffeine, the screen stays on")
+            #'anthe-caffeine-mode))))
+
 (defun anthe-bar--look ()
   "Look at Claude's limits, the system, the drives, Bluetooth, the network
 and the battery, and redraw the bar."
   (setq anthe-bar--status
         (delq nil (mapcar (lambda (look) (ignore-errors (funcall look)))
                           '(anthe-bar--claude anthe-bar--system anthe-bar--drives-status
-                            anthe-bar--bluetooth anthe-bar--network anthe-bar--battery))))
+                            anthe-bar--bluetooth anthe-bar--network anthe-bar--caffeine
+                            anthe-bar--battery))))
   (force-mode-line-update t))
 
 (defun anthe-bar--right ()
@@ -491,6 +505,9 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
       (list (lambda () (anthe-bar--on-bar (anthe-bar--workspaces)))
             (lambda () (anthe-bar--on-bar (anthe-bar--clock)))
             (lambda () (anthe-bar--on-bar (anthe-bar--right)))))
+;; The gaps' room under the bar (anthe-windows.el), kept when this file is loaded again
+(when (bound-and-true-p anthe/window-gaps-mode)
+  (add-to-list 'tab-bar-format #'anthe/window-gaps--bar-room t))
 
 ;;; The colours: the mode line's, the themes' tab bar being for tabs
 
@@ -528,6 +545,28 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
 
 (defun anthe-bar--redraw (&rest _)
   (force-mode-line-update t))
+
+;;; The workspaces in the echo area: not while the bar shows them
+
+(defun anthe-bar--display-a (fn)
+  "Show the workspaces in the echo area only when the bar is hidden, or
+when asked (SPC TAB TAB)."
+  (when (or (not anthe-bar-shown) (eq this-command '+workspace/display))
+    (funcall fn)))
+
+(defun anthe-bar--message-body-a (fn message &optional type)
+  "Doom's workspace messages, without the workspaces when the bar shows them."
+  (if anthe-bar-shown
+      (propertize (format "%s" message)
+                  'face (pcase type
+                          ('error 'error)
+                          ('warn 'warning)
+                          ('success 'success)
+                          ('info 'font-lock-comment-face)))
+    (funcall fn message type)))
+
+(advice-add '+workspace/display :around #'anthe-bar--display-a)
+(advice-add '+workspace--message-body :around #'anthe-bar--message-body-a)
 
 (add-hook 'persp-activated-functions #'anthe-bar--redraw)
 (add-hook 'persp-renamed-functions #'anthe-bar--redraw)
