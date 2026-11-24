@@ -209,6 +209,57 @@ nil: `anthe/window-margin'.")
   "Pixels of the windows' rounded corners, 0 for square ones.
 The corners are cut in steps of a pixel, not smoothed as picom's.")
 
+(defvar-local anthe/window-cards-function nil
+  "When non-nil, a function of a window showing this buffer giving the cards
+kept of it, each (LEFT TOP RIGHT BOTTOM) in its frame's pixels: the rest of
+the window is cut out, the wallpaper showing there.")
+
+(defun anthe/window-cards (window property)
+  "The cards in WINDOW: the text of each value of PROPERTY, from the first
+to the last character of its lines, bar the space aligning them, as many of
+its lines as show.  For `anthe/window-cards-function'."
+  (with-current-buffer (window-buffer window)
+    (pcase-let ((`(,body-left ,body-top ,body-right ,body-bottom) (window-body-pixel-edges window))
+                (cards nil)
+                (pos (window-start window))
+                (end (min (point-max) (or (window-end window t) (point-max)))))
+      (save-excursion
+        (while (< pos end)
+          (let ((name (get-text-property pos property))
+                ;; A card's text is a line's part at most
+                (next (min (next-single-property-change pos property nil end)
+                           (progn (goto-char pos) (line-end-position)))))
+            (when name
+              (let ((from pos))
+                ;; The space reaching the card's column is not the card
+                (while (and (< from next)
+                            (eq (car-safe (get-text-property from 'display)) 'space))
+                  (setq from (1+ from)))
+                (when-let* (((< from next))
+                            (left (pos-visible-in-window-p from window t))
+                            ;; The last character, and its width: an aligning
+                            ;; space after it is placed oddly on a line cut
+                            ;; by the window's bottom
+                            (last (pos-visible-in-window-p (1- next) window t))
+                            (right (list (+ (car last)
+                                            (string-pixel-width (buffer-substring (1- next) next))))))
+                  (let* ((height (or (nth 4 left)
+                                     (cdr (window-text-pixel-size
+                                           window (line-beginning-position) (line-end-position)))))
+                         (x1 (+ body-left (car left)))
+                         (x2 (+ body-left (car right)))
+                         (y1 (+ body-top (max 0 (cadr left))))
+                         (y2 (+ body-top (cadr left) height))
+                         (card (assq name cards)))
+                    (if card
+                        (setcdr card (list (min x1 (nth 1 card)) (min y1 (nth 2 card))
+                                           (max x2 (nth 3 card)) (max y2 (nth 4 card))))
+                      (push (list name x1 y1 x2 y2) cards))))))
+            (setq pos (if (= next pos) (1+ pos) next))))
+        (mapcar (pcase-lambda (`(,_ ,x1 ,y1 ,x2 ,y2))
+                  (list x1 y1 (min x2 body-right) (min y2 body-bottom)))
+                cards)))))
+
 (defun anthe/window-gaps--bar-gap ()
   (or anthe/window-bar-gap anthe/window-margin))
 
