@@ -176,56 +176,116 @@ otherwise the left or top one, so the border follows the key."
 
 ;;; Gaps between the windows
 
-;; The dividers widened into gaps, and a thin margin around the frame and
-;; under the top bar.  Under EXWM they are holes cut in the frame (its X
-;; shape): the wallpaper shows there as it is, neither tinted nor blurred,
-;; and the applications' rounded corners round into it.  The child frames
-;; (completion popups) are kept whole across them.  Elsewhere, the gaps are
-;; the frame's background.
-(defvar anthe/window-gap 12
-  "Pixels between two windows, with `anthe/window-gaps-mode'.")
+;; Gaps between the windows, and margins: left and right of the windows,
+;; between them and the top bar, and the echo area, under which too.  The top
+;; bar and the echo area run the frame's whole width.  Under EXWM the gaps
+;; are holes cut in the frame (its X shape): the wallpaper shows there as it
+;; is, neither tinted nor blurred, and the applications' rounded corners
+;; round into it; the child frames (completion popups) are kept whole across
+;; them.  The window dividers make the gaps between windows, the outer
+;; fringes the margins beside them, the room under the top bar's text the
+;; margin under it; the margin above the echo area is taken from the
+;; dividers under the bottom windows.
+(defvar anthe/window-gap 6
+  "Pixels between two windows.")
 
-(defvar anthe/window-margin 5
-  "Pixels around the frame and under the top bar, with `anthe/window-gaps-mode'.")
+(defvar anthe/window-margin 6
+  "Pixels left and right of the windows, by the frame's edges.")
+
+(defvar anthe/window-bar-gap nil
+  "Pixels between the top bar and the windows; nil: `anthe/window-margin'.")
+
+(defvar anthe/window-bar-padding 0
+  "Pixels of the top bar above and under its text.")
+
+(defvar anthe/window-echo-gap nil
+  "Pixels between the windows and the echo area, at most `anthe/window-gap';
+nil: `anthe/window-margin'.")
+
+(defvar anthe/window-echo-margin 0
+  "Pixels under the echo area, by the frame's bottom edge.")
+
+(defun anthe/window-gaps--bar-gap ()
+  (or anthe/window-bar-gap anthe/window-margin))
+
+(defun anthe/window-gaps--echo-gap ()
+  (min anthe/window-gap (or anthe/window-echo-gap anthe/window-margin)))
 
 (defun anthe/window-gaps--colours (&rest _)
-  "Colour the gaps after the theme: its background, the top bar padded."
+  "Colour the dividers as the background, where they are not cut out."
   (when anthe/window-gaps-mode
     (let ((background (face-attribute 'default :background nil t)))
       (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel))
-        (set-face-attribute face nil :foreground background))
-      (set-face-background 'internal-border background)
-      ;; Room under the top bar's text, for the margin cut in it
-      (set-face-attribute 'tab-bar nil
-                          :box `(:line-width (1 . ,anthe/window-margin)
-                                 :color ,(face-attribute 'tab-bar :background nil t))))))
+        (set-face-attribute face nil :foreground background)))))
+
+(defun anthe/window-gaps--bar-room ()
+  "A tab bar item, empty, giving the bar room above and under its text."
+  (when-let* ((anthe/window-gaps-mode)
+              (info (font-info (face-font 'tab-bar))))
+    (let* ((ascent (+ (aref info 8) anthe/window-bar-padding))
+           (height (+ ascent (aref info 9) anthe/window-bar-padding
+                      (anthe/window-gaps--bar-gap))))
+      `((anthe-window-gaps menu-item
+         ,(propertize " " 'display `(space :width (0) :height (,height)
+                                          :ascent ,(round (* 100.0 ascent) height)))
+         ignore)))))
 
 (defun anthe/window-gaps--frames ()
   "The frames shaped: EXWM's workspaces."
   (and (bound-and-true-p exwm--connection) (bound-and-true-p exwm-workspace--list)
        (seq-filter #'frame-live-p exwm-workspace--list)))
 
+(defun anthe/window-gaps--margins (window)
+  "The margins beside WINDOW, (LEFT . RIGHT): by the frame's edges."
+  (if anthe/window-gaps-mode
+      (cons (if (window-at-side-p window 'left) anthe/window-margin 0)
+            (if (window-at-side-p window 'right) anthe/window-margin 0))
+    '(0 . 0)))
+
+(defun anthe/window-gaps--fringes (frame)
+  "Widen the fringes of FRAME's windows by the frame's edges by the margin:
+the buffer's, else the frame's, and the margin."
+  (dolist (window (window-list frame 'never))
+    (let* ((buffer (window-buffer window))
+           (margins (anthe/window-gaps--margins window))
+           (left (+ (or (buffer-local-value 'left-fringe-width buffer)
+                        (frame-parameter frame 'left-fringe) 8)
+                    (car margins)))
+           (right (+ (or (buffer-local-value 'right-fringe-width buffer)
+                         (frame-parameter frame 'right-fringe) 8)
+                     (cdr margins))))
+      (unless (equal (take 2 (window-fringes window)) (list left right))
+        (set-window-fringes window left right nil t)))))
+
 (defun anthe/window-gaps--rectangles (frame)
-  "The rectangles of FRAME to keep: its windows without their dividers, the
-minibuffer, the top bar without the margin under it, and its child frames."
+  "The rectangles of FRAME to keep: the top bar but the gap under it, the
+windows but their dividers and margins, the echo area but its margin, and
+the child frames."
   (let ((rects nil)
-        (border (frame-internal-border-width frame))
-        (bar (tab-bar-height frame t)))
+        (width (frame-native-width frame))
+        (bar (tab-bar-height frame t))
+        (mini (minibuffer-window frame)))
     (cl-flet ((add (left top right bottom)
                 (when (and (> right left) (> bottom top))
                   (push (make-instance 'xcb:RECTANGLE :x left :y top
                                        :width (- right left) :height (- bottom top))
                         rects))))
       (when (> bar 0)
-        (add border border (- (frame-native-width frame) border)
-             (+ border bar (- anthe/window-margin))))
+        (add 0 0 width (- bar (anthe/window-gaps--bar-gap))))
       (dolist (window (window-list frame 'never))
-        (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window)))
-          (add left top (- right (window-right-divider-width window))
-               (- bottom (window-bottom-divider-width window)))))
-      (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges (minibuffer-window frame))))
-        (when (eq (window-frame (minibuffer-window frame)) frame)
-          (add left top right bottom)))
+        (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges window))
+                    (`(,margin-left . ,margin-right) (anthe/window-gaps--margins window)))
+          (add (+ left margin-left) top
+               (- right (window-right-divider-width window) margin-right)
+               (- bottom (window-bottom-divider-width window)))
+          ;; Above the echo area, the divider under the gap is kept
+          (when (and (eq (window-frame mini) frame) (window-at-side-p window 'bottom))
+            (add left (+ (- bottom (window-bottom-divider-width window))
+                         (anthe/window-gaps--echo-gap))
+                 right bottom))))
+      (when (eq (window-frame mini) frame)
+        (pcase-let ((`(,left ,top ,right ,bottom) (window-pixel-edges mini)))
+          (add left top right (- bottom anthe/window-echo-margin))))
       (dolist (child (frame-list))
         (when (and (eq (frame-parameter child 'parent-frame) frame)
                    (frame-visible-p child))
@@ -261,15 +321,18 @@ minibuffer, the top bar without the margin under it, and its child frames."
 
 (defvar anthe/window-gaps--timer nil)
 
+(defun anthe/window-gaps--refresh ()
+  "Set the margins and shape the frames again, now."
+  (setq anthe/window-gaps--timer nil)
+  (when-let* ((frames (anthe/window-gaps--frames)))
+    (mapc #'anthe/window-gaps--fringes frames)
+    (mapc #'anthe/window-gaps--shape frames)
+    (xcb:flush exwm--connection)))
+
 (defun anthe/window-gaps--update (&rest _)
   "Shape the frames again, once the changes of this command are done."
   (unless (timerp anthe/window-gaps--timer)
-    (setq anthe/window-gaps--timer
-          (run-at-time 0 nil (lambda ()
-                               (setq anthe/window-gaps--timer nil)
-                               (when-let* ((frames (anthe/window-gaps--frames)))
-                                 (mapc #'anthe/window-gaps--shape frames)
-                                 (xcb:flush exwm--connection)))))))
+    (setq anthe/window-gaps--timer (run-at-time 0 nil #'anthe/window-gaps--refresh))))
 
 (defun anthe/window-gaps--child-a (frame &rest _)
   "Shape again when FRAME, a child frame, shows, hides or moves."
@@ -277,17 +340,14 @@ minibuffer, the top bar without the margin under it, and its child frames."
     (anthe/window-gaps--update)))
 
 (define-minor-mode anthe/window-gaps-mode
-  "Gaps between the windows and around them, the wallpaper showing through."
+  "Gaps between the windows and margins around them, the wallpaper showing
+through.  After changing their sizes, call this again to apply them."
   :global t
-  (let ((width (if anthe/window-gaps-mode anthe/window-gap 1))
-        (margin (if anthe/window-gaps-mode anthe/window-margin 0)))
+  (let ((width (if anthe/window-gaps-mode anthe/window-gap 1)))
     (setq window-divider-default-right-width width
           window-divider-default-bottom-width width)
     (when window-divider-mode
-      (window-divider-mode 1))
-    (setf (alist-get 'internal-border-width default-frame-alist) margin)
-    (dolist (frame (or (anthe/window-gaps--frames) (list (selected-frame))))
-      (set-frame-parameter frame 'internal-border-width margin)))
+      (window-divider-mode 1)))
   (let ((hook (if anthe/window-gaps-mode #'add-hook #'remove-hook)))
     (funcall hook 'doom-load-theme-hook #'anthe/window-gaps--colours)
     (funcall hook 'window-size-change-functions #'anthe/window-gaps--update)
@@ -296,17 +356,20 @@ minibuffer, the top bar without the margin under it, and its child frames."
     (if anthe/window-gaps-mode
         (advice-add fn :after #'anthe/window-gaps--child-a)
       (advice-remove fn #'anthe/window-gaps--child-a)))
+  ;; The room under the top bar's text, last of the bar
+  (setq tab-bar-format (delq 'anthe/window-gaps--bar-room tab-bar-format))
+  (when anthe/window-gaps-mode
+    (setq tab-bar-format (append tab-bar-format '(anthe/window-gaps--bar-room))))
+  (force-mode-line-update t)
   (if anthe/window-gaps-mode
       (anthe/window-gaps--colours)
-    (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel
-                    internal-border tab-bar))
+    (dolist (face '(window-divider window-divider-first-pixel window-divider-last-pixel))
       (custom-theme-recalc-face face)))
-  (when (anthe/window-gaps--frames)
-    (mapc #'anthe/window-gaps--shape (anthe/window-gaps--frames))
-    (xcb:flush exwm--connection)))
+  (anthe/window-gaps--refresh))
 
 (when (display-graphic-p)
-  (anthe/window-gaps-mode 1))
+  ;; Once the top bar's items are set (anthe-bar.el)
+  (add-hook 'emacs-startup-hook (lambda () (anthe/window-gaps-mode 1)) 90))
 
 (map! :leader :desc "Gaps between windows" "t G" #'anthe/window-gaps-mode)
 
