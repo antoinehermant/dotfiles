@@ -10,7 +10,8 @@
 ;;  the processors and memory used (a click opens proced),
 ;;  the USB drives plugged in (a click opens a menu to open or eject them),
 ;;  Bluetooth (a click opens a menu to turn it on or off and to connect the
-;;  paired devices), the network and the battery.
+;;  paired devices), the network, caffeine (a cup: a click keeps the
+;;  screen on, exwm-desktop.el) and the battery.
 ;;
 ;;  It is Emacs's own tab bar, shown on the EXWM workspaces only, not on
 ;;  floating windows.  While it shows, the time and the battery leave the
@@ -461,13 +462,24 @@ the rest."
             (anthe/claude-limits-help)
             #'anthe-bar-claude-limits))))
 
+(defun anthe-bar--caffeine ()
+  "A cup, full with caffeine on (the screen stays on), empty without; a
+click switches it (exwm-desktop.el)."
+  (when (fboundp 'anthe-caffeine-mode)
+    (let ((on (bound-and-true-p anthe-caffeine-mode)))
+      (list (anthe-bar--icon (if on "nf-md-coffee" "nf-md-coffee_outline") (if on 'warning 'shadow))
+            (if on "Caffeine on: the screen stays on and unlocked\nClick: lock again when idle"
+              "The screen locks when idle\nClick: caffeine, the screen stays on")
+            #'anthe-caffeine-mode))))
+
 (defun anthe-bar--look ()
   "Look at Claude's limits, the system, the drives, Bluetooth, the network
 and the battery, and redraw the bar."
   (setq anthe-bar--status
         (delq nil (mapcar (lambda (look) (ignore-errors (funcall look)))
                           '(anthe-bar--claude anthe-bar--system anthe-bar--drives-status
-                            anthe-bar--bluetooth anthe-bar--network anthe-bar--battery))))
+                            anthe-bar--bluetooth anthe-bar--network anthe-bar--caffeine
+                            anthe-bar--battery))))
   (force-mode-line-update t))
 
 (defun anthe-bar--right ()
