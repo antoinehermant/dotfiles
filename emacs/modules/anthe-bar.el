@@ -505,6 +505,9 @@ over (icons and faces vary), else the tab bar wraps it on a second line."
       (list (lambda () (anthe-bar--on-bar (anthe-bar--workspaces)))
             (lambda () (anthe-bar--on-bar (anthe-bar--clock)))
             (lambda () (anthe-bar--on-bar (anthe-bar--right)))))
+;; The gaps' room under the bar (anthe-windows.el), kept when this file is loaded again
+(when (bound-and-true-p anthe/window-gaps-mode)
+  (add-to-list 'tab-bar-format #'anthe/window-gaps--bar-room t))
 
 ;;; The colours: the mode line's, the themes' tab bar being for tabs
 
