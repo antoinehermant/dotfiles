@@ -722,25 +722,31 @@ buffer; from the week, the month of the day at point."
   (setq anthe-week--cache nil)
   (anthe-week--render))
 
-(defun anthe-week-sync ()
+(defun anthe-week-sync (&optional then)
   "Sync the calendars with the server (vdirsyncer), then import them; the
-week shows the new events once the file changes."
+week shows the new events once the file changes.  From a program, quietly,
+then THEN called with whether it synced."
   (interactive)
   (require 'khalel)
-  (message "Syncing the calendars...")
-  (let ((buffer (generate-new-buffer " *anthe-week-sync*")))
+  (let ((quiet (not (called-interactively-p 'any)))
+        (buffer (generate-new-buffer " *anthe-week-sync*")))
+    (unless quiet (message "Syncing the calendars..."))
     (make-process
      :name "vdirsyncer" :buffer buffer :noquery t :connection-type 'pipe
      :command `(,(or khalel-vdirsyncer-command "vdirsyncer") "sync")
      :sentinel (lambda (process _event)
                  (unless (process-live-p process)
-                   (if (zerop (process-exit-status process))
-                       (progn (save-window-excursion (khalel-import-events))
-                              (message "Calendars synced"))
-                     (message "Calendar sync failed: %s"
-                              (car (last (split-string (with-current-buffer buffer (buffer-string))
-                                                       "\n" t)))))
-                   (kill-buffer buffer))))))
+                   (let ((ok (zerop (process-exit-status process))))
+                     (if ok
+                         (progn (save-window-excursion
+                                  (let ((inhibit-message quiet)) (khalel-import-events)))
+                                (unless quiet (message "Calendars synced")))
+                       (unless quiet
+                         (message "Calendar sync failed: %s"
+                                  (car (last (split-string (with-current-buffer buffer (buffer-string))
+                                                           "\n" t))))))
+                     (kill-buffer buffer)
+                     (when then (funcall then ok))))))))
 
 (define-keymap :keymap anthe-week-mode-map
   "]" #'anthe-week-next "[" #'anthe-week-previous "." #'anthe-week-today

@@ -19,7 +19,8 @@
 ;;
 ;;; Code:
 
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(with-eval-after-load 'package
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/")))
 
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/elpy/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
@@ -28,7 +29,7 @@
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/python-mode/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/virtualenv.el/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pipenv.el/")
-(straight-use-package 'elpy)
+;; elpy is in packages.el
 ;; (straight-use-package 'jupyter)
 ;; (use-package! python-mode)
 ;; (straight-use-package 'virtualenv)
@@ -43,7 +44,8 @@
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/company-jedi-20200324.25/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pyenv-mode/")
 (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/jupyter/")
-(use-package! company-jedi)
+(use-package! company-jedi
+  :commands company-jedi)
 (add-to-list 'company-backends 'company-jedi)
 
 (use-package! elpy
@@ -52,13 +54,14 @@
   (elpy-enable))
 
 ;; (setq jedi:complete-on-dot 't)
-(require 'python)
+;; python (with pyvenv and eshell, from Doom) loads with the first Python buffer
 ;; (require 'conda)
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/conda.el")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/pythonic")
 ;; (use-package! conda)
 
 (use-package python
+  :defer t
   ;; :hook (python-mode . lsp-deferred)
   :custom
   (python-indent-offset 4)
@@ -89,7 +92,6 @@
 
 (add-hook 'python-mode-hook 'code-cells-mode)
 
-(require 'flymake)
 (add-hook 'python-mode-hook 'flymake-mode)
 
 (defun my-run-cell-and-forward-cell ()

@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 
-(require 'lsp-mode)
+;; lsp-mode loads with the first buffer that starts it (half a second)
 
 (defun anthe-lsp-mode-setup ()
   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))

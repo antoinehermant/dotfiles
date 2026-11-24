@@ -860,7 +860,7 @@ The first index only takes note of those already there."
                  (not (string-prefix-p "*mu4e-" (buffer-name buffer)))
                  (or (not (bound-and-true-p persp-mode))
                      (+workspace-contains-buffer-p buffer)))
-      (dashboard-open))))
+      (anthe-dashboard-open))))
 
 (with-eval-after-load 'mu4e
   (evil-define-key* 'normal mu4e-main-mode-map

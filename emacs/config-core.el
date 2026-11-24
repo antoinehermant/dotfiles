@@ -86,10 +86,11 @@
 ;;   :config
 ;;   (when (memq window-system '(mac ns x))
 ;;   (exec-path-from-shell-initialize)))
-(require 'package)
-(require 'straight)
-(add-to-list 'package-archives
-             '("melpa" . "http://melpa.org/packages/") t)
+;; Not loaded at startup: package.el and straight cost a second (straight
+;; makes Doom read packages.el again), and Doom installs the packages anyway
+(with-eval-after-load 'package
+  (add-to-list 'package-archives
+               '("melpa" . "http://melpa.org/packages/") t))
 
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))

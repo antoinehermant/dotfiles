@@ -348,7 +348,8 @@ confirmed."
 
 (defun anthe-bib--key-here ()
   "The citation key at point: a citation, or the BibTeX entry."
-  (or (and (fboundp 'citar-key-at-point) (citar-key-at-point))
+  ;; citar isn't loaded at startup: the commands asking for a key load it
+  (or (and (require 'citar nil t) (citar-key-at-point))
       (and (derived-mode-p 'bibtex-mode)
            (save-excursion
              (bibtex-beginning-of-entry)

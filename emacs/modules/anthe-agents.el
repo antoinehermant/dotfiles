@@ -26,7 +26,9 @@
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/acp-20260527.2132/")
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/shell-maker-20260601.1034/")
 
+;; agent-shell loads with its first shell (a third of a second at startup)
 (use-package agent-shell
+  :defer t
   :config
   ;; Only C-c C-c sends a prompt, in the shell and in the compose buffer: RET is a newline
   ;; (insert state) or moves (normal state). C-c C-k interrupts the agent instead of C-c C-c.
@@ -83,11 +85,12 @@ Sending kills the compose buffer, but its window would show the shell."
   (advice-add command :around #'anthe/agent-shell--close-compose-window))
 
 ;; Mistral, where its key is (not on the HPC)
-(when-let* ((key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
-  (setq agent-shell-mistral-authentication
-        (agent-shell-mistral-make-authentication :api-key key)))
+(with-eval-after-load 'agent-shell
+  (when-let* ((key (getenv "MISTRAL_VIBE_API_KEY_STUDENT")))
+    (setq agent-shell-mistral-authentication
+          (agent-shell-mistral-make-authentication :api-key key)))
 
-(setopt agent-shell-persistent-prompt-enabled t)
+  (setopt agent-shell-persistent-prompt-enabled t))
 (setq agent-shell-session-restore-verbosity 'last)
 
 ;; Killing a shell with a session asks first, not to lose it by accident.
@@ -121,6 +124,7 @@ Sending kills the compose buffer, but its window would show the shell."
 
 (defun anthe/agent-shell--project-shell (root)
   "The most recent agent shell working in ROOT, or nil."
+  (require 'agent-shell)
   (seq-find (lambda (buffer)
               (equal (file-name-as-directory (expand-file-name root))
                      (file-name-as-directory

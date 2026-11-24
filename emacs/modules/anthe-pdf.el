@@ -48,19 +48,39 @@
 (defvar anthe/wallpaper-colours nil
   "The mean colour of wallpapers, an alist from their file.")
 
+(defvar anthe/wallpaper--measuring nil
+  "The wallpapers whose mean colour convert is measuring.")
+
 (defun anthe/wallpaper-colour ()
-  "The mean colour of the wallpaper feh sets (~/.fehbg), or nil."
+  "The mean colour of the wallpaper feh sets (~/.fehbg), or nil.
+convert takes half a second, which blocked startup: it measures it in the
+background, nil until then, and the viewers get their colours again after."
   (when-let* ((fehbg (and (file-readable-p "~/.fehbg")
                           (with-temp-buffer (insert-file-contents "~/.fehbg") (buffer-string))))
               (file (and (string-match "--bg-[a-z]+ +'\\([^']+\\)'" fehbg) (match-string 1 fehbg)))
               ((file-readable-p file)))
     (or (alist-get file anthe/wallpaper-colours nil nil #'equal)
-        (let ((mean (string-trim
-                     (shell-command-to-string
-                      (format "convert %s -resize 1x1! -format '#%%[hex:p{0,0}]' info: 2>/dev/null"
-                              (shell-quote-argument file))))))
-          (when (string-match-p "\\`#[0-9A-Fa-f]\\{6\\}" mean)
-            (setf (alist-get file anthe/wallpaper-colours nil nil #'equal) (substring mean 0 7)))))))
+        (progn (anthe/wallpaper--measure file) nil))))
+
+(defun anthe/wallpaper--measure (file)
+  "Measure the mean colour of the wallpaper FILE with convert, then give the
+viewers their colours again."
+  (unless (member file anthe/wallpaper--measuring)
+    (push file anthe/wallpaper--measuring)
+    (make-process
+     :name "wallpaper-colour" :noquery t
+     :buffer (generate-new-buffer " *wallpaper-colour*")
+     :command (list "sh" "-c" (format "convert %s -resize 1x1! -format '#%%[hex:p{0,0}]' info: 2>/dev/null"
+                                      (shell-quote-argument file)))
+     :sentinel (lambda (process _event)
+                 (unless (process-live-p process)
+                   (setq anthe/wallpaper--measuring (delete file anthe/wallpaper--measuring))
+                   (let ((mean (with-current-buffer (process-buffer process)
+                                 (string-trim (buffer-string)))))
+                     (kill-buffer (process-buffer process))
+                     (when (string-match-p "\\`#[0-9A-Fa-f]\\{6\\}" mean)
+                       (setf (alist-get file anthe/wallpaper-colours nil nil #'equal) (substring mean 0 7))
+                       (anthe/pdf-theme-colours))))))))
 
 (defun anthe/seen-background (background)
   "BACKGROUND as it looks on the selected frame, over the wallpaper."
@@ -214,7 +234,7 @@ already showing the file (`anthe-viewers-open')."
                 (format "Nsxiv.bar.background: %s\nNsxiv.bar.foreground: %s\n" paper ink))
         (call-process-region (point-min) (point-max) "xrdb" nil nil nil "-merge")))))
 
-(anthe/pdf-theme-colours)
+;; Not called here: Doom's theme, loaded after, runs `doom-load-theme-hook'
 
 (require 'anthe-viewers)
 

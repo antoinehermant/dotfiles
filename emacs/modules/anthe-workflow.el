@@ -223,7 +223,8 @@ window, the days before hidden above it, where scrolling up shows them.")
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/elpa/org-wild-notifier-20260127.533/")
 (add-to-list 'load-path "~/.config/emacs/.local/elpa/alert-20260316.2025/")
-(use-package org-wild-notifier)
+(use-package org-wild-notifier
+  :defer t)
 
 (setq org-wild-notifier-alert-time '(0 10 30)) 
 (setq org-wild-notifier-alert-times-property "NOTIF") 
@@ -232,12 +233,14 @@ window, the days before hidden above it, where scrolling up shows them.")
 ;; Its check runs in another Emacs, which would stop at the question of a file
 ;; missing, today's daily note before it's written, and so never notify
 (setq org-agenda-skip-unavailable-files t)
-(add-to-list 'org-wild-notifier-additional-environment-regexes
-             "\\`org-agenda-skip-unavailable-files\\'")
+(with-eval-after-load 'org-wild-notifier
+  (add-to-list 'org-wild-notifier-additional-environment-regexes
+               "\\`org-agenda-skip-unavailable-files\\'"))
 ;; The calendar's events have their own reminders (anthe-week.el); khalel tags
 ;; them with their calendar
 (setq org-wild-notifier-tags-blacklist '("infomaniak" "outlook"))
-(org-wild-notifier-mode)
+;; A few seconds after startup, not to hold it
+(run-with-idle-timer 3 nil #'org-wild-notifier-mode)
 (add-to-list 'org-default-properties "NOTIF")
 
 ;; (custom-set-faces!
@@ -246,7 +249,8 @@ window, the days before hidden above it, where scrolling up shows them.")
 
 
 ;; (add-to-list 'load-path "~/.config/emacs/.local/straight/repos/org-journal/")
-(use-package org-journal)
+(use-package org-journal
+  :defer t)
 (setq org-journal-date-format "%a, %Y.%m.%d"
       org-journal-file-format "%Y.%m.%d.org")
 (setq org-journal-dir "~/org/roam/journal")
@@ -262,8 +266,20 @@ window, the days before hidden above it, where scrolling up shows them.")
 ;; (setq org-contacts-directory '"~/org/org/contacts/")
 ;; (setq org-contacts-files '("~/org/org/contacts/test.org"))
 
+;; khalel loads ox-icalendar, and so the exporters (half a second): it loads
+;; with its commands, or with the capture, for its template "e".  Not after
+;; org-capture loads: khalel requires it, which would require khalel again
+(defun anthe/khalel-load (&rest _)
+  "Load khalel, which adds its capture template."
+  (require 'khalel))
+
 (use-package khalel
-  :after org
+  :defer t
+  :commands (khalel-import-events khalel-add-capture-template khalel-run-vdirsyncer
+             khalel-edit-calendar-event khalel-export-org-subtree-to-calendar
+             khalel-refresh-khal-calendar-list)
+  :init
+  (advice-add 'org-capture :before #'anthe/khalel-load)
   :config
   ;; Import events in org
   (khalel-add-capture-template)
@@ -280,6 +296,7 @@ window, the days before hidden above it, where scrolling up shows them.")
 (defun anthe/import-birthday-events ()
   "Import birthdays via `khalel-import-events` in a specific birthday.org."
   (interactive)
+  (require 'khalel)
   (let ((current-prefix-arg '(4))
         (khalel-default-calendar "birthdays")
         (khalel-import-org-file (concat org-directory "birthdays.org")))
@@ -288,6 +305,7 @@ window, the days before hidden above it, where scrolling up shows them.")
 (defun khalel-run-vdirsyncer-silent ()
   "Run vdirsyncer silently in background and import events."
   (interactive)
+  (require 'khalel)
   (let ((vdirsyncer (or khalel-vdirsyncer-command
                         (executable-find "vdirsyncer")))
         (buf (get-buffer-create " *khalel-vdirsyncer-silent*")))
