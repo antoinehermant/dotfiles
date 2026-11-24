@@ -153,7 +153,9 @@ after a space (vterminal<2>: vterm 2)."
                           :box nil :inherit 'unspecified)
       ;; The tab shown, the window selected or not
       (dolist (face '(tab-line-tab tab-line-tab-current))
+        ;; Their own grey, over what they inherit, cleared
         (set-face-attribute face nil :box nil :weight 'bold
+                            :background 'unspecified :foreground 'unspecified
                             :inherit (if (facep 'anthe-bar-current-workspace)
                                          'anthe-bar-current-workspace
                                        'highlight)))
