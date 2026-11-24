@@ -226,7 +226,9 @@ goes back to its own."
   (anthe-workspaces-settle))
 
 (map! :leader
-      :desc "Move workspace to other monitor" "TAB m" #'anthe-workspaces-move)
+      :desc "Move workspace to other monitor" "TAB m" #'anthe-workspaces-move
+      :desc "Left workspace" "TAB h" #'+workspace/switch-left
+      :desc "Right workspace" "TAB l" #'+workspace/switch-right)
 
 (provide 'anthe-workspaces)
 ;;; anthe-workspaces.el ends here
